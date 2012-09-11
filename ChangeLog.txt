@@ -1,0 +1,2 @@
+=== TeXSample Server 0.1.0pa1 (11 September 2012) ===
+    * First pre-alpha version
