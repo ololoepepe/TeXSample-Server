@@ -92,8 +92,6 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
              this, SLOT( replyReceivedSlot(BNetworkOperation *) ) );
     connect( this, SIGNAL( requestReceived(BNetworkOperation *) ),
              this, SLOT( requestReceivedSlot(BNetworkOperation *) ) );
-    connect( this, SIGNAL( replySent(BNetworkOperation *) ),
-             this, SLOT( replySentSlot(BNetworkOperation *) ) );
     QTimer::singleShot( 0, this, SLOT( checkAuthorization() ) );
     sendRequest(TexSampleServer::AuthorizeOperation);
 }
@@ -118,86 +116,12 @@ void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
 
 void UserConnection::handleRequestGetPdf(BNetworkOperation *operation)
 {
-    if (!operation)
-        return;
-    QDataStream in( operation->data() );
-    in.setVersion(TexSampleServer::DataStreamVersion);
-    QByteArray ba;
-    QDataStream out(&ba, QIODevice::WriteOnly);
-    out.setVersion(TexSampleServer::DataStreamVersion);
-    QString id;
-    in >> id;
-    if ( !standardCheck(id, out) )
-    {
-        sendReply(operation, ba);
-        return;
-    }
-    //
-    QString dir = BCore::user("samples") + "/" + expandId(id);
-    if ( !QDir(dir).exists() )
-    {
-        out << false;
-        out << tr("No such sample", "reply text");
-        sendReply(operation, ba);
-        return;
-    }
-    QFile f(dir + "/" + SampleBaseName + ".pdf");
-    if ( !f.open(QFile::ReadOnly) )
-    {
-        out << false;
-        out << tr("Internal error", "reply text");
-        sendReply(operation, ba);
-        return;
-    }
-    out << true;
-    out << f.readAll();
-    f.close();
-    sendReply(operation, ba);
+    sendSample(operation, true);
 }
 
 void UserConnection::handleRequestGetSample(BNetworkOperation *operation)
 {
-    if (!operation)
-        return;
-    QDataStream in( operation->data() );
-    in.setVersion(TexSampleServer::DataStreamVersion);
-    QByteArray ba;
-    QDataStream out(&ba, QIODevice::WriteOnly);
-    out.setVersion(TexSampleServer::DataStreamVersion);
-    QString id;
-    in >> id;
-    if ( !standardCheck(id, out) )
-    {
-        sendReply(operation, ba);
-        return;
-    }
-    //
-    QString dir = BCore::user("samples") + "/" + expandId(id);
-    if ( !QDir(dir).exists() )
-    {
-        out << false;
-        out << tr("No such sample", "reply text");
-        sendReply(operation, ba);
-        return;
-    }
-    QString sample;
-    TexSampleServer::FilePairList fpl;
-    if ( !readFiles(dir, sample, fpl) )
-    {
-        out << false;
-        out << tr("Internal error", "reply text");
-        sendReply(operation, ba);
-        return;
-    }
-    out << true;
-    out << sample;
-    for (int i = 0; i < fpl.size(); ++i)
-    {
-        const TexSampleServer::FilePair &fp = fpl.at(i);
-        out << fp.first;
-        out << fp.second;
-    }
-    sendReply(operation, ba);
+    sendSample(operation, false);
 }
 
 //other
@@ -219,6 +143,64 @@ bool UserConnection::standardCheck(const QString &id, QDataStream &out)
     return true;
 }
 
+void UserConnection::sendSample(BNetworkOperation *operation, bool pdf)
+{
+    QDataStream in( operation->data() );
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    out.setVersion(TexSampleServer::DataStreamVersion);
+    QString id;
+    in >> id;
+    if ( !standardCheck(id, out) )
+        return mySendReply(operation, data);
+    QString dir = BCore::user("samples") + "/" + expandId(id);
+    if ( !QDir(dir).exists() )
+    {
+        out << false;
+        out << tr("No such sample", "reply text");
+        return mySendReply(operation, data);
+    }
+    if (pdf)
+    {
+        QFile f(dir + "/" + SampleBaseName + ".pdf");
+        if ( !f.open(QFile::ReadOnly) )
+        {
+            out << false;
+            out << tr("Internal error", "reply text");
+            return mySendReply(operation, data);
+        }
+        out << true;
+        out << f.readAll();
+        f.close();
+    }
+    else
+    {
+        QString sample;
+        TexSampleServer::FilePairList fpl;
+        if ( !readFiles(dir, sample, fpl) )
+        {
+            out << false;
+            out << tr("Internal error", "reply text");
+            return mySendReply(operation, data);
+        }
+        out << true;
+        out << sample;
+        for (int i = 0; i < fpl.size(); ++i)
+        {
+            const TexSampleServer::FilePair &fp = fpl.at(i);
+            out << fp.first;
+            out << fp.second;
+        }
+    }
+    sendReply(operation, data);
+}
+
+void UserConnection::mySendReply(BNetworkOperation *operation, const QByteArray &data)
+{
+    sendReply(operation, data);
+}
+
 //
 
 void UserConnection::replyReceivedSlot(BNetworkOperation *operation)
@@ -236,12 +218,6 @@ void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
     if (h && authorized)
         (this->*h)(operation);
     else if (operation)
-        operation->deleteLater();
-}
-
-void UserConnection::replySentSlot(BNetworkOperation *operation)
-{
-    if (operation)
         operation->deleteLater();
 }
 

@@ -32,10 +32,11 @@ private:
     void handleRequestGetSample(BNetworkOperation *operation);
     //other
     bool standardCheck(const QString &id, QDataStream &out);
+    void sendSample(BNetworkOperation *operation, bool pdf);
+    void mySendReply( BNetworkOperation *operation, const QByteArray &data = QByteArray() );
 private slots:
     void replyReceivedSlot(BNetworkOperation *operation);
     void requestReceivedSlot(BNetworkOperation *operation);
-    void replySentSlot(BNetworkOperation *operation);
     void checkAuthorization();
 };
 
