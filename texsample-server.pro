@@ -6,23 +6,25 @@ QT += \
 
 SOURCES += \
     src/main.cpp \
-    src/server.cpp \
-    src/connection.cpp \
-    src/connectionthread.cpp
+    src/userconnection.cpp \
+    src/userworker.cpp \
+    src/userserver.cpp \
+    src/databaseinteractor.cpp
 
 HEADERS += \
     include/texsampleserver.h \
-    src/server.h \
-    src/connection.h \
-    src/connectionthread.h
+    src/userconnection.h \
+    src/userworker.h \
+    src/userserver.h \
+    src/databaseinteractor.h
+
+RESOURCES += \
+    texsample-server.qrc
 
 TRANSLATIONS += \
     res/translations/texsample-server_ru.ts
 
 unix:LIBS += -lbeqtcore -lbeqtnetwork
 unix:INCLUDEPATH += "/usr/include/beqt"
-win32:LIBS += -L"$$(systemdrive)/Program files/BeQt/lib" -lbeqtcore0 -lbeqtnetwork0
+win32:LIBS += -L"$$(systemdrive)/Program files/BeQt/lib" -lbeqtcore1 -lbeqtnetwork1
 win32:INCLUDEPATH += "$$(systemdrive)/Program files/BeQt/include"
-
-RESOURCES += \
-    texsample-server.qrc

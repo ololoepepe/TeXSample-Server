@@ -1,10 +1,39 @@
-#ifndef CONNECTION_H
-#define CONNECTION_H
+#ifndef USERCONNECTION_H
+#define USERCONNECTION_H
 
-class QTcpSocket;
+class BGenericSocket;
+class BNetworkOperation;
+
+class QObject;
 
 #include <bnetworkconnection.h>
 
+#include <QByteArray>
+#include <QMap>
+#include <QString>
+
+class UserConnection : public BNetworkConnection
+{
+    Q_OBJECT
+public:
+    explicit UserConnection(BGenericSocket *socket, QObject *parent = 0);
+private:
+    typedef void (UserConnection::*Handler)(const QByteArray &);
+    //
+    bool authorized;
+    QMap<QString, Handler> replyHandlers;
+    QMap<QString, Handler> requestHandlers;
+    //
+    void handleReplyAuthorization(const QByteArray &data);
+    //
+private slots:
+    void replyReceivedSlot(BNetworkOperation *operation);
+    void requestReceivedSlot(BNetworkOperation *operation);
+    void replySentSlot(BNetworkOperation *operation);
+    void checkAuthorization();
+};
+
+/*
 #include <QObject>
 #include <QDataStream>
 #include <QString>
@@ -49,5 +78,6 @@ private slots:
 signals:
     void updateNotify();
 };
+*/
 
-#endif // CONNECTION_H
+#endif // USERCONNECTION_H

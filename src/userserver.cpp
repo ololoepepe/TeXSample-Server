@@ -1,11 +1,23 @@
-#include "src/server.h"
-#include "src/connectionthread.h"
-#include "src/connection.h"
-#include "include/texsampleserver.h"
+#include "src/userserver.h"
+#include "src/userworker.h"
 
-#include <bstdio.h>
-#include <bcore.h>
+#include <bnetworkserver.h>
+#include <bgenericserver.h>
+#include <bnetworkserverworker.h>
 
+UserServer::UserServer(QObject *parent) :
+    BNetworkServer(BGenericServer::TcpServer, parent)
+{
+}
+
+//
+
+BNetworkServerWorker *UserServer::createWorker()
+{
+    return new UserWorker;
+}
+
+/*
 #include <QObject>
 #include <QTcpServer>
 #include <QString>
@@ -285,3 +297,4 @@ void Server::updateNotify()
     for (int i = 0; i < mConnections.size(); ++i)
         mConnections.at(i)->requestUpdateNotify();
 }
+*/

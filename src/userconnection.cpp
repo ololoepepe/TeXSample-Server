@@ -1,10 +1,91 @@
-#include "src/connection.h"
+#include "src/userconnection.h"
+#include "src/databaseinteractor.h"
 #include "include/texsampleserver.h"
 
-#include <bcore.h>
-#include <bstdio.h>
 #include <bnetworkconnection.h>
+#include <bnetworkoperation.h>
+#include <bcore.h>
 
+#include <QTimer>
+#include <QByteArray>
+#include <QMap>
+#include <QString>
+#include <QDataStream>
+#include <QMutex>
+#include <QMutexLocker>
+
+const int AuthorizationTimeout = 15 * BCore::Second;
+
+//
+
+UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
+    BNetworkConnection(socket, parent)
+{
+    if ( !isConnected() )
+        return;
+    //initializing members
+    authorized = false;
+    //adding reply handlers
+    replyHandlers.insert(TexSampleServer::AuthorizeOperation, &UserConnection::handleReplyAuthorization);
+    //adding request handlers
+    //
+    //other
+    connect( this, SIGNAL( replyReceived(BNetworkOperation *) ),
+             this, SLOT( replyReceivedSlot(BNetworkOperation *) ) );
+    connect( this, SIGNAL( requestReceived(BNetworkOperation *) ),
+             this, SLOT( requestReceivedSlot(BNetworkOperation *) ) );
+    connect( this, SIGNAL( replySent(BNetworkOperation *) ),
+             this, SLOT( replySentSlot(BNetworkOperation *) ) );
+    QTimer::singleShot( 0, this, SLOT( checkAuthorization() ) );
+    sendRequest(TexSampleServer::AuthorizeOperation);
+}
+
+//
+
+void UserConnection::handleReplyAuthorization(const QByteArray &data)
+{
+    QDataStream in(data);
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QString login;
+    QString password;
+    in >> login;
+    in >> password;
+    //TODO: check user
+}
+
+//
+
+void UserConnection::replyReceivedSlot(BNetworkOperation *operation)
+{
+    Handler h = operation ? replyHandlers.value( operation->metaData().operation() ) : 0;
+    if (h)
+        (this->*h)( operation->data() );
+    if (operation)
+        operation->deleteLater();
+}
+
+void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
+{
+    Handler h = operation ? requestHandlers.value( operation->metaData().operation() ) : 0;
+    if (h && authorized)
+        (this->*h)( operation->data() );
+    else if (operation)
+        operation->deleteLater();
+}
+
+void UserConnection::replySentSlot(BNetworkOperation *operation)
+{
+    if (operation)
+        operation->deleteLater();
+}
+
+void UserConnection::checkAuthorization()
+{
+    if (!authorized)
+        close();
+}
+
+/*
 #include <QObject>
 #include <QTcpSocket>
 #include <QTimer>
@@ -598,3 +679,4 @@ void Connection::emitUpdateNotify()
 {
     emit updateNotify();
 }
+*/

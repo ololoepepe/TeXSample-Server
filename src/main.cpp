@@ -1,5 +1,5 @@
-#include "src/server.h"
-#include "src/connection.h"
+#include "src/userserver.h"
+#include "src/databaseinteractor.h"
 
 #include <bstdio.h>
 #include <bcore.h>
@@ -8,7 +8,7 @@
 #include <QStringList>
 #include <QString>
 #include <QObject>
-#include <QThreadPool>
+#include <QDir>
 
 #include <QDebug>
 
@@ -22,19 +22,18 @@ int main(int argc, char **argv)
     QCoreApplication::setApplicationVersion("0.1.0pa1");
     QCoreApplication::setOrganizationName("Andrey Bogdanov");
     QCoreApplication::setOrganizationDomain("https://github.com/the-dark-angel/TeXSample-Server");
-    QThreadPool::globalInstance()->setMaxThreadCount(10); //Maybe not optimal
     //initializing BCore
 #if defined(Q_OS_MAC)
     QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins"); //TODO
     BCore::setSharedRoot("/usr/share/texsample-server"); //TODO
-    BCore::setUserRoot(BCore::Home + "/Library/Application Support/TeXSample Server");
+    BCore::setUserRoot(QDir::homePath() + "/Library/Application Support/TeXSample Server");
 #elif defined(Q_OS_UNIX)
     QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins");
     BCore::setSharedRoot("/usr/share/texsample-server");
-    BCore::setUserRoot(BCore::Home + "/.texsample-server");
+    BCore::setUserRoot(QDir::homePath() + "/.texsample-server");
 #elif defined(Q_OS_WIN)
     BCore::setSharedRoot( QCoreApplication::applicationDirPath() );
-    BCore::setUserRoot(BCore::Home + "/TeXSample Server");
+    BCore::setUserRoot(QDir::homePath() + "/TeXSample Server");
 #endif
     BCore::setPath("translations", "translations");
     BCore::setPath("samples", "samples");
@@ -65,16 +64,15 @@ int main(int argc, char **argv)
         BStdIO::write(QObject::tr("Invalid password.", "stdout text") + "\n");
         return 0;
     }
-    Connection::setAdminLogin(login);
-    Connection::setAdminPassword(password);
-    if ( !Server::checkAdmin() )
+    DatabaseInteractor::setAdminInfo(login, password);
+    if ( !DatabaseInteractor::checkAdmin() )
     {
         BStdIO::write(QObject::tr("Failed to connect to database.", "stdout text") + "\n");
         return 0;
     }
-    Server *srv = new Server;
+    UserServer *srv = new UserServer;
     int ret = app->exec();
-    srv->saveSettings();
+    srv->deleteLater();
     BCore::saveSettings();
     return ret;
 }
