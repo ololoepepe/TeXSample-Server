@@ -11,6 +11,7 @@ class QObject;
 #include <QByteArray>
 #include <QMap>
 #include <QString>
+#include <QDataStream>
 
 class UserConnection : public BNetworkConnection
 {
@@ -18,14 +19,19 @@ class UserConnection : public BNetworkConnection
 public:
     explicit UserConnection(BGenericSocket *socket, QObject *parent = 0);
 private:
-    typedef void (UserConnection::*Handler)(const QByteArray &);
+    typedef void (UserConnection::*Handler)(BNetworkOperation *);
     //
     bool authorized;
     QMap<QString, Handler> replyHandlers;
     QMap<QString, Handler> requestHandlers;
     //
-    void handleReplyAuthorization(const QByteArray &data);
-    //
+    //reply handlers
+    void handleReplyAuthorization(BNetworkOperation *operation);
+    //resuest handlers
+    void handleRequestGetPdf(BNetworkOperation *operation);
+    void handleRequestGetSample(BNetworkOperation *operation);
+    //other
+    bool standardCheck(const QString &id, QDataStream &out);
 private slots:
     void replyReceivedSlot(BNetworkOperation *operation);
     void requestReceivedSlot(BNetworkOperation *operation);

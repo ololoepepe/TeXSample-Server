@@ -13,8 +13,65 @@
 #include <QDataStream>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QFile>
+#include <QTextStream>
+#include <QIODevice>
 
 const int AuthorizationTimeout = 15 * BCore::Second;
+const int IdLength = 20;
+const QString SampleBaseName = "___sample___";
+const QString SamplePrefix = "\\input texsample.tex\n\n";
+const QString SamplePostfix = "\n\n\\end{document}";
+const QStringList ExtraFiles = QStringList() << SampleBaseName + ".aux" << SampleBaseName + ".idx"
+    << SampleBaseName + ".log" << SampleBaseName + ".out" << SampleBaseName + ".pdf" << SampleBaseName + ".tex";
+
+//
+
+bool checkId(const QString &id)
+{
+    bool ok = false;
+    int iid = id.toInt(&ok);
+    return ok && iid > 0 && id.length() <= IdLength;
+}
+
+QString expandId(const QString &id)
+{
+    QString eid = id;
+    int len = eid.length();
+    if (len < IdLength)
+        eid.prepend( QString().fill('0', IdLength - len) );
+    return eid;
+}
+
+bool readFiles(const QString &dir, QString &sample, TexSampleServer::FilePairList &list)
+{
+    //Reading sample
+    QFile f(dir + "/" + SampleBaseName + ".tex");
+    if ( !f.open(QFile::ReadOnly) )
+        return false;
+    QTextStream fin(&f);
+    fin.setCodec("UTF-8");
+    sample = fin.readAll().remove(SamplePrefix).remove(SamplePostfix);
+    f.close();
+    //Reading auxiliary files
+    QStringList sl = QDir(dir).entryList(QDir::Files);
+    for (int i = 0; i < ExtraFiles.size(); ++i)
+        sl.removeAll( ExtraFiles.at(i) );
+    for (int i = 0; i < sl.size(); ++i)
+    {
+        TexSampleServer::FilePair fp;
+        fp.first = sl.at(i);
+        QFile f(dir + "/" + fp.first);
+        if ( !f.open(QFile::ReadOnly) )
+            return false;
+        fp.second = f.readAll();
+        f.close();
+        if ( fp.second.isEmpty() )
+            continue;
+        list << fp;
+    }
+    return true;
+}
 
 //
 
@@ -28,7 +85,8 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
     //adding reply handlers
     replyHandlers.insert(TexSampleServer::AuthorizeOperation, &UserConnection::handleReplyAuthorization);
     //adding request handlers
-    //
+    requestHandlers.insert(TexSampleServer::GetPdfOperation, &UserConnection::handleRequestGetPdf);
+    requestHandlers.insert(TexSampleServer::GetSampleOperation, &UserConnection::handleRequestGetSample);
     //other
     connect( this, SIGNAL( replyReceived(BNetworkOperation *) ),
              this, SLOT( replyReceivedSlot(BNetworkOperation *) ) );
@@ -40,17 +98,125 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
     sendRequest(TexSampleServer::AuthorizeOperation);
 }
 
-//
+//reply handlers
 
-void UserConnection::handleReplyAuthorization(const QByteArray &data)
+void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
 {
-    QDataStream in(data);
+    if (!operation)
+        return;
+    QDataStream in( operation->data() );
     in.setVersion(TexSampleServer::DataStreamVersion);
     QString login;
     QString password;
     in >> login;
     in >> password;
-    //TODO: check user
+    authorized = DatabaseInteractor::checkUser(login, password);
+    checkAuthorization();
+}
+
+//request handlers
+
+void UserConnection::handleRequestGetPdf(BNetworkOperation *operation)
+{
+    if (!operation)
+        return;
+    QDataStream in( operation->data() );
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QByteArray ba;
+    QDataStream out(&ba, QIODevice::WriteOnly);
+    out.setVersion(TexSampleServer::DataStreamVersion);
+    QString id;
+    in >> id;
+    if ( !standardCheck(id, out) )
+    {
+        sendReply(operation, ba);
+        return;
+    }
+    //
+    QString dir = BCore::user("samples") + "/" + expandId(id);
+    if ( !QDir(dir).exists() )
+    {
+        out << false;
+        out << tr("No such sample", "reply text");
+        sendReply(operation, ba);
+        return;
+    }
+    QFile f(dir + "/" + SampleBaseName + ".pdf");
+    if ( !f.open(QFile::ReadOnly) )
+    {
+        out << false;
+        out << tr("Internal error", "reply text");
+        sendReply(operation, ba);
+        return;
+    }
+    out << true;
+    out << f.readAll();
+    f.close();
+    sendReply(operation, ba);
+}
+
+void UserConnection::handleRequestGetSample(BNetworkOperation *operation)
+{
+    if (!operation)
+        return;
+    QDataStream in( operation->data() );
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QByteArray ba;
+    QDataStream out(&ba, QIODevice::WriteOnly);
+    out.setVersion(TexSampleServer::DataStreamVersion);
+    QString id;
+    in >> id;
+    if ( !standardCheck(id, out) )
+    {
+        sendReply(operation, ba);
+        return;
+    }
+    //
+    QString dir = BCore::user("samples") + "/" + expandId(id);
+    if ( !QDir(dir).exists() )
+    {
+        out << false;
+        out << tr("No such sample", "reply text");
+        sendReply(operation, ba);
+        return;
+    }
+    QString sample;
+    TexSampleServer::FilePairList fpl;
+    if ( !readFiles(dir, sample, fpl) )
+    {
+        out << false;
+        out << tr("Internal error", "reply text");
+        sendReply(operation, ba);
+        return;
+    }
+    out << true;
+    out << sample;
+    for (int i = 0; i < fpl.size(); ++i)
+    {
+        const TexSampleServer::FilePair &fp = fpl.at(i);
+        out << fp.first;
+        out << fp.second;
+    }
+    sendReply(operation, ba);
+}
+
+//other
+
+bool UserConnection::standardCheck(const QString &id, QDataStream &out)
+{
+    if (!authorized)
+    {
+        out << false;
+        out << tr("Not authorized", "reply text");
+        return false;
+    }
+    if ( !checkId(id) )
+    {
+        out << false;
+        out << tr("Invalid id", "reply text");
+        return false;
+    }
+    return true;
 }
 
 //
@@ -59,7 +225,7 @@ void UserConnection::replyReceivedSlot(BNetworkOperation *operation)
 {
     Handler h = operation ? replyHandlers.value( operation->metaData().operation() ) : 0;
     if (h)
-        (this->*h)( operation->data() );
+        (this->*h)(operation);
     if (operation)
         operation->deleteLater();
 }
@@ -68,7 +234,7 @@ void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
 {
     Handler h = operation ? requestHandlers.value( operation->metaData().operation() ) : 0;
     if (h && authorized)
-        (this->*h)( operation->data() );
+        (this->*h)(operation);
     else if (operation)
         operation->deleteLater();
 }
@@ -86,41 +252,11 @@ void UserConnection::checkAuthorization()
 }
 
 /*
-#include <QObject>
-#include <QTcpSocket>
-#include <QTimer>
-#include <QDataStream>
-#include <QString>
-#include <QMap>
-#include <QIODevice>
-#include <QSqlDatabase>
-#include <QSqlQuery>
-#include <QDir>
-#include <QTextStream>
-#include <QStringList>
-#include <QVariantMap>
-#include <QAbstractSocket>
-#include <QFile>
-#include <QProcess>
-#include <QFileInfo>
-#include <QPair>
-#include <QDateTime>
-#include <QTimer>
-#include <QUuid>
-#include <QReadWriteLock>
-
-#include <QDebug>
-
-const int AuthorizationTimeout = 10 * BCore::Second;
 const int UpdateNotifyTimeout = 1 * BCore::Second;
 const int CriticalBufferSize = 100 * BCore::Megabyte;
-const int IdLength = 20;
 //
-const QString SampleBaseName = "___sample___";
-const QString SamplePrefix = "\\input texsample.tex\n\n";
-const QString SamplePostfix = "\n\n\\end{document}";
-const QStringList ExtraFiles = QStringList() << SampleBaseName + ".aux" << SampleBaseName + ".idx"
-    << SampleBaseName + ".log" << SampleBaseName + ".out" << SampleBaseName + ".pdf" << SampleBaseName + ".tex";
+
+
 const QString CompilerCommand = "pdflatex";
 const QStringList CompilerArguments = QStringList() << "-interaction=nonstopmode";
 const int CompilerStartTimeout = 10 * BCore::Second;
@@ -128,23 +264,7 @@ const int CompilerFinishTimeout = 2 * BCore::Minute;
 
 //
 
-QString madminLogin;
-QString madminPassword;
-QStringList mbanListLogin;
-QStringList mbanListAddress;
-QReadWriteLock madminLoginLock;
-QReadWriteLock madminPasswordLock;
-QReadWriteLock mbanListLoginLock;
-QReadWriteLock mbanListAddressLock;
-
 //
-
-bool checkId(const QString &id)
-{
-    bool ok = false;
-    int iid = id.toInt(&ok);
-    return ok && iid > 0 && id.length() <= IdLength;
-}
 
 bool readStream(QDataStream &in, QString &sample, QString &title, QString &author,
                 QString &tags, QString &comment, TexSampleServer::FilePairList &list)
@@ -188,35 +308,6 @@ bool writeFiles(const QString &dir, const QString &sample, const TexSampleServer
             return false;
         af.write(fp.second);
         af.close();
-    }
-    return true;
-}
-
-bool readFiles(const QString &dir, QString &sample, TexSampleServer::FilePairList &list)
-{
-    //Reading sample
-    QFile f(dir + "/" + SampleBaseName + ".tex");
-    if ( !f.open(QFile::ReadOnly) )
-        return false;
-    QTextStream fin(&f);
-    sample = fin.readAll().remove(SamplePrefix).remove(SamplePostfix);
-    f.close();
-    //Reading auxiliary files
-    QStringList sl = QDir(dir).entryList(QDir::Files);
-    for (int i = 0; i < ExtraFiles.size(); ++i)
-        sl.removeAll( ExtraFiles.at(i) );
-    for (int i = 0; i < sl.size(); ++i)
-    {
-        TexSampleServer::FilePair fp;
-        fp.first = sl.at(i);
-        QFile f(dir + "/" + fp.first);
-        if ( !f.open(QFile::ReadOnly) )
-            return false;
-        fp.second = f.readAll();
-        f.close();
-        if ( fp.second.isEmpty() )
-            continue;
-        list << fp;
     }
     return true;
 }
@@ -270,15 +361,6 @@ bool checkSample(const QString &dir, QString &resultString, QString &logText)
     return true;
 }
 
-QString expandId(const QString &id)
-{
-    QString eid = id;
-    int len = eid.length();
-    if (len < IdLength)
-        eid.prepend( QString().fill('0', IdLength - len) );
-    return eid;
-}
-
 bool checkUser(const QString &uniqueId, const QString &login, const QString &password)
 {
     QSqlDatabase *db = Connection::createDatabase(uniqueId);
@@ -330,20 +412,6 @@ void deleteSample(const QString &uniqueId, const QString &id)
 
 //
 
-void Connection::setAdminLogin(const QString &login)
-{
-    madminLoginLock.lockForWrite();
-    madminLogin = login;
-    madminLoginLock.unlock();
-}
-
-void Connection::setAdminPassword(const QString &password)
-{
-    madminPasswordLock.lockForWrite();
-    madminPassword = password;
-    madminPasswordLock.unlock();
-}
-
 void Connection::addToBanList(const QString &value, bool address)
 {
     if ( value.isEmpty() )
@@ -364,22 +432,6 @@ void Connection::addToBanList(const QString &value, bool address)
     }
 }
 
-QString Connection::adminLogin()
-{
-    madminLoginLock.lockForRead();
-    QString s = madminLogin;
-    madminLoginLock.unlock();
-    return s;
-}
-
-QString Connection::adminPassword()
-{
-    madminPasswordLock.lockForRead();
-    QString s = madminPassword;
-    madminPasswordLock.unlock();
-    return s;
-}
-
 QStringList Connection::banList(bool address)
 {
     QStringList sl;
@@ -398,69 +450,6 @@ QStringList Connection::banList(bool address)
     return sl;
 }
 
-QSqlDatabase *Connection::createDatabase(const QString &uniqueId)
-{
-    QString cn = (!uniqueId.isEmpty() ? uniqueId + "@" : "") + TexSampleServer::DBName;
-    QSqlDatabase *db = new QSqlDatabase( QSqlDatabase::addDatabase(TexSampleServer::DBType, cn) );
-    db->setHostName("127.0.0.1");
-    db->setPort(TexSampleServer::DBPort);
-    db->setDatabaseName(TexSampleServer::DBName);
-    db->setUserName( adminLogin() );
-    db->setPassword( adminPassword() );
-    if ( !db->open() )
-    {
-        delete db;
-        QSqlDatabase::removeDatabase(cn);
-        return 0;
-    }
-    QSqlQuery *q = new QSqlQuery(*db);
-    bool b = q->exec("SET NAMES utf8");
-    delete q;
-    if (!b)
-    {
-        delete db;
-        QSqlDatabase::removeDatabase(cn);
-        return 0;
-    }
-    return db;
-}
-
-void Connection::removeDatabase(QSqlDatabase *db)
-{
-    if (!db)
-        return;
-    QString cn = db->connectionName();
-    delete db;
-    QSqlDatabase::removeDatabase(cn);
-}
-
-//
-
-Connection::Connection(QTcpSocket *socket, QObject *parent) :
-    BNetworkConnection(socket, AuthorizationTimeout, parent), mCUniqueId( QUuid::createUuid().toString() )
-{
-    if ( !isConnected() )
-        return;
-    mDatabase = 0;
-    setCriticalBufferSize(CriticalBufferSize);
-    setCloseOnCriticalBufferSizeReached(true);
-    addRequestHandler(TexSampleServer::GetSampleOperation, (RequestHandler) &Connection::handleGetSampleRequest);
-    addRequestHandler(TexSampleServer::GetPdfOperation, (RequestHandler) &Connection::handleGetPdfRequest);
-    addRequestHandler(TexSampleServer::SendSampleOperation, (RequestHandler) &Connection::handleSendSampleRequest);
-    addReplyHandler(TexSampleServer::UpdateNotifyOperation, (ReplyHandler) &Connection::handleUpdateNotifyReply);
-    addReplyHandler(TexSampleServer::SendVersionOperation, (ReplyHandler) &Connection::handleSendVersionReply);
-    connect( this, SIGNAL( replySent(QString) ), this, SLOT( replySentSlot(QString) ) );
-    setLogger( (Logger) &Connection::logger );
-    log( tr("Incoming connection", "log text") );
-}
-
-//
-
-const QString &Connection::uniqueId() const
-{
-    return mCUniqueId;
-}
-
 //
 
 void Connection::requestUpdateNotify()
@@ -475,97 +464,6 @@ void Connection::requestUpdateNotify()
 }
 
 //
-
-bool Connection::authorize(const QString &login, const QString &password)
-{
-    if ( login.isEmpty() || banList().contains(login, Qt::CaseInsensitive) || password.isEmpty() )
-        return false;
-    mlogin = login;
-    return checkUser(mCUniqueId, mlogin, password);
-}
-
-//
-
-void Connection::handleGetSampleRequest(QDataStream &in, QDataStream &out)
-{
-    if ( !checkInOutDataStreams(in, out) )
-        return;
-    if ( !isAuthorized() )
-    {
-        out << false;
-        out << tr("Not authorized", "reply text");
-        return;
-    }
-    QString id;
-    in >> id;
-    if ( !checkId(id) )
-    {
-        out << false;
-        out << tr("Invalid id", "reply text");
-        return;
-    }
-    QString dir = BCore::user("samples") + "/" + expandId(id);
-    if ( !QDir(dir).exists() )
-    {
-        out << false;
-        out << tr("No such sample", "reply text");
-        return;
-    }
-    QString sample;
-    TexSampleServer::FilePairList fpl;
-    if ( !readFiles(dir, sample, fpl) )
-    {
-        out << false;
-        out << tr("Internal error", "reply text");
-        return;
-    }
-    out << true;
-    out << sample;
-    for (int i = 0; i < fpl.size(); ++i)
-    {
-        const TexSampleServer::FilePair &fp = fpl.at(i);
-        out << fp.first;
-        out << fp.second;
-    }
-}
-
-void Connection::handleGetPdfRequest(QDataStream &in, QDataStream &out)
-{
-    if ( !checkInOutDataStreams(in, out) )
-        return;
-    if ( !isAuthorized() )
-    {
-        out << false;
-        out << tr("Not authorized", "reply text");
-        return;
-    }
-    QString id;
-    in >> id;
-    if ( !checkId(id) )
-    {
-        out << false;
-        out << tr("Invalid id", "reply text");
-        return;
-    }
-    QString dir = BCore::user("samples") + "/" + expandId(id);
-    if ( !QDir(dir).exists() )
-    {
-        out << false;
-        out << tr("No such sample", "reply text");
-        return;
-    }
-    QFile f(dir + "/" + SampleBaseName + ".pdf");
-    if ( !f.open(QFile::ReadOnly) )
-    {
-        out << false;
-        out << tr("Internal error", "reply text");
-        return;
-    }
-    QByteArray ba = f.readAll();
-    f.close();
-    out << true;
-    out << ba;
-}
 
 void Connection::handleSendSampleRequest(QDataStream &in, QDataStream &out)
 {
