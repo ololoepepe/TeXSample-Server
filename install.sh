@@ -7,7 +7,7 @@ mkdir -p /usr/lib/texsample-server/beqt
 cp ./build/texsample-server /usr/lib/texsample-server
 cp ./install/texsample-server.sh /usr/bin
 cp ./include/* /usr/include/texsample-server
-cp /usr/lib/libbeqtcore.so.0 /usr/lib/texsample-server/beqt
-cp /usr/lib/libbeqtnetwork.so.0 /usr/lib/texsample-server/beqt
+cp -P /usr/lib/libbeqtcore.* /usr/lib/texsample-server/beqt
+cp -P /usr/lib/libbeqtnetwork.* /usr/lib/texsample-server/beqt
 echo "Installation finished."
 exit 0

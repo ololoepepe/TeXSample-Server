@@ -41,11 +41,10 @@ enum TableTexSampleColumn
 const QRegExp TagSeparator = QRegExp("\\,\\s*");
 //
 const QString AuthorizeOperation = "authorize";
-const QString SendVersionOperation = "send version";
+const QString GetVersionOperation = "get version";
 const QString GetSampleOperation = "get sample";
 const QString GetPdfOperation = "get pdf";
 const QString SendSampleOperation = "send sample";
-const QString UpdateNotifyOperation = "update samples";
 //
 const QDataStream::Version DataStreamVersion = QDataStream::Qt_4_8;
 

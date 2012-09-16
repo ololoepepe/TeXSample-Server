@@ -20,6 +20,9 @@ QReadWriteLock adminInfoLock;
 
 //
 
+QSqlDatabase *createDatabase();
+void removeDatabase(QSqlDatabase *db);
+
 QSqlDatabase *createDatabase()
 {
     QString cn = QUuid::createUuid().toString();
@@ -33,8 +36,7 @@ QSqlDatabase *createDatabase()
     adminInfoLock.unlock();
     if ( !db->open() )
     {
-        delete db;
-        QSqlDatabase::removeDatabase(cn);
+        removeDatabase(db);
         return 0;
     }
     return db;
@@ -44,6 +46,8 @@ void removeDatabase(QSqlDatabase *db)
 {
     if (!db)
         return;
+    if ( db->isOpen() )
+        db->close();
     QString cn = db->connectionName();
     delete db;
     QSqlDatabase::removeDatabase(cn);

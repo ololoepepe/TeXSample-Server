@@ -81,18 +81,18 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
     if ( !isConnected() )
         return;
     //initializing members
-    authorized = false;
+    mauthorized = false;
     //adding reply handlers
-    replyHandlers.insert(TexSampleServer::AuthorizeOperation, &UserConnection::handleReplyAuthorization);
+    mreplyHandlers.insert(TexSampleServer::AuthorizeOperation, &UserConnection::handleReplyAuthorization);
     //adding request handlers
-    requestHandlers.insert(TexSampleServer::GetPdfOperation, &UserConnection::handleRequestGetPdf);
-    requestHandlers.insert(TexSampleServer::GetSampleOperation, &UserConnection::handleRequestGetSample);
+    mrequestHandlers.insert(TexSampleServer::GetPdfOperation, &UserConnection::handleRequestGetPdf);
+    mrequestHandlers.insert(TexSampleServer::GetSampleOperation, &UserConnection::handleRequestGetSample);
     //other
     connect( this, SIGNAL( replyReceived(BNetworkOperation *) ),
              this, SLOT( replyReceivedSlot(BNetworkOperation *) ) );
     connect( this, SIGNAL( requestReceived(BNetworkOperation *) ),
              this, SLOT( requestReceivedSlot(BNetworkOperation *) ) );
-    QTimer::singleShot( 0, this, SLOT( checkAuthorization() ) );
+    QTimer::singleShot( AuthorizationTimeout, this, SLOT( checkAuthorization() ) );
     sendRequest(TexSampleServer::AuthorizeOperation);
 }
 
@@ -108,8 +108,13 @@ void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
     QString password;
     in >> login;
     in >> password;
-    authorized = DatabaseInteractor::checkUser(login, password);
-    checkAuthorization();
+    mauthorized = DatabaseInteractor::checkUser(login, password);
+    if (!mauthorized)
+    {
+        close();
+        return;
+    }
+    sendRequest(TexSampleServer::GetVersionOperation);
 }
 
 //request handlers
@@ -128,7 +133,7 @@ void UserConnection::handleRequestGetSample(BNetworkOperation *operation)
 
 bool UserConnection::standardCheck(const QString &id, QDataStream &out)
 {
-    if (!authorized)
+    if (!mauthorized)
     {
         out << false;
         out << tr("Not authorized", "reply text");
@@ -205,7 +210,7 @@ void UserConnection::mySendReply(BNetworkOperation *operation, const QByteArray 
 
 void UserConnection::replyReceivedSlot(BNetworkOperation *operation)
 {
-    Handler h = operation ? replyHandlers.value( operation->metaData().operation() ) : 0;
+    Handler h = operation ? mreplyHandlers.value( operation->metaData().operation() ) : 0;
     if (h)
         (this->*h)(operation);
     if (operation)
@@ -214,8 +219,8 @@ void UserConnection::replyReceivedSlot(BNetworkOperation *operation)
 
 void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
 {
-    Handler h = operation ? requestHandlers.value( operation->metaData().operation() ) : 0;
-    if (h && authorized)
+    Handler h = operation ? mrequestHandlers.value( operation->metaData().operation() ) : 0;
+    if (h && mauthorized)
         (this->*h)(operation);
     else if (operation)
         operation->deleteLater();
@@ -223,7 +228,7 @@ void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
 
 void UserConnection::checkAuthorization()
 {
-    if (!authorized)
+    if (!mauthorized)
         close();
 }
 

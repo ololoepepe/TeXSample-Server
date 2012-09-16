@@ -21,9 +21,9 @@ public:
 private:
     typedef void (UserConnection::*Handler)(BNetworkOperation *);
     //
-    bool authorized;
-    QMap<QString, Handler> replyHandlers;
-    QMap<QString, Handler> requestHandlers;
+    bool mauthorized;
+    QMap<QString, Handler> mreplyHandlers;
+    QMap<QString, Handler> mrequestHandlers;
     //
     //reply handlers
     void handleReplyAuthorization(BNetworkOperation *operation);

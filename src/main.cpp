@@ -1,5 +1,6 @@
 #include "src/userserver.h"
 #include "src/databaseinteractor.h"
+#include "include/texsampleserver.h"
 
 #include <bstdio.h>
 #include <bcore.h>
@@ -71,6 +72,7 @@ int main(int argc, char **argv)
         return 0;
     }
     UserServer *srv = new UserServer;
+    srv->listen("0.0.0.0", TexSampleServer::ServerPort);
     int ret = app->exec();
     srv->deleteLater();
     BCore::saveSettings();
