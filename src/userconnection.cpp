@@ -110,9 +110,11 @@ void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
     mauthorized = DatabaseInteractor::checkUser(login, password);
     if (!mauthorized)
     {
+        log( tr("Authorization failed. Now closing connection...", "log text") );
         close();
         return;
     }
+    log(tr("Authorized as:", "log text") + " " + login);
     sendRequest(TexSampleServer::GetVersionOperation);
 }
 
