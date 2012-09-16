@@ -4,10 +4,21 @@
 #include <bnetworkserver.h>
 #include <bgenericserver.h>
 #include <bnetworkserverworker.h>
+#include <bterminaliohandler.h>
+
+#include <QString>
+#include <QStringList>
+#include <QMap>
+#include <QApplication>
 
 UserServer::UserServer(QObject *parent) :
     BNetworkServer(BGenericServer::TcpServer, parent)
 {
+    //handlers
+    mhandlers.insert("exit", &UserServer::handleExit);
+    //
+    connect( BTerminalIOHandler::instance(), SIGNAL( commandEntered(QString, QStringList) ),
+             this, SLOT( commandEntered(QString, QStringList) ) );
 }
 
 //
@@ -15,6 +26,22 @@ UserServer::UserServer(QObject *parent) :
 BNetworkServerWorker *UserServer::createWorker()
 {
     return new UserWorker;
+}
+
+//
+
+void UserServer::handleExit(const QStringList &arguments)
+{
+    QApplication::quit();
+}
+
+//
+
+void UserServer::commandEntered(const QString &command, const QStringList &arguments)
+{
+    Handler h = mhandlers.value(command);
+    if (h)
+        (this->*h)(arguments);
 }
 
 /*

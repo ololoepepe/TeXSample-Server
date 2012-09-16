@@ -84,6 +84,7 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
     mauthorized = false;
     //adding reply handlers
     mreplyHandlers.insert(TexSampleServer::AuthorizeOperation, &UserConnection::handleReplyAuthorization);
+    mreplyHandlers.insert(TexSampleServer::GetVersionOperation, &UserConnection::handleReplyGetVersion);
     //adding request handlers
     mrequestHandlers.insert(TexSampleServer::GetPdfOperation, &UserConnection::handleRequestGetPdf);
     mrequestHandlers.insert(TexSampleServer::GetSampleOperation, &UserConnection::handleRequestGetSample);
@@ -100,8 +101,6 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
 
 void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
 {
-    if (!operation)
-        return;
     QDataStream in( operation->data() );
     in.setVersion(TexSampleServer::DataStreamVersion);
     QString login;
@@ -115,6 +114,19 @@ void UserConnection::handleReplyAuthorization(BNetworkOperation *operation)
         return;
     }
     sendRequest(TexSampleServer::GetVersionOperation);
+}
+
+void UserConnection::handleReplyGetVersion(BNetworkOperation *operation)
+{
+    QDataStream in( operation->data() );
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QString editor;
+    QString plugin;
+    QString beqt;
+    in >> editor;
+    in >> plugin;
+    in >> beqt;
+    log(tr("Editor:", "log text") + " " + editor + ". " + tr("Plugin:", "log text") + " " + plugin + ". BeQt: " + beqt);
 }
 
 //request handlers

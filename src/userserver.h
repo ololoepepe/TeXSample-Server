@@ -7,13 +7,26 @@ class QObject;
 
 #include <bnetworkserver.h>
 
+#include <QString>
+#include <QStringList>
+#include <QMap>
+
 class UserServer : public BNetworkServer
 {
     Q_OBJECT
 public:
     explicit UserServer(QObject *parent = 0);
-private:
+protected:
     BNetworkServerWorker *createWorker();
+private:
+    typedef void (UserServer::*Handler)(const QStringList &);
+    //
+    QMap<QString, Handler> mhandlers;
+    //
+    //handlers
+    void handleExit(const QStringList &arguments);
+private slots:
+    void commandEntered(const QString &command, const QStringList &arguments);
 };
 
 /*

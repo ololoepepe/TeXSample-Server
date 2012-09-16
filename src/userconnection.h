@@ -27,6 +27,7 @@ private:
     //
     //reply handlers
     void handleReplyAuthorization(BNetworkOperation *operation);
+    void handleReplyGetVersion(BNetworkOperation *operation);
     //resuest handlers
     void handleRequestGetPdf(BNetworkOperation *operation);
     void handleRequestGetSample(BNetworkOperation *operation);

@@ -2,7 +2,7 @@
 #include "src/databaseinteractor.h"
 #include "include/texsampleserver.h"
 
-#include <bstdio.h>
+#include <bterminaliohandler.h>
 #include <bcore.h>
 
 #include <QCoreApplication>
@@ -48,32 +48,41 @@ int main(int argc, char **argv)
     BCore::loadSettings();
     BCore::setLocale( QLocale::system() );
     //starting server
-    BStdIO::write(QObject::tr("Login:", "stdout text") + " ");
-    QString login = BStdIO::readLine();
+    BTerminalIOHandler::write(QObject::tr("Login:", "stdout text") + " ");
+    QString login = BTerminalIOHandler::readLine();
     if ( login.isEmpty() )
     {
-        BStdIO::write(QObject::tr("Invalid login.", "stdout text") + "\n");
+        BTerminalIOHandler::writeLine( QObject::tr("Invalid login", "stdout text") );
         return 0;
     }
-    BStdIO::write(QObject::tr("Password:", "stdout text") + " ");
-    BStdIO::setStdinEchoEnabled(false);
-    QString password = BStdIO::readLine();
-    BStdIO::setStdinEchoEnabled(true);
-    BStdIO::write("\n");
+    BTerminalIOHandler::write(QObject::tr("Password:", "stdout text") + " ");
+    BTerminalIOHandler::setStdinEchoEnabled(false);
+    QString password = BTerminalIOHandler::readLine();
+    BTerminalIOHandler::setStdinEchoEnabled(true);
+    BTerminalIOHandler::write("\n");
     if ( password.isEmpty() )
     {
-        BStdIO::write(QObject::tr("Invalid password.", "stdout text") + "\n");
+        BTerminalIOHandler::writeLine( QObject::tr("Invalid password", "stdout text") );
         return 0;
     }
     DatabaseInteractor::setAdminInfo(login, password);
     if ( !DatabaseInteractor::checkAdmin() )
     {
-        BStdIO::write(QObject::tr("Failed to connect to database.", "stdout text") + "\n");
+        BTerminalIOHandler::writeLine( QObject::tr("Failed to connect to database", "stdout text") );
         return 0;
     }
     UserServer *srv = new UserServer;
-    srv->listen("0.0.0.0", TexSampleServer::ServerPort);
-    int ret = app->exec();
+    int ret = 0;
+    if ( srv->listen("0.0.0.0", TexSampleServer::ServerPort) )
+    {
+        BTerminalIOHandler::writeLine( QObject::tr("Server successfully started", "stdout text") );
+        ret = app->exec();
+    }
+    else
+    {
+        BTerminalIOHandler::writeLine( QObject::tr("Failed to start server", "stdout text") );
+        ret = 1;
+    }
     srv->deleteLater();
     BCore::saveSettings();
     return ret;
