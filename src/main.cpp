@@ -20,31 +20,16 @@ int main(int argc, char **argv)
     //initializing application
     QCoreApplication *app = new QCoreApplication(argc, argv);
     QCoreApplication::setApplicationName("TexSample Server");
-    QCoreApplication::setApplicationVersion("0.1.0pa1");
+    QCoreApplication::setApplicationVersion("1.0.0pa1");
     QCoreApplication::setOrganizationName("Andrey Bogdanov");
     QCoreApplication::setOrganizationDomain("https://github.com/the-dark-angel/TeXSample-Server");
     //initializing BCore
-#if defined(Q_OS_MAC)
-    QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins"); //TODO
-    BCore::setSharedRoot("/usr/share/texsample-server"); //TODO
-    BCore::setUserRoot(QDir::homePath() + "/Library/Application Support/TeXSample Server");
-#elif defined(Q_OS_UNIX)
+#if defined(Q_OS_UNIX)
     QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins");
-    BCore::setSharedRoot("/usr/share/texsample-server");
-    BCore::setUserRoot(QDir::homePath() + "/.texsample-server");
-#elif defined(Q_OS_WIN)
-    BCore::setSharedRoot( QCoreApplication::applicationDirPath() );
-    BCore::setUserRoot(QDir::homePath() + "/TeXSample Server");
 #endif
-    BCore::setPath("translations", "translations");
+    BCore::init();
     BCore::setPath("samples", "samples");
-    BCore::createUserPath("translations");
     BCore::createUserPath("samples");
-    BCore::addStandardTranslator(BCore::QtTranslator);
-    BCore::addStandardTranslator(BCore::BCoreTranslator);
-    BCore::addStandardTranslator(BCore::BNetworkTranslator);
-    BCore::addTranslator(":/res/translations/texsample-server");
-    BCore::addTranslator(BCore::user("translations") + "/texsample-server");
     BCore::loadSettings();
     BCore::setLocale( QLocale::system() );
     //starting server
