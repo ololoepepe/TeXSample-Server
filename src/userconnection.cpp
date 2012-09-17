@@ -243,7 +243,10 @@ void UserConnection::requestReceivedSlot(BNetworkOperation *operation)
 void UserConnection::checkAuthorization()
 {
     if (!mauthorized)
+    {
+        log( tr("Authorization timeout. Closing connection...", "log text") );
         close();
+    }
 }
 
 /*

@@ -33,6 +33,8 @@ int main(int argc, char **argv)
     BCore::loadSettings();
     BCore::setLocale( QLocale::system() );
     //starting server
+    BTerminalIOHandler::writeLine( QObject::tr("This is TeXSample Server version", "stdout text") +
+                                   " " + QCoreApplication::applicationVersion() );
     BTerminalIOHandler::write(QObject::tr("Login:", "stdout text") + " ");
     QString login = BTerminalIOHandler::readLine();
     if ( login.isEmpty() )
