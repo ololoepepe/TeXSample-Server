@@ -24,12 +24,14 @@ const QString DBTable = "samples";
 enum SampleType
 {
     Unverified = 0,
-    Approved = 1
+    Approved = 1,
+    Disapproved = 2,
+    AddedByCurrentUser
 };
 enum TableTexSampleColumn
 {
     IdColumn = 0, //BIGINT(20) (Primary, Not NULL, Auto Increment, UNSIGNED, ZEROFILL)
-    TypeColumn = 1, //TINYINT(3) (Not NULL, UNSIGNED) [SampleType: 0-2]
+    TypeColumn = 1, //TINYINT(3) (Not NULL, UNSIGNED) [SampleType: 0-3]
     TitleColumn = 2, //TEXT (Not NULL, Character Set: UTF-8)
     AuthorColumn = 3, //TEXT (Not NULL, Character Set: UTF-8)
     TagsColumn = 4, //TEXT (Not NULL, Character Set: UTF-8)
