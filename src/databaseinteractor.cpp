@@ -103,23 +103,23 @@ bool DatabaseInteractor::checkUser(const QString &login, const QString &password
     return b && !results.isEmpty();
 }
 
-QString DatabaseInteractor::insertSample(const QString &title, const QString &tags,
-                                         const QString &comment, const QString &user)
+QString DatabaseInteractor::insertSample(const QString &title, const QString &author,
+                                         const QString &tags, const QString &comment)
 {
     //TODO: Needs to be replaced by a stored procedure execution, but procedures seem not work properly
     QString id;
-    if ( title.isEmpty() || user.isEmpty() )
+    if ( title.isEmpty() || author.isEmpty() )
         return id;
     QSqlDatabase *db = createDatabase();
     if (!db)
         return id;
     QSqlQuery *q = new QSqlQuery(*db);
-    q->prepare("INSERT INTO " + TexSampleServer::DBTable + " (title, tags, comment, user) "
-               "VALUES (:title, :tags, :comment, :user)");
+    q->prepare("INSERT INTO " + TexSampleServer::DBTable + " (title, author, tags, comment) "
+               "VALUES (:title, :author, :tags, :comment)");
     q->bindValue(":title", title);
+    q->bindValue(":author", author);
     q->bindValue(":tags", tags);
     q->bindValue(":comment", comment);
-    q->bindValue(":user", user);
     q->exec();
     id = q->lastInsertId().toString();
     delete q;

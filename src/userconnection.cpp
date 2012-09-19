@@ -291,7 +291,7 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
         return;
     }
     //Executing query
-    QString id = DatabaseInteractor::insertSample(title, tags, comment, mlogin);
+    QString id = DatabaseInteractor::insertSample(title, mlogin, tags, comment);
     QString dir = BCore::user("samples") + "/" + expandId(id);
     //Checking id and creating directory
     if ( !checkId(id) || !QDir(tdir).rename(tdir, dir) )

@@ -9,8 +9,8 @@ public:
     static void setAdminInfo(const QString &login, const QString &password);
     static bool checkAdmin();
     static bool checkUser(const QString &login, const QString &password);
-    static QString insertSample(const QString &title, const QString &tags,
-                                const QString &comment, const QString &user);
+    static QString insertSample(const QString &title, const QString &author,
+                                const QString &tags, const QString &comment);
     static bool deleteSample(const QString &id);
 private:
     DatabaseInteractor();
