@@ -103,26 +103,40 @@ bool DatabaseInteractor::checkUser(const QString &login, const QString &password
     return b && !results.isEmpty();
 }
 
-QString DatabaseInteractor::insertSample(const QString &title, const QString &author, const QString &tags,
-                                         const QString &comment, const QString &user, const QString &address)
+QString DatabaseInteractor::insertSample(const QString &title, const QString &tags,
+                                         const QString &comment, const QString &user)
 {
     //TODO: Needs to be replaced by a stored procedure execution, but procedures seem not work properly
     QString id;
+    if ( title.isEmpty() || user.isEmpty() )
+        return id;
     QSqlDatabase *db = createDatabase();
     if (!db)
         return id;
     QSqlQuery *q = new QSqlQuery(*db);
-    q->prepare("INSERT INTO " + TexSampleServer::DBTable + " (title, author, tags, comment, user, address) "
-               "VALUES (:title, :author, :tags, :comment, :user, :address)");
+    q->prepare("INSERT INTO " + TexSampleServer::DBTable + " (title, tags, comment, user) "
+               "VALUES (:title, :tags, :comment, :user)");
     q->bindValue(":title", title);
-    q->bindValue(":author", author);
     q->bindValue(":tags", tags);
     q->bindValue(":comment", comment);
     q->bindValue(":user", user);
-    q->bindValue(":address", address);
     q->exec();
     id = q->lastInsertId().toString();
     delete q;
     removeDatabase(db);
     return id;
+}
+
+bool DatabaseInteractor::deleteSample(const QString &id)
+{
+    if ( id.isEmpty() )
+        return false;
+    QSqlDatabase *db = createDatabase();
+    if (!db)
+        return false;
+    QSqlQuery *q = new QSqlQuery(*db);
+    bool b = q->exec("DELETE FROM " + TexSampleServer::DBTable + " WHERE id=\"" + id + "\"");
+    delete q;
+    removeDatabase(db);
+    return b;
 }
