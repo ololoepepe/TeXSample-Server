@@ -192,6 +192,7 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
     mrequestHandlers.insert(TexSampleServer::GetPdfOperation, &UserConnection::handleRequestGetPdf);
     mrequestHandlers.insert(TexSampleServer::GetSampleOperation, &UserConnection::handleRequestGetSample);
     mrequestHandlers.insert(TexSampleServer::SendSampleOperation, &UserConnection::handleRequestSendSample);
+    mrequestHandlers.insert(TexSampleServer::DeleteSampleOperation, &UserConnection::handleRequestDeleteSample);
     //other
     setCriticalBufferSize(CriticalBufferSize);
     setCloseOnCriticalBufferSize(true);
@@ -316,8 +317,43 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
     }
     //Writing reply
     out << true;
-    out << tr("Sample successfully sent", "reply text");
+    out << tr("Sample successfully added", "reply text");
     out << logText;
+    sendReply(operation, data);
+}
+
+void UserConnection::handleRequestDeleteSample(BNetworkOperation *operation)
+{
+    log( tr("Delete sample request", "log text") );
+    QDataStream in( operation->data() );
+    in.setVersion(TexSampleServer::DataStreamVersion);
+    QByteArray data;
+    QDataStream out(&data, QIODevice::WriteOnly);
+    out.setVersion(TexSampleServer::DataStreamVersion);
+    if ( !standardCheck(out) )
+        return mySendReply(operation, data);
+    QString id;
+    in >> id;
+    if ( !checkId(id) )
+    {
+        out << false;
+        out << tr("Invalid id", "reply text");
+        return mySendReply(operation, data);
+    }
+    if ( DatabaseInteractor::checkSampleAuthorship(mlogin, id) )
+    {
+        out << false;
+        out << tr("You are not the author of this sample", "reply text");
+        return mySendReply(operation, data);
+    }
+    if ( !DatabaseInteractor::deleteSample(id) || !BCore::removeDir( BCore::user("samples") + "/" + expandId(id) ) )
+    {
+        out << false;
+        out << tr("Internal error", "reply text");
+        return mySendReply(operation, data);
+    }
+    out << true;
+    out << tr("Sample successfully deleted", "reply text");
     sendReply(operation, data);
 }
 

@@ -55,6 +55,7 @@ private:
     void handleRequestGetPdf(BNetworkOperation *operation);
     void handleRequestGetSample(BNetworkOperation *operation);
     void handleRequestSendSample(BNetworkOperation *operation);
+    void handleRequestDeleteSample(BNetworkOperation *operation);
     //other
     bool standardCheck(QDataStream &out);
     void sendSample(BNetworkOperation *operation, bool pdf);

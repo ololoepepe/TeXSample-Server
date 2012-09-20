@@ -46,6 +46,7 @@ const QString GetVersionOperation = "get version";
 const QString GetSampleOperation = "get sample";
 const QString GetPdfOperation = "get pdf";
 const QString SendSampleOperation = "send sample";
+const QString DeleteSampleOperation = "delete sample";
 //
 const QDataStream::Version DataStreamVersion = QDataStream::Qt_4_8;
 

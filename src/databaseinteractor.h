@@ -14,6 +14,7 @@ public:
     static bool checkAdmin();
     static bool checkUser(const QString &login, const QString &password);
     static bool checkSampleExistance(const QString &title, const QString &author);
+    static bool checkSampleAuthorship(const QString &author, const QString &id);
     static QString insertSample(const QString &title, const QString &author,
                                 const QString &tags, const QString &comment);
     static bool deleteSample(const QString &id);

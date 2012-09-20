@@ -57,10 +57,11 @@
     <message>
         <location filename="../../src/userconnection.cpp" line="134"/>
         <location filename="../../src/userconnection.cpp" line="166"/>
-        <location filename="../../src/userconnection.cpp" line="290"/>
-        <location filename="../../src/userconnection.cpp" line="312"/>
-        <location filename="../../src/userconnection.cpp" line="367"/>
-        <location filename="../../src/userconnection.cpp" line="381"/>
+        <location filename="../../src/userconnection.cpp" line="291"/>
+        <location filename="../../src/userconnection.cpp" line="313"/>
+        <location filename="../../src/userconnection.cpp" line="352"/>
+        <location filename="../../src/userconnection.cpp" line="403"/>
+        <location filename="../../src/userconnection.cpp" line="417"/>
         <source>Internal error</source>
         <comment>reply text</comment>
         <translation type="unfinished">Внутренняя ошибка</translation>
@@ -78,85 +79,104 @@
         <translation type="unfinished">Компиляция прошла успешно</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="219"/>
+        <location filename="../../src/userconnection.cpp" line="220"/>
         <source>Authorization failed. Now closing connection...</source>
         <comment>log text</comment>
         <translation type="unfinished">Авторизация не удалась. Соединение закрывается...</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="224"/>
+        <location filename="../../src/userconnection.cpp" line="225"/>
         <source>Authorized as:</source>
         <comment>log text</comment>
         <translation type="unfinished">Авторизован как:</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="238"/>
+        <location filename="../../src/userconnection.cpp" line="239"/>
         <source>Editor:</source>
         <comment>log text</comment>
         <translation type="unfinished">Редактор:</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="239"/>
+        <location filename="../../src/userconnection.cpp" line="240"/>
         <source>Plugin:</source>
         <comment>log text</comment>
         <translation type="unfinished">Плагин:</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="246"/>
+        <location filename="../../src/userconnection.cpp" line="247"/>
         <source>Get PDF request</source>
         <comment>log text</comment>
         <translation type="unfinished">Запрос на получение PDF</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="252"/>
+        <location filename="../../src/userconnection.cpp" line="253"/>
         <source>Get sample request</source>
         <comment>log text</comment>
         <translation type="unfinished">Запрос на получение сэмпла</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="258"/>
+        <location filename="../../src/userconnection.cpp" line="259"/>
         <source>Send sample request</source>
         <comment>log text</comment>
         <translation type="unfinished">Запрос на отправку сэмпла</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="275"/>
+        <location filename="../../src/userconnection.cpp" line="276"/>
         <source>Invalid data</source>
         <comment>reply text</comment>
         <translation type="unfinished">Некорректные данные</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="282"/>
+        <location filename="../../src/userconnection.cpp" line="283"/>
         <source>Sample with this name already exists</source>
         <comment>reply text</comment>
         <translation type="unfinished">Сэмпл с таким именем уже существует</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="319"/>
-        <source>Sample successfully sent</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Сэмпл успешно отправлен</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="331"/>
+        <location filename="../../src/userconnection.cpp" line="367"/>
         <source>Not authorized</source>
         <comment>reply text</comment>
         <translation type="unfinished">Не авторизован</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="351"/>
+        <location filename="../../src/userconnection.cpp" line="340"/>
+        <location filename="../../src/userconnection.cpp" line="387"/>
         <source>Invalid id</source>
         <comment>reply text</comment>
         <translation type="unfinished">Неверный id</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="358"/>
+        <location filename="../../src/userconnection.cpp" line="320"/>
+        <source>Sample successfully added</source>
+        <comment>reply text</comment>
+        <translation type="unfinished">Сэмпл успешно добавлен</translation>
+    </message>
+    <message>
+        <location filename="../../src/userconnection.cpp" line="327"/>
+        <source>Delete sample request</source>
+        <comment>log text</comment>
+        <translation type="unfinished">Запрос на удаление сэмпла</translation>
+    </message>
+    <message>
+        <location filename="../../src/userconnection.cpp" line="346"/>
+        <source>You are not the author of this sample</source>
+        <comment>reply text</comment>
+        <translation type="unfinished">Вы не являетесь автором этого сэмпла</translation>
+    </message>
+    <message>
+        <location filename="../../src/userconnection.cpp" line="356"/>
+        <source>Sample successfully deleted</source>
+        <comment>reply text</comment>
+        <translation type="unfinished">Сэмпл успешно удален</translation>
+    </message>
+    <message>
+        <location filename="../../src/userconnection.cpp" line="394"/>
         <source>No such sample</source>
         <comment>reply text</comment>
         <translation type="unfinished">Нет такого сэмпла</translation>
     </message>
     <message>
-        <location filename="../../src/userconnection.cpp" line="425"/>
+        <location filename="../../src/userconnection.cpp" line="461"/>
         <source>Authorization timeout. Closing connection...</source>
         <comment>log text</comment>
         <translation type="unfinished">Превышено время ожидания авторизации. Соединение закрывается...</translation>

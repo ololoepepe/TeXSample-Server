@@ -63,6 +63,21 @@ bool DatabaseInteractor::checkSampleExistance(const QString &title, const QStrin
     return b;
 }
 
+bool DatabaseInteractor::checkSampleAuthorship(const QString &author, const QString &id)
+{
+    if ( author.isEmpty() || id.isEmpty() )
+        return false;
+    QSqlDatabase *db = createDatabase();
+    if (!db)
+        return false;
+    QSqlQuery *q = new QSqlQuery(*db);
+    bool b = q->exec("SELECT author FROM samples WHERE id=\'" + id + "\'") && q->next();
+    b = b && QString::compare(q->value(0).toString(), author, Qt::CaseInsensitive);
+    delete q;
+    removeDatabase(db);
+    return b;
+}
+
 QString DatabaseInteractor::insertSample(const QString &title, const QString &author,
                                          const QString &tags, const QString &comment)
 {
