@@ -182,6 +182,7 @@ UserConnection::UserConnection(BGenericSocket *socket, QObject *parent) :
 {
     if ( !isConnected() )
         return;
+    //setDetailedLogMode(true); //For debug reasons
     //initializing members
     mauthorized = false;
     //adding reply handlers
@@ -268,7 +269,7 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
     {
         out << false;
         out << tr("Invalid data", "reply text");
-        return;
+        return mySendReply(operation, data);
     }
     //Creating temporary dir and writing files
     QString tdir = BCore::user("samples") + "/" + uniqueId().toString();
@@ -277,7 +278,7 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
         out << false;
         out << tr("Internal error", "reply text");
         BCore::removeDir(tdir);
-        return;
+        return mySendReply(operation, data);
     }
     //Checking sample
     QString resultString;
@@ -288,7 +289,7 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
         out << resultString;
         out << logText;
         BCore::removeDir(tdir);
-        return;
+        return mySendReply(operation, data);
     }
     //Executing query
     QString id = DatabaseInteractor::insertSample(title, mlogin, tags, comment);
@@ -300,11 +301,13 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
         out << tr("Internal error", "reply text");
         DatabaseInteractor::deleteSample(id);
         BCore::removeDir(tdir);
-        return;
+        return mySendReply(operation, data);
     }
     //Writing reply
     out << true;
+    out << tr("Sample successfully sent", "reply text");
     out << logText;
+    sendReply(operation, data);
 }
 
 //other

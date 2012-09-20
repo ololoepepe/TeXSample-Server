@@ -20,61 +20,6 @@ QReadWriteLock adminInfoLock;
 
 //
 
-QSqlDatabase *createDatabase();
-void removeDatabase(QSqlDatabase *db);
-
-QSqlDatabase *createDatabase()
-{
-    QString cn = QUuid::createUuid().toString();
-    QSqlDatabase *db = new QSqlDatabase( QSqlDatabase::addDatabase(TexSampleServer::DBType, cn) );
-    db->setHostName("127.0.0.1");
-    db->setPort(TexSampleServer::DBPort);
-    db->setDatabaseName(TexSampleServer::DBName);
-    adminInfoLock.lockForRead();
-    db->setUserName(adminLogin);
-    db->setPassword(adminPassword);
-    adminInfoLock.unlock();
-    if ( !db->open() )
-    {
-        removeDatabase(db);
-        return 0;
-    }
-    return db;
-}
-
-void removeDatabase(QSqlDatabase *db)
-{
-    if (!db)
-        return;
-    if ( db->isOpen() )
-        db->close();
-    QString cn = db->connectionName();
-    delete db;
-    QSqlDatabase::removeDatabase(cn);
-}
-
-bool callStoredProcedure(const QString &procedure, const QStringList &parameters, QVariantList &results)
-{
-    if ( procedure.isEmpty() )
-        return false;
-    QSqlDatabase *db = createDatabase();
-    if (!db)
-        return false;
-    QSqlQuery *q = new QSqlQuery(*db);
-    QString qs = "CALL " + procedure + "(";
-    for (int i = 0; i < parameters.size(); ++i)
-        qs += "\'" + parameters.at(i) + "\'" +( (i < parameters.size() - 1) ? ", " : "" );
-    qs += ")";
-    bool b = q->exec(qs);
-    while ( q->next() )
-        results << q->value(0);
-    delete q;
-    removeDatabase(db);
-    return b;
-}
-
-//
-
 void DatabaseInteractor::setAdminInfo(const QString &login, const QString &password)
 {
     QWriteLocker locker(&adminInfoLock);
@@ -136,6 +81,58 @@ bool DatabaseInteractor::deleteSample(const QString &id)
         return false;
     QSqlQuery *q = new QSqlQuery(*db);
     bool b = q->exec("DELETE FROM " + TexSampleServer::DBTable + " WHERE id=\"" + id + "\"");
+    delete q;
+    removeDatabase(db);
+    return b;
+}
+
+//
+
+QSqlDatabase *DatabaseInteractor::createDatabase()
+{
+    QString cn = QUuid::createUuid().toString();
+    QSqlDatabase *db = new QSqlDatabase( QSqlDatabase::addDatabase(TexSampleServer::DBType, cn) );
+    db->setHostName("127.0.0.1");
+    db->setPort(TexSampleServer::DBPort);
+    db->setDatabaseName(TexSampleServer::DBName);
+    adminInfoLock.lockForRead();
+    db->setUserName(adminLogin);
+    db->setPassword(adminPassword);
+    adminInfoLock.unlock();
+    if ( !db->open() )
+    {
+        removeDatabase(db);
+        return 0;
+    }
+    return db;
+}
+
+void DatabaseInteractor::removeDatabase(QSqlDatabase *db)
+{
+    if (!db)
+        return;
+    if ( db->isOpen() )
+        db->close();
+    QString cn = db->connectionName();
+    delete db;
+    QSqlDatabase::removeDatabase(cn);
+}
+
+bool DatabaseInteractor::callStoredProcedure(const QString &procedure, const QStringList &parameters, QVariantList &results)
+{
+    if ( procedure.isEmpty() )
+        return false;
+    QSqlDatabase *db = createDatabase();
+    if (!db)
+        return false;
+    QSqlQuery *q = new QSqlQuery(*db);
+    QString qs = "CALL " + procedure + "(";
+    for (int i = 0; i < parameters.size(); ++i)
+        qs += "\'" + parameters.at(i) + "\'" +( (i < parameters.size() - 1) ? ", " : "" );
+    qs += ")";
+    bool b = q->exec(qs);
+    while ( q->next() )
+        results << q->value(0);
     delete q;
     removeDatabase(db);
     return b;

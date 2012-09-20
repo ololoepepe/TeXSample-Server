@@ -1,7 +1,11 @@
 #ifndef DATABASEINTERACTOR_H
 #define DATABASEINTERACTOR_H
 
+class QSqlDatabase;
+
 #include <QString>
+#include <QStringList>
+#include <QVariantList>
 
 class DatabaseInteractor
 {
@@ -13,6 +17,10 @@ public:
                                 const QString &tags, const QString &comment);
     static bool deleteSample(const QString &id);
 private:
+    static QSqlDatabase *createDatabase();
+    static void removeDatabase(QSqlDatabase *db);
+    static bool callStoredProcedure(const QString &procedure, const QStringList &parameters, QVariantList &results);
+    //
     DatabaseInteractor();
     DatabaseInteractor(const DatabaseInteractor &other);
     ~DatabaseInteractor();
