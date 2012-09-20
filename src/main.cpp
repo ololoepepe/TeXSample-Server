@@ -19,10 +19,10 @@ int main(int argc, char **argv)
 {
     //initializing application
     QCoreApplication *app = new QCoreApplication(argc, argv);
-    QCoreApplication::setApplicationName("TexSample Server");
+    QCoreApplication::setApplicationName("TeXSample Server");
     QCoreApplication::setApplicationVersion("1.0.0pa1");
-    QCoreApplication::setOrganizationName("Andrey Bogdanov");
-    QCoreApplication::setOrganizationDomain("https://github.com/the-dark-angel/TeXSample-Server");
+    QCoreApplication::setOrganizationName("TeXSample Team");
+    QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     //initializing BCore
 #if defined(Q_OS_UNIX)
     QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins");

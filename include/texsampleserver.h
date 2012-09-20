@@ -36,7 +36,8 @@ enum TableTexSampleColumn
     AuthorColumn = 3, //TEXT (Not NULL, Character Set: UTF-8)
     TagsColumn = 4, //TEXT (Not NULL, Character Set: UTF-8)
     CommentColumn = 5, //TEXT (Not NULL, Character Set: UTF-8)
-    RatingColumn = 6 //TINYINT(3) (Not NULL, UNSIGNED) [0-100]
+    RatingColumn = 6, //TINYINT(3) (Not NULL, UNSIGNED) [0-100]
+    RemarkColumn = 7 //TEXT (Not NULL, Character Set: UTF-8)
 };
 const QRegExp TagSeparator = QRegExp("\\,\\s*");
 //
