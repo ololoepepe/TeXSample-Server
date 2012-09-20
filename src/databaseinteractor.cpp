@@ -56,8 +56,8 @@ bool DatabaseInteractor::checkSampleExistance(const QString &title, const QStrin
     if (!db)
         return false;
     QSqlQuery *q = new QSqlQuery(*db);
-    bool b = q->exec("SELECT title FROM samples WHERE title=\'" + title + "\' AND author=\'" + author + "\'") &&
-            q->next();
+    bool b = q->exec("SELECT title FROM " + TexSampleServer::DBTable + " WHERE title=\'" + title +
+                     "\' AND author=\'" + author + "\'") && q->next();
     delete q;
     removeDatabase(db);
     return b;
@@ -71,7 +71,7 @@ bool DatabaseInteractor::checkSampleAuthorship(const QString &author, const QStr
     if (!db)
         return false;
     QSqlQuery *q = new QSqlQuery(*db);
-    bool b = q->exec("SELECT author FROM samples WHERE id=\'" + id + "\'") && q->next();
+    bool b = q->exec("SELECT author FROM " + TexSampleServer::DBTable + " WHERE id=\'" + id + "\'") && q->next();
     b = b && QString::compare(q->value(0).toString(), author, Qt::CaseInsensitive);
     delete q;
     removeDatabase(db);
@@ -106,14 +106,8 @@ bool DatabaseInteractor::deleteSample(const QString &id)
 {
     if ( id.isEmpty() )
         return false;
-    QSqlDatabase *db = createDatabase();
-    if (!db)
-        return false;
-    QSqlQuery *q = new QSqlQuery(*db);
-    bool b = q->exec("DELETE FROM " + TexSampleServer::DBTable + " WHERE id=\"" + id + "\"");
-    delete q;
-    removeDatabase(db);
-    return b;
+    QVariantList results;
+    return callStoredProcedure("pDeleteSample", QStringList() << id, results);
 }
 
 //
