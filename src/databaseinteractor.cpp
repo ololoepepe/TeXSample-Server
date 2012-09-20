@@ -48,6 +48,21 @@ bool DatabaseInteractor::checkUser(const QString &login, const QString &password
     return b && !results.isEmpty();
 }
 
+bool DatabaseInteractor::checkSampleExistance(const QString &title, const QString &author)
+{
+    if ( title.isEmpty() || author.isEmpty() )
+        return false;
+    QSqlDatabase *db = createDatabase();
+    if (!db)
+        return false;
+    QSqlQuery *q = new QSqlQuery(*db);
+    bool b = q->exec("SELECT title FROM samples WHERE title=\'" + title + "\' AND author=\'" + author + "\'") &&
+            q->next();
+    delete q;
+    removeDatabase(db);
+    return b;
+}
+
 QString DatabaseInteractor::insertSample(const QString &title, const QString &author,
                                          const QString &tags, const QString &comment)
 {

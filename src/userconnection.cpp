@@ -235,23 +235,27 @@ void UserConnection::handleReplyGetVersion(BNetworkOperation *operation)
     in >> editor;
     in >> plugin;
     in >> beqt;
-    log(tr("Editor:", "log text") + " " + editor + ". " + tr("Plugin:", "log text") + " " + plugin + ". BeQt: " + beqt);
+    log(tr("Editor:", "log text") + " " + editor + ". " +
+        tr("Plugin:", "log text") + " " + plugin + ". BeQt: " + beqt);
 }
 
 //request handlers
 
 void UserConnection::handleRequestGetPdf(BNetworkOperation *operation)
 {
+    log( tr("Get PDF request", "log text") );
     sendSample(operation, true);
 }
 
 void UserConnection::handleRequestGetSample(BNetworkOperation *operation)
 {
+    log( tr("Get sample request", "log text") );
     sendSample(operation, false);
 }
 
 void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
 {
+    log( tr("Send sample request", "log text") );
     QDataStream in( operation->data() );
     in.setVersion(TexSampleServer::DataStreamVersion);
     QByteArray data;
@@ -269,6 +273,13 @@ void UserConnection::handleRequestSendSample(BNetworkOperation *operation)
     {
         out << false;
         out << tr("Invalid data", "reply text");
+        return mySendReply(operation, data);
+    }
+    //Checking sample existance
+    if ( DatabaseInteractor::checkSampleExistance(title, mlogin) )
+    {
+        out << false;
+        out << tr("Sample with this name already exists", "reply text");
         return mySendReply(operation, data);
     }
     //Creating temporary dir and writing files
