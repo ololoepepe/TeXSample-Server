@@ -1,6 +1,8 @@
 #ifndef TEXSAMPLESERVER_H
 #define TEXSAMPLESERVER_H
 
+#include <bcore.h>
+
 #include <QString>
 #include <QDataStream>
 #include <QRegExp>
@@ -20,6 +22,7 @@ const int DBPort = 3306;
 const QString DBType = "QMYSQL";
 const QString DBName = "texsample";
 const QString DBTable = "samples";
+const int MaximumPackageSize = 100 * BCore::Megabyte;
 //
 enum SampleType
 {

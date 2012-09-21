@@ -18,7 +18,7 @@
 #include <QIODevice>
 #include <QProcess>
 
-const int UserConnection::CriticalBufferSize = 100 * BCore::Megabyte;
+const int UserConnection::CriticalBufferSize = TexSampleServer::MaximumPackageSize + 1 * BCore::Megabyte;
 const int UserConnection::AuthorizationTimeout = 15 * BCore::Second;
 const int UserConnection::IdLength = 20;
 const QString UserConnection::SampleBaseName = "___sample___";
