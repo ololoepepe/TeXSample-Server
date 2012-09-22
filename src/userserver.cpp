@@ -9,7 +9,7 @@
 #include <QString>
 #include <QStringList>
 #include <QMap>
-#include <QApplication>
+#include <QCoreApplication>
 
 UserServer::UserServer(QObject *parent) :
     BNetworkServer(BGenericServer::TcpServer, parent)
@@ -32,7 +32,7 @@ BNetworkServerWorker *UserServer::createWorker()
 
 void UserServer::handleExit(const QStringList &arguments)
 {
-    QApplication::quit();
+    QCoreApplication::quit();
 }
 
 //

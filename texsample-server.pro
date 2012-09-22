@@ -1,5 +1,6 @@
 CONFIG += console
 
+QT -= gui
 QT += \
     network \
     sql
