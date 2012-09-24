@@ -16,7 +16,7 @@ namespace TexSampleServer
 typedef QPair<QString, QByteArray> FilePair;
 typedef QList<FilePair> FilePairList;
 //
-const QString DefaultHostName = "90.157.27.188";
+const QString DefaultHostName = "texsample-server.no-ip.org";
 const quint16 ServerPort = 9022;
 const int DBPort = 3306;
 const QString DBType = "QMYSQL";
