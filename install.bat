@@ -2,6 +2,8 @@
 echo Installing...
 mkdir "%programfiles%\TeXSample Server"
 mkdir "%programfiles%\TeXSample Server\include"
+mkdir "%programfiles%\TeXSample Server\plugins"
+mkdir "%programfiles%\TeXSample Server\translations"
 del "%programfiles%\TeXSample Server\texsample-server.exe"
 del "%programfiles%\TeXSample Server\include\*.h"
 del "%programfiles%\TeXSample Server\beqt*"
