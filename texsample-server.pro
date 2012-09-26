@@ -19,11 +19,8 @@ HEADERS += \
     src/userserver.h \
     src/databaseinteractor.h
 
-RESOURCES += \
-    texsample-server.qrc
-
 TRANSLATIONS += \
-    res/translations/texsample-server_ru.ts
+    translations/texsample-server_ru.ts
 
 unix:LIBS += -lbeqtcore -lbeqtnetwork
 unix:INCLUDEPATH += "/usr/include/beqt"
