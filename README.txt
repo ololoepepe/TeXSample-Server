@@ -52,7 +52,7 @@ session) do the following:
     (up to 4).
 
 Note, that you will have to place Qt libraries (QtCore, QtNetwork, QtSql),
-Qt QMYSQL plugin, MySQL library, Qt and BeQt translation files manually to the
+Qt QMYSQL plugin, MySQL library and Qt translation files manually to the
 following directories:
 
   1. On UNIX-like systems:
