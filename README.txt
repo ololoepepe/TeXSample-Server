@@ -2,9 +2,9 @@
  TeXSample Server
 ===============================================================================
 
-Homepage: https://github.com/the-dark-angel/TeXSample-Server
+Homepage: https://github.com/TeXSample-Team/TeXSample-Server
 
-Author: Andrey Bogdanov
+Author: TeXSample Team
 
 License: See COPYING.txt
 
@@ -15,7 +15,7 @@ License: See COPYING.txt
 To build and use TeXSample Server you will need the same libraries and tools as
 for building any other Qt-based project.
 See: http://qt-project.org/resources/getting_started for details.
-You will also need the BeQt libraries (extension of Qt) version 0.1.x.
+You will also need the BeQt libraries (extension of Qt) version 1.0.x.
 See: https://github.com/the-dark-angel/BeQt for details.
 
 It is strongly recommended that you use Qt libraries 4.8.0 or higher. Further
@@ -40,7 +40,8 @@ session) do the following:
   1. On UNIX-like systems:
 
     In terminal, cd to the TeXSample Server source files directory and run:
-    "./build-install.sh"
+    "./build-install.sh [make_parameters]", where make_parameters is the list
+    of make parameters.
 
   2. On Windows:
 
@@ -51,18 +52,21 @@ session) do the following:
     (up to 4).
 
 Note, that you will have to place Qt libraries (QtCore, QtNetwork, QtSql),
-Qt QMYSQL plugin and MySQL library manually to the following directories:
+Qt QMYSQL plugin, MySQL library, Qt and BeQt translation files manually to the
+following directories:
 
   1. On UNIX-like systems:
 
      * "/usr/lib/texsample-server/qt4" - Qt libraries
      * "/usr/lib/texsample-server/qt4/plugins/sqldrivers" - Qt QMYSQL plugin
      * "/usr/lib/texsample-server/other" - MySQL library
+     * "/usr/share/texsample-server/translations" - translation files
 
   2. On Windows:
 
      * "%programfiles%\TeXSample Server" - Qt libraries and MySQL library
      * "%programfiles%\TeXSample Server\sqldrivers" - Qt QMYSQL plugin
+     * "%programfiles%\TeXSample Server\translations" - translation files
 
     Here "%programfiles%" stands for the "Program files" directory,
     for example, "C:\Program files".
