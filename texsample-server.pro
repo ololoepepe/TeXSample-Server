@@ -70,7 +70,7 @@ trans.files = translations/*.qm
 trans.path = $$PREFIX/translations
 INSTALLS += trans
 ### BeQt translations ###
-beqttrans.files = /usr/share/beqt/translations/*.qm
+beqttrans.files = $$(systemdrive)/BeQt/translations/*.qm
 beqttrans.path = $$PREFIX/translations
 INSTALLS += beqttrans
 }
