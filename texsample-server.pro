@@ -38,7 +38,7 @@ unix {
 target.path = /usr/lib/texsample-server
 INSTALLS = target
 ### Includes ###
-includes.files = *.h
+includes.files = include/*.h
 includes.path = /usr/include/texsample-server
 INSTALLS += includes
 ### Translations ###
@@ -62,7 +62,7 @@ isEmpty(PREFIX) {
 target.path = $$PREFIX
 INSTALLS = target
 ### Includes ###
-includes.files = *.h
+includes.files = include/*.h
 includes.path = $$PREFIX/include
 INSTALLS += includes
 ### Translations ###
