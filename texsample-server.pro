@@ -56,7 +56,7 @@ INSTALLS += unixsh
 }
 win32 {
 isEmpty(PREFIX) {
-    PREFIX = $$(systemdrive)/TeXSamples-Server
+    PREFIX = $$(systemdrive)/TeXSample-Server
 }
 ### Target ###
 target.path = $$PREFIX
