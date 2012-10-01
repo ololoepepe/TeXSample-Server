@@ -1,5 +1,5 @@
-#include "src/userworker.h"
-#include "src/userconnection.h"
+#include "userworker.h"
+#include "userconnection.h"
 
 #include <bnetworkserverworker.h>
 #include <bnetworkconnection.h>

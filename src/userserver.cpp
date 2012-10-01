@@ -1,5 +1,5 @@
-#include "src/userserver.h"
-#include "src/userworker.h"
+#include "userserver.h"
+#include "userworker.h"
 
 #include <bnetworkserver.h>
 #include <bgenericserver.h>
@@ -65,59 +65,9 @@ void UserServer::commandEntered(const QString &command, const QStringList &argum
 
 const int AutosaveInterval = 6 * BCore::Hour;
 //
-const QHostAddress Address = QHostAddress::Any;
-//
 const QString GroupServer = "server";
   const QString PrefixBanned = "banned";
     const QString KeyAddress = "address";
-
-//
-
-void logger(const QString &text)
-{
-    BStdIO::writeLine(QDateTime::currentDateTime().toString("MM.dd-hh:mm:ss") + ": " + text);
-}
-
-//
-
-bool Server::checkAdmin()
-{
-    QSqlDatabase *db = Connection::createDatabase("texsample-server");
-    if (!db)
-        return false;
-    QSqlQuery *q = new QSqlQuery(*db);
-    bool b = q->exec("CALL pCheckAdmin(\"" + Connection::adminLogin() + "\")") && q->next();
-    delete q;
-    Connection::removeDatabase(db);
-    return b;
-}
-
-//
-
-Server::Server(QObject *parent) :
-    QTcpServer(parent)
-{
-    BStdIO::writeLine( tr("Starting server...", "stdout text") );
-    connect( BStdIO::instance(), SIGNAL( read(QString) ), this, SLOT( read(QString) ) );
-    mHandlerMap.insert("save-settings", &Server::handleSaveSettings);
-    mHandlerMap.insert("banned", &Server::handleBanned);
-    mHandlerMap.insert("ban", &Server::handleBan);
-    mHandlerMap.insert("unban", &Server::handleUnban);
-    mHandlerMap.insert("connections", &Server::handleConnections);
-    mHandlerMap.insert("restart", &Server::handleRestart);
-    mHandlerMap.insert("exit", &Server::handleExit);
-    if ( !restart() )
-    {
-        BStdIO::writeLine( tr("Failed to start server. Will now quit.", "stdout text") );
-        QTimer::singleShot( 1, QCoreApplication::instance(), SLOT( quit() ) );
-        return;
-    }
-    loadSettings();
-    mtimerAutosave = new QTimer(this);
-    connect( mtimerAutosave, SIGNAL( timeout() ), this, SLOT( saveSettings() ) );
-    mtimerAutosave->start(AutosaveInterval);
-    BStdIO::writeLine( tr("Server succesfully started.", "stdout text") );
-}
 
 //
 
@@ -137,18 +87,6 @@ void Server::saveSettings()
       s->endArray();
     s->endGroup();
     s->sync();
-}
-
-//
-
-void Server::incomingConnection(int handle)
-{
-    ConnectionThread *connection = new ConnectionThread(handle, this);
-    connect( connection, SIGNAL( finished() ), this, SLOT( finished() ) );
-    connect( connection, SIGNAL( updateNotify() ), this, SLOT( updateNotify() ) );
-    connection->start();
-    mConnections << connection;
-    logger( tr("Added new connection. Connection count:", "log text") + " " + QString::number( mConnections.size() ) );
 }
 
 //
@@ -293,35 +231,5 @@ bool Server::handleExit(const QStringList &arguments)
     QCoreApplication::instance()->quit();
     BStdIO::writeLine( tr("Ok: Exiting...", "log text") );
     return true;
-}
-
-//
-
-void Server::read(const QString &text)
-{
-    QStringList list = BStdIO::splitCommand(text);
-    if ( list.isEmpty() )
-        return;
-    Handler h = mHandlerMap.value( list.takeFirst() );
-    if (h)
-        (this->*h)(list);
-    else
-        BStdIO::writeLine( tr("Error: Invalid command.", "log text") );
-}
-
-void Server::finished()
-{
-    ConnectionThread *connection = qobject_cast<ConnectionThread *>( sender() );
-    if ( !connection)
-        return;
-    mConnections.removeAll(connection);
-    connection->deleteLater();
-    logger( tr("Removed connection. Connection count:", "log text") + " " + QString::number( mConnections.size() ) );
-}
-
-void Server::updateNotify()
-{
-    for (int i = 0; i < mConnections.size(); ++i)
-        mConnections.at(i)->requestUpdateNotify();
 }
 */

@@ -1,6 +1,6 @@
-#include "src/userserver.h"
-#include "src/databaseinteractor.h"
-#include "include/texsampleserver.h"
+#include "userserver.h"
+#include "databaseinteractor.h"
+#include "../include/texsampleserver.h"
 
 #include <bterminaliohandler.h>
 #include <bcore.h>

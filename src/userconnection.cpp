@@ -1,6 +1,6 @@
-#include "src/userconnection.h"
-#include "src/databaseinteractor.h"
-#include "include/texsampleserver.h"
+#include "userconnection.h"
+#include "databaseinteractor.h"
+#include "../include/texsampleserver.h"
 
 #include <bnetworkconnection.h>
 #include <bnetworkoperation.h>

@@ -1,5 +1,5 @@
-#include "src/databaseinteractor.h"
-#include "include/texsampleserver.h"
+#include "databaseinteractor.h"
+#include "../include/texsampleserver.h"
 
 #include <QString>
 #include <QReadWriteLock>
