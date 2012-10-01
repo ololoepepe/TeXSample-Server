@@ -6,7 +6,7 @@ class BNetworkOperation;
 
 class QObject;
 
-#include "include/texsampleserver.h"
+#include "../include/texsampleserver.h"
 
 #include <bnetworkconnection.h>
 
