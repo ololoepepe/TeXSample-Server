@@ -1,10 +1,35 @@
-#ifndef SERVER_H
-#define SERVER_H
+#ifndef USERSERVER_H
+#define USERSERVER_H
 
-class ConnectionThread;
+class BNetworkServerWorker;
 
-class QTcpServer;
+class QObject;
 
+#include <bnetworkserver.h>
+
+#include <QString>
+#include <QStringList>
+#include <QMap>
+
+class UserServer : public BNetworkServer
+{
+    Q_OBJECT
+public:
+    explicit UserServer(QObject *parent = 0);
+protected:
+    BNetworkServerWorker *createWorker();
+private:
+    typedef void (UserServer::*Handler)(const QStringList &);
+    //
+    QMap<QString, Handler> mhandlers;
+    //
+    //handlers
+    void handleExit(const QStringList &arguments);
+private slots:
+    void commandEntered(const QString &command, const QStringList &arguments);
+};
+
+/*
 #include <QTcpServer>
 #include <QString>
 #include <QList>
@@ -45,5 +70,6 @@ private slots:
     void finished();
     void updateNotify();
 };
+*/
 
-#endif // SERVER_H
+#endif // USERSERVER_H
