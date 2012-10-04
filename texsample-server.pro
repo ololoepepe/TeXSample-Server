@@ -32,16 +32,18 @@ RCC_DIR = $$builddir
 # PREFIX and BEQT_DIR
 ###############################################################################
 
-unix:isEmpty(PREFIX):PREFIX = /usr
-win32:PREFIX = TeXSample-Server
+isEmpty(PREFIX) {
+unix:PREFIX = /usr
+win32:PREFIX = $$(systemdrive)/PROGRA~1/TeXSample-Server
+}
 
 win32 {
 isEmpty(BEQT_DIR) {
-    BEQT_DIR = $$quote($$(systemdrive)/Program files/BeQt)
+    BEQT_DIR = $$(systemdrive)/PROGRA~1/BeQt
     warning(BeQt dir not specified; trying "$$BEQT_DIR")
 }
 isEmpty(MINGW_DIR) {
-    MINGW_DIR = $$quote($$(systemdrive)/MinGW)
+    MINGW_DIR = $$(systemdrive)/MinGW
     warning(MinGW dir not specified; trying "$$MINGW_DIR")
 }
 }
@@ -69,6 +71,8 @@ unix:I_TRANSLATIONS.files += $$PREFIX/share/beqt/translations/*.qm
 win32:I_TRANSLATIONS.files += $$BEQT_DIR/translations/*.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??_??.qm
+unix:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/libsqlmysql.so
+win32:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/qsqlmysql4.dll
 ### unix-only ###
 unix {
 I_SCRIPTS.files = unix-only/texsample-server.sh
@@ -94,6 +98,7 @@ target.path = $$PREFIX/lib/texsample-server
 I_HEADERS.path = $$PREFIX/include/texsample-server
 I_TRANSLATIONS.path = $$PREFIX/share/texsample-server/translations
 I_LIBS.path = $$PREFIX/lib/tex-creator
+I_QT_PLUGINS.path = $$PREFIX/lib/tex-creator/sqldrivers
 ### unix-only ###
 I_SCRIPTS.path = $$PREFIX/bin
 }
@@ -102,6 +107,7 @@ target.path = $$PREFIX
 I_HEADERS.path = $$PREFIX/include
 I_TRANSLATIONS.path = $$PREFIX/translations
 I_LIBS.path = $$PREFIX
+I_QT_PLUGINS.path = $$PREFIX/sqldrivers
 }
 
 ###############################################################################
@@ -126,6 +132,7 @@ INSTALLS = target
 INSTALLS += I_HEADERS
 INSTALLS += I_TRANSLATIONS
 INSTALLS += I_LIBS
+INSTALLS += I_QT_PLUGINS
 ### unix-only ###
 unix {
 INSTALLS += I_SCRIPTS
