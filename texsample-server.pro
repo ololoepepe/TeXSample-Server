@@ -71,8 +71,8 @@ unix:I_TRANSLATIONS.files += $$PREFIX/share/beqt/translations/*.qm
 win32:I_TRANSLATIONS.files += $$BEQT_DIR/translations/*.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??_??.qm
-unix:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/libsqlmysql.so
-win32:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/qsqlmysql4.dll
+unix:I_QT_PLUGINS.files += $$QT_DIR/plugins/sqldrivers/libsqlmysql.so
+win32:I_QT_PLUGINS.files += $$QT_DIR/plugins/sqldrivers/qsqlmysql4.dll
 ### unix-only ###
 unix {
 I_SCRIPTS.files = unix-only/texsample-server.sh
