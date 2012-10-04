@@ -85,8 +85,8 @@ I_LIBS.files += \
     $$(QTDIR)/lib/QtCore4.dll \
     $$(QTDIR)/lib/QtNetwork4.dll \
     $$(QTDIR)/lib/QtSql4.dll \
-    $$MINGW_DIR/libgcc_s_dw2-1.dll \
-    $$MINGW_DIR/mingwm10.dll
+    $$MINGW_DIR/bin/libgcc_s_dw2-1.dll \
+    $$MINGW_DIR/bin/mingwm10.dll
 }
 
 ###############################################################################
