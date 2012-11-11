@@ -20,7 +20,7 @@ int main(int argc, char **argv)
     //initializing application
     QCoreApplication *app = new QCoreApplication(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0pa1");
+    QCoreApplication::setApplicationVersion("1.0.0pa2");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     //initializing BCore

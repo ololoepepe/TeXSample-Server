@@ -71,8 +71,8 @@ unix:I_TRANSLATIONS.files += $$PREFIX/share/beqt/translations/*.qm
 win32:I_TRANSLATIONS.files += $$BEQT_DIR/translations/*.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??.qm
 I_TRANSLATIONS.files += $$(QTDIR)/translations/qt_??_??.qm
-unix:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/libsqlmysql.so
-win32:I_QT_PLUGINS.files += $$BEQT_DIR/plugins/sqldrivers/qsqlmysql4.dll
+unix:I_QT_PLUGINS.files += $$QT_DIR/plugins/sqldrivers/libsqlmysql.so
+win32:I_QT_PLUGINS.files += $$QT_DIR/plugins/sqldrivers/qsqlmysql4.dll
 ### unix-only ###
 unix {
 I_SCRIPTS.files = unix-only/texsample-server.sh
@@ -85,8 +85,8 @@ I_LIBS.files += \
     $$(QTDIR)/lib/QtCore4.dll \
     $$(QTDIR)/lib/QtNetwork4.dll \
     $$(QTDIR)/lib/QtSql4.dll \
-    $$MINGW_DIR/libgcc_s_dw2-1.dll \
-    $$MINGW_DIR/mingwm10.dll
+    $$MINGW_DIR/bin/libgcc_s_dw2-1.dll \
+    $$MINGW_DIR/bin/mingwm10.dll
 }
 
 ###############################################################################
