@@ -95,7 +95,6 @@ bool UserConnection::readStream(QDataStream &in, QString &sample, QString &title
     in >> fp.second;
     while ( !fp.first.isEmpty() && !fp.second.isEmpty() )
     {
-        fp.first = fp.first.toLower();
         list << fp;
         fp.first.clear();
         fp.second.clear();
