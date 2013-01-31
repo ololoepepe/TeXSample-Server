@@ -47,6 +47,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("get_sample_preview", (InternalHandler) &Connection::handleGetSamplePreviewRequest);
     installRequestHandler("add_sample", (InternalHandler) &Connection::handleAddSampleRequest);
     installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
+    installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
+    installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
     QTimer::singleShot( 15 * BeQt::Second, this, SLOT( testAuthorization() ) );
 }
 
@@ -211,7 +213,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     if ( mlogin.isEmpty() || pwd.isEmpty() || !beginDBOperation() )
         return retErr(op, out, tr("Authorization failed", "log text") );
     QVariantMap q;
-    if ( !execQuery("SELECT password, access_level FROM users WHERE login=:login", q, ":login", mlogin) )
+    if ( !execQuery("SELECT password, access_level, real_name FROM users WHERE login=:login", q, ":login", mlogin) )
         return retErr(op, out, "Failed to authorize"); //TODO
     endDBOperation();
     mauthorized = (q.value("password").toByteArray() == pwd);
@@ -221,6 +223,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     maccessLevel = q.value("access_level", NoLevel).toInt(); //TODO: Check validity
     setCriticalBufferSize(200 * BeQt::Megabyte);
     out.insert("access_level", maccessLevel);
+    out.insert( "real_name", q.value("real_name") );
     log( tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) );
     sendReply(op, out);
 }
@@ -359,6 +362,48 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     bv.insert( ":deleted_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     if ( !execQuery("INSERT INTO deleted_samples (id, deleted_dt) VALUES (:id, :deleted_dt)", 0, bv) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
+    endDBOperation();
+    out.insert("ok", true);
+    sendReply(op, out);
+}
+
+void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Update account request", "log text") );
+    //TODO: Implement error notification
+    QVariantMap in = op->variantData().toMap();
+    QByteArray pwd = in.value("password").toByteArray();
+    QVariantMap bv;
+    bv.insert(":login", mlogin);
+    bv.insert(":password", pwd);
+    bv.insert( ":real_name", in.value("real_name") );
+    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || !beginDBOperation() ||
+         !execQuery("UPDATE users SET password = :password, real_name = :real_name WHERE login = :login", 0, bv) )
+        return retErr( op, out, tr("Updating account failed", "log text") );
+    endDBOperation();
+    out.insert("ok", true);
+    sendReply(op, out);
+}
+
+void Connection::handleAddUserRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Add user request", "log text") );
+    //TODO: Implement error notification
+    QVariantMap in = op->variantData().toMap();
+    QString login = in.value("login").toString();
+    QByteArray pwd = in.value("password").toByteArray();
+    int lvl = in.value("access_level", NoLevel).toInt();
+    QVariantMap bv;
+    bv.insert(":login", login);
+    bv.insert(":pwd", pwd);
+    bv.insert( ":rname", in.value("real_name") );
+    bv.insert(":alvl", lvl);
+    QString qs = "INSERT INTO users (login, password, access_level, real_name) VALUES (:login, :pwd, :alvl, :rname)";
+    if ( !mauthorized || maccessLevel < AdminLevel || login.isEmpty() || pwd.isEmpty() ||
+         !bRange(NoLevel, AdminLevel).contains(lvl) || !beginDBOperation() || !execQuery(qs, 0, bv) )
+        return retErr( op, out, tr("Adding user failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
     sendReply(op, out);
