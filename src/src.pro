@@ -31,7 +31,7 @@ defineReplace(nativeFileName) {
     return($${fileName})
 }
 
-translationsTs=$$files($${PWD}/translations/*.ts)
+translationsTs=$$files($${PWD}/../translations/*.ts)
 for(fileName, translationsTs) {
     system(lrelease $$nativeFileName($${fileName}))
 }

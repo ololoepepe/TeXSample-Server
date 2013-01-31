@@ -34,6 +34,8 @@ int main(int argc, char *argv[])
 #endif
     int ret = 0;
     BCoreApplication bapp;
+    BCoreApplication::logger()->setFileName(BCoreApplication::location(BCoreApplication::DataPath,
+                                                                       BCoreApplication::UserResources) + "/log.txt");
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
     BDirTools::createUserLocations(QStringList() << "samples" << "tmp");
