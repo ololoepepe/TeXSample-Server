@@ -1,3 +1,0 @@
-=== This release ===
-
-* Fix samples storage (remove the preamble)
