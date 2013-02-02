@@ -353,14 +353,18 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     if (m.value("author").toString() != mlogin && maccessLevel < AdminLevel)
         return retErr( op, out, tr("Deleting sample failed", "log text") );
-    if ( !BDirTools::rmdir( BDirTools::findResource( "samples/" + QString::number(id) ) ) )
-        return retErr( op, out, tr("Deleting sample failed", "log text") );
     if ( !execQuery("DELETE FROM samples WHERE id = :id", ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
+    QString qs = "INSERT INTO deleted_samples (id, user, reason, deleted_dt) "
+                 "VALUES (:id, :user, :reason, :deleted_dt)";
     QVariantMap bv;
     bv.insert(":id", id);
+    bv.insert(":user", mlogin);
+    bv.insert( ":reason", in.value("reason") );
     bv.insert( ":deleted_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
-    if ( !execQuery("INSERT INTO deleted_samples (id, deleted_dt) VALUES (:id, :deleted_dt)", 0, bv) )
+    if ( !execQuery(qs, 0, bv) )
+        return retErr( op, out, tr("Deleting sample failed", "log text") );
+    if ( !BDirTools::rmdir( BDirTools::findResource( "samples/" + QString::number(id) ) ) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
@@ -374,12 +378,15 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     QByteArray pwd = in.value("password").toByteArray();
+    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, avatar = :avatar, modified_dt = :mod_dt "
+                 "WHERE login = :login";
     QVariantMap bv;
     bv.insert(":login", mlogin);
-    bv.insert(":password", pwd);
-    bv.insert( ":real_name", in.value("real_name") );
-    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || !beginDBOperation() ||
-         !execQuery("UPDATE users SET password = :password, real_name = :real_name WHERE login = :login", 0, bv) )
+    bv.insert(":pwd", pwd);
+    bv.insert( ":rname", in.value("real_name") );
+    bv.insert( ":avatar", in.value("avatar") );
+    bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
+    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Updating account failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
@@ -395,12 +402,15 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
     int lvl = in.value("access_level", NoLevel).toInt();
+    QString qs = "INSERT INTO users (login, password, access_level, real_name, avatar, modified_dt) "
+                 "VALUES (:login, :pwd, :alvl, :rname, :avatar, :mod_dt)";
     QVariantMap bv;
     bv.insert(":login", login);
     bv.insert(":pwd", pwd);
-    bv.insert( ":rname", in.value("real_name") );
     bv.insert(":alvl", lvl);
-    QString qs = "INSERT INTO users (login, password, access_level, real_name) VALUES (:login, :pwd, :alvl, :rname)";
+    bv.insert( ":rname", in.value("real_name") );
+    bv.insert( ":avatar", in.value("avatar") );
+    bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     if ( !mauthorized || maccessLevel < AdminLevel || login.isEmpty() || pwd.isEmpty() ||
          !bRange(NoLevel, AdminLevel).contains(lvl) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Adding user failed", "log text") );
