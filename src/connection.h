@@ -74,6 +74,8 @@ private:
 private slots:
     void testAuthorization();
 private:
+    static const int MaxAvatarSize;
+private:
     bool mauthorized;
     QString mlogin;
     int maccessLevel;

@@ -166,7 +166,8 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
     QString text = in.value("text").toString();
     if ( path.isEmpty() || fn.isEmpty() || text.isEmpty() || !BDirTools::mkpath(path) )
         return false;
-    if ( !BDirTools::writeTextFile(path + "/" + QFileInfo(fn).fileName(), text, "UTF-8") )
+    QString bfn = QFileInfo(fn).baseName();
+    if ( !BDirTools::writeTextFile(path + "/" + bfn + ".tex", text, "UTF-8") )
     {
         BDirTools::rmdir(path);
         return false;
@@ -185,8 +186,8 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
     QProcess proc;
     proc.setWorkingDirectory(path);
     QStringList args;
-    args << ( "-jobname=" + QFileInfo(fn).baseName() );
-    args << ("\\input texsample.tex \\input \"" + QFileInfo(fn).fileName() + "\" \\end{document}");
+    args << ("-jobname=" + bfn);
+    args << ("\\input texsample.tex \\input \"" + bfn + ".tex\" \\end{document}");
     proc.start("pdflatex", args);
     if ( !proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(2 * BeQt::Minute) )
     {
@@ -195,7 +196,7 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
         return false;
     }
     if (log)
-        *log = BDirTools::readTextFile(path + "/" + QFileInfo(fn).baseName() + ".log"); //TODO: Maybe use UTF-8 codec?
+        *log = BDirTools::readTextFile(path + "/" + bfn + ".log"); //TODO: Maybe use UTF-8 codec?
     return true;
 }
 
@@ -315,8 +316,7 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     QString title = in.value("title").toString();
     QString tpath = userTmpPath(mlogin);
     QString log;
-    if ( !mauthorized || maccessLevel < UserLevel || title.isEmpty() ||
-         !beginDBOperation() || !compileSample(tpath, in, &log) )
+    if ( !mauthorized || maccessLevel < UserLevel || title.isEmpty() || !beginDBOperation() )
         return retErr( op, out, "log", log, tr("Adding sample failed", "log text") );
     out.insert("log", log);
     QString qs = "INSERT INTO samples (title, author, tags, comment, modified_dt) "
@@ -328,7 +328,7 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     bv.insert( ":comment", in.value("comment").toString() );
     bv.insert( ":modified_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     QVariant iid;
-    if ( !execQuery(qs, &iid, bv) || !execQuery("DELETE FROM deleted_samples WHERE id = :id", ":id", iid) )
+    if ( !execQuery(qs, &iid, bv) || !compileSample(tpath, in, &log) )
     {
         BDirTools::rmdir(tpath);
         return retErr( op, out, tr("Adding sample failed", "log text") );
@@ -380,15 +380,17 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     QByteArray pwd = in.value("password").toByteArray();
+    QByteArray ava = in.value("avatar").toByteArray();
     QString qs = "UPDATE users SET password = :pwd, real_name = :rname, avatar = :avatar, modified_dt = :mod_dt "
                  "WHERE login = :login";
     QVariantMap bv;
     bv.insert(":login", mlogin);
     bv.insert(":pwd", pwd);
     bv.insert( ":rname", in.value("real_name") );
-    bv.insert( ":avatar", in.value("avatar") );
+    bv.insert(":avatar", ava);
     bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
-    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || !beginDBOperation() || !execQuery(qs, 0, bv) )
+    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || ava.size() > MaxAvatarSize ||
+         !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Updating account failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
@@ -571,3 +573,7 @@ void Connection::testAuthorization()
     log("Authorization failed, closing connection");
     close();
 }
+
+/*============================== Static private constants ==================*/
+
+const int Connection::MaxAvatarSize = BeQt::Megabyte;

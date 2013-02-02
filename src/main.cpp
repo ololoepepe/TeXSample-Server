@@ -42,8 +42,8 @@ int main(int argc, char *argv[])
     BCoreApplication::loadSettings();
     if ( !testDatabase() )
         return 0;
-    TerminalIOHandler handler;
     Server server;
+    TerminalIOHandler handler(&server);
     server.listen("0.0.0.0", 9041);
     ret = app.exec();
     BCoreApplication::saveSettings();
