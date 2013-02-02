@@ -269,8 +269,6 @@ void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
     QDateTime dt = in.value("last_update_dt").toDateTime();
-    QVariantMap bv;
-    bv.insert(":id", id);
     QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery("SELECT modified_dt FROM samples WHERE id = :id", q, ":id", id) || q.isEmpty() )
@@ -297,11 +295,11 @@ void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
     QDateTime dt = in.value("last_update_dt").toDateTime();
     QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
-    if ( !execQuery("SELECT id FROM samples WHERE id = :id", q, ":id", id) || q.isEmpty() )
+    if ( !execQuery("SELECT modified_dt FROM samples WHERE id = :id", q, ":id", id) || q.isEmpty() )
         return retErr( op, out, tr("Getting sample preview failed", "log text") );
     endDBOperation();
     out.insert("update_dt", dtn);
-    if ( dt.isValid() && dt > dtn)
+    if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
         return retOk( op, out, "cache_ok", true, tr("Cache is up to date", "log text") );
     if ( !addFile( out, samplePreviewFileName(id) ) )
         return retErr( op, out, tr("Getting sample preview failed", "log text") );
