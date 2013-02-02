@@ -96,7 +96,7 @@ QStringList Connection::sampleAuxiliaryFileNames(quint64 id)
     QFileInfo fi(tfn);
     QString path = fi.path();
     QStringList files = QDir(path).entryList(QDir::Files);
-    static const QStringList Suffixes = QStringList() << "aux" << "idx" << "log" << "out" << "pdf" << "tex";
+    static const QStringList Suffixes = QStringList() << "aux" << "idx" << "log" << "out" << "pdf" << "tex" << "toc";
     foreach (const QString &suff, Suffixes)
         files.removeAll(fi.baseName() + "." + suff);
     foreach (const QString &fn, files)
