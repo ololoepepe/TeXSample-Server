@@ -53,6 +53,7 @@ private:
     void handleDeleteSampleRequest(BNetworkOperation *op);
     void handleUpdateAccountRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
+    void handleGetUserInfoRequest(BNetworkOperation *op);
     void retOk( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
     void retOk( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
                 const QString &msg = QString() );

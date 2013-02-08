@@ -49,6 +49,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
     installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
     installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
+    installRequestHandler("get_user_info", (InternalHandler) &Connection::handleGetUserInfoRequest);
     QTimer::singleShot( 15 * BeQt::Second, this, SLOT( testAuthorization() ) );
 }
 
@@ -420,6 +421,26 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
         return retErr( op, out, tr("Adding user failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
+    sendReply(op, out);
+}
+
+void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Get user info request", "log text") );
+    //TODO: Implement error notification
+    if ( !mauthorized || maccessLevel < UserLevel || !beginDBOperation() )
+        return retErr( op, out, tr("Getting user info failed", "log text") );
+    QVariantMap in = op->variantData().toMap();
+    QString login = in.value("login").toString();
+    QString qs = "SELECT access_level, real_name, avatar FROM users WHERE login = :login";
+    QVariantMap q;
+    if ( login.isEmpty() || !execQuery(qs, q, ":login", login) || q.isEmpty() )
+        return retErr( op, out, tr("Getting user info failed", "log text") );
+    endDBOperation();
+    out.insert( "access_level", q.value("access_level") );
+    out.insert( "real_name", q.value("real_name") );
+    out.insert( "avatar", q.value("avatar") );
     sendReply(op, out);
 }
 
