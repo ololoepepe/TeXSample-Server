@@ -20,7 +20,7 @@ HEADERS += \
     connection.h
 
 TRANSLATIONS += \
-    translations/texsample-server_ru.ts
+    ../translations/texsample-server_ru.ts
 
 #Gets a file name
 #Returns the given file name.

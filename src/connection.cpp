@@ -201,6 +201,26 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
     return true;
 }
 
+bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
+{
+    if (isNew)
+    {
+        if ( m.value("login").toString().isEmpty() )
+            return false;
+        bool ok = false;
+        int lvl = m.value("access_level", NoLevel).toInt(&ok);
+        if ( !ok || !bRange(NoLevel, AdminLevel).contains(lvl) )
+            return false;
+    }
+    if ( m.value("password").toByteArray().isEmpty() )
+        return false;
+    if (m.value("real_name").toString().length() > 128)
+        return false;
+    if (m.value("avatar").toByteArray().size() > MaxAvatarSize)
+        return false;
+    return true;
+}
+
 /*============================== Private methods ===========================*/
 
 void Connection::handleAuthorizeRequest(BNetworkOperation *op)
@@ -237,7 +257,7 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get samples list request", "log text") );
     //TODO: Implement error notification
-    if ( !mauthorized || maccessLevel < UserLevel || !beginDBOperation() )
+    if ( !checkRights() || !beginDBOperation() )
         return retErr( op, out, tr("Getting samples list failed", "log text") );
     QVariantMap in = op->variantData().toMap();
     QDateTime dt = in.value("last_update_dt").toDateTime();
@@ -266,7 +286,7 @@ void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get sample source request", "log text") );
     //TODO: Implement error notification
-    if ( !mauthorized || maccessLevel < UserLevel || !beginDBOperation() )
+    if ( !checkRights() || !beginDBOperation() )
         return retErr( op, out, tr("Getting sample source failed", "log text") );
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
@@ -290,7 +310,7 @@ void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get sample preview request", "log text") );
     //TODO: Implement error notification
-    if ( !mauthorized || maccessLevel < UserLevel || !beginDBOperation() )
+    if ( !checkRights() || !beginDBOperation() )
         return retErr( op, out, tr("Getting sample preview failed", "log text") );
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
@@ -317,7 +337,7 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     QString title = in.value("title").toString();
     QString tpath = userTmpPath(mlogin);
     QString log;
-    if ( !mauthorized || maccessLevel < UserLevel || title.isEmpty() || !beginDBOperation() )
+    if ( !checkRights() || title.isEmpty() || !beginDBOperation() )
         return retErr( op, out, "log", log, tr("Adding sample failed", "log text") );
     out.insert("log", log);
     QString qs = "INSERT INTO samples (title, author, tags, comment, modified_dt) "
@@ -351,7 +371,7 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
     QVariantMap m;
-    if ( !mauthorized || maccessLevel < UserLevel || !id || !beginDBOperation() ||
+    if ( !checkRights() || !id || !beginDBOperation() ||
          !execQuery("SELECT author FROM samples WHERE id = :id", m, ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     if (m.value("author").toString() != mlogin && maccessLevel < AdminLevel)
@@ -390,8 +410,7 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     bv.insert( ":rname", in.value("real_name") );
     bv.insert(":avatar", ava);
     bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
-    if ( !mauthorized || maccessLevel < UserLevel || pwd.isEmpty() || ava.size() > MaxAvatarSize ||
-         !beginDBOperation() || !execQuery(qs, 0, bv) )
+    if ( !checkRights() || !testUserInfo(in) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Updating account failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
@@ -416,8 +435,7 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
     bv.insert( ":rname", in.value("real_name") );
     bv.insert( ":avatar", in.value("avatar") );
     bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
-    if ( !mauthorized || maccessLevel < AdminLevel || login.isEmpty() || pwd.isEmpty() ||
-         !bRange(NoLevel, AdminLevel).contains(lvl) || !beginDBOperation() || !execQuery(qs, 0, bv) )
+    if ( !checkRights(AdminLevel) || testUserInfo(in, true) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Adding user failed", "log text") );
     endDBOperation();
     out.insert("ok", true);
@@ -429,19 +447,29 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get user info request", "log text") );
     //TODO: Implement error notification
-    if ( !mauthorized || maccessLevel < UserLevel || !beginDBOperation() )
+    if ( !checkRights() || !beginDBOperation() )
         return retErr( op, out, tr("Getting user info failed", "log text") );
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
-    QString qs = "SELECT access_level, real_name, avatar FROM users WHERE login = :login";
+    QDateTime dt = in.value("last_update_dt").toDateTime();
+    QString qs = "SELECT access_level, real_name, avatar, modified_dt FROM users WHERE login = :login";
     QVariantMap q;
+    QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( login.isEmpty() || !execQuery(qs, q, ":login", login) || q.isEmpty() )
         return retErr( op, out, tr("Getting user info failed", "log text") );
     endDBOperation();
+    out.insert("update_dt", dtn);
+    if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
+        return retOk( op, out, "cache_ok", true, tr("Cache is up to date", "log text") );
     out.insert( "access_level", q.value("access_level") );
     out.insert( "real_name", q.value("real_name") );
     out.insert( "avatar", q.value("avatar") );
     sendReply(op, out);
+}
+
+bool Connection::checkRights(AccessLevel minLevel) const
+{
+    return mauthorized && maccessLevel >= minLevel;
 }
 
 void Connection::retOk(BNetworkOperation *op, const QVariantMap &out, const QString &msg)

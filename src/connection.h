@@ -43,7 +43,8 @@ private:
     static int addFiles(QVariantMap &target, const QStringList &fileNames);
     static bool addTextFile(QVariantMap &target, const QString &fileName);
     static QString userTmpPath(const QString &login);
-    bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
+    static bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
+    static bool testUserInfo(const QVariantMap &m, bool isNew = false);
 private:
     void handleAuthorizeRequest(BNetworkOperation *op);
     void handleGetSamplesListRequest(BNetworkOperation *op);
@@ -54,6 +55,7 @@ private:
     void handleUpdateAccountRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
     void handleGetUserInfoRequest(BNetworkOperation *op);
+    bool checkRights(AccessLevel minLevel = UserLevel) const;
     void retOk( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
     void retOk( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
                 const QString &msg = QString() );
