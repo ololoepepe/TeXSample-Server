@@ -230,12 +230,14 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     mlogin = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
+    QDateTime dt = in.value("last_update_dt").toDateTime();
     log(tr("Authorize request:", "log text") + " " + mlogin);
     //TODO: Implement error notification
     if ( mlogin.isEmpty() || pwd.isEmpty() || !beginDBOperation() )
         return retErr(op, out, tr("Authorization failed", "log text") );
-    QString qs = "SELECT password, access_level, real_name, avatar FROM users WHERE login=:login";
+    QString qs = "SELECT password, access_level, real_name, avatar, modified_dt FROM users WHERE login=:login";
     QVariantMap q;
+    QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery(qs, q, ":login", mlogin) )
         return retErr(op, out, "Failed to authorize"); //TODO
     endDBOperation();
@@ -245,9 +247,18 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         return retOk( op, out, tr("Authorization failed", "log text") );
     maccessLevel = q.value("access_level", NoLevel).toInt(); //TODO: Check validity
     setCriticalBufferSize(200 * BeQt::Megabyte);
-    out.insert("access_level", maccessLevel);
-    out.insert( "real_name", q.value("real_name") );
-    out.insert( "avatar", q.value("avatar") );
+    out.insert("update_dt", dtn);
+    if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
+    {
+        log( tr("Cache is up to date", "log text") );
+        out.insert("cache_ok", true);
+    }
+    else
+    {
+        out.insert("access_level", maccessLevel);
+        out.insert( "real_name", q.value("real_name") );
+        out.insert( "avatar", q.value("avatar") );
+    }
     log( tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) );
     sendReply(op, out);
 }
