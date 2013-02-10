@@ -4,13 +4,13 @@
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="234"/>
+        <location filename="../src/connection.cpp" line="235"/>
         <source>Authorize request:</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="237"/>
+        <location filename="../src/connection.cpp" line="238"/>
         <location filename="../src/connection.cpp" line="247"/>
         <source>Authorization failed</source>
         <comment>log text</comment>
@@ -23,142 +23,144 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="269"/>
+        <location filename="../src/connection.cpp" line="268"/>
         <source>Get samples list request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="272"/>
-        <location filename="../src/connection.cpp" line="283"/>
+        <location filename="../src/connection.cpp" line="271"/>
+        <location filename="../src/connection.cpp" line="282"/>
         <source>Getting samples list failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="285"/>
-        <source>Last update time:</source>
-        <comment>log text</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
         <location filename="../src/connection.cpp" line="286"/>
-        <source>New update time:</source>
-        <comment>log text</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/connection.cpp" line="290"/>
         <source>New samples:</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="291"/>
+        <location filename="../src/connection.cpp" line="287"/>
         <source>Deleted samples</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="298"/>
+        <location filename="../src/connection.cpp" line="293"/>
         <source>Get sample source request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="301"/>
+        <location filename="../src/connection.cpp" line="296"/>
+        <location filename="../src/connection.cpp" line="303"/>
         <location filename="../src/connection.cpp" line="308"/>
-        <location filename="../src/connection.cpp" line="314"/>
         <source>Getting sample source failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/connection.cpp" line="253"/>
-        <location filename="../src/connection.cpp" line="312"/>
-        <location filename="../src/connection.cpp" line="336"/>
-        <location filename="../src/connection.cpp" line="474"/>
+        <location filename="../src/connection.cpp" line="306"/>
+        <location filename="../src/connection.cpp" line="329"/>
+        <location filename="../src/connection.cpp" line="503"/>
         <source>Cache is up to date</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="322"/>
+        <location filename="../src/connection.cpp" line="316"/>
         <source>Get sample preview request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="325"/>
-        <location filename="../src/connection.cpp" line="332"/>
-        <location filename="../src/connection.cpp" line="338"/>
+        <location filename="../src/connection.cpp" line="321"/>
+        <location filename="../src/connection.cpp" line="326"/>
+        <location filename="../src/connection.cpp" line="331"/>
         <source>Getting sample preview failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="345"/>
+        <location filename="../src/connection.cpp" line="338"/>
         <source>Add sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="352"/>
-        <location filename="../src/connection.cpp" line="366"/>
-        <location filename="../src/connection.cpp" line="372"/>
+        <location filename="../src/connection.cpp" line="345"/>
+        <location filename="../src/connection.cpp" line="359"/>
+        <location filename="../src/connection.cpp" line="364"/>
         <source>Adding sample failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="380"/>
+        <location filename="../src/connection.cpp" line="371"/>
+        <source>Update sample request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="386"/>
+        <location filename="../src/connection.cpp" line="392"/>
+        <location filename="../src/connection.cpp" line="409"/>
+        <source>Updating sample failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="416"/>
         <source>Delete sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="387"/>
-        <location filename="../src/connection.cpp" line="389"/>
-        <location filename="../src/connection.cpp" line="391"/>
-        <location filename="../src/connection.cpp" line="400"/>
-        <location filename="../src/connection.cpp" line="402"/>
+        <location filename="../src/connection.cpp" line="423"/>
+        <location filename="../src/connection.cpp" line="425"/>
+        <location filename="../src/connection.cpp" line="427"/>
+        <location filename="../src/connection.cpp" line="436"/>
+        <location filename="../src/connection.cpp" line="438"/>
         <source>Deleting sample failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="411"/>
+        <location filename="../src/connection.cpp" line="445"/>
         <source>Update account request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="425"/>
+        <location filename="../src/connection.cpp" line="459"/>
         <source>Updating account failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="434"/>
+        <location filename="../src/connection.cpp" line="466"/>
         <source>Add user request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="450"/>
+        <location filename="../src/connection.cpp" line="482"/>
         <source>Adding user failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="459"/>
+        <location filename="../src/connection.cpp" line="489"/>
         <source>Get user info request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="462"/>
-        <location filename="../src/connection.cpp" line="470"/>
+        <location filename="../src/connection.cpp" line="492"/>
+        <location filename="../src/connection.cpp" line="500"/>
         <source>Getting user info failed</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>

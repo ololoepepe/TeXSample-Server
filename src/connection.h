@@ -34,6 +34,12 @@ private:
         ModeratorLevel = 100,
         AdminLevel = 1000
     };
+    enum SampleType
+    {
+        Unverified = 0,
+        Approved,
+        Rejected
+    };
 private:
     static QString sampleSourceFileName(quint64 id);
     static QString samplePreviewFileName(quint64 id);
@@ -51,6 +57,7 @@ private:
     void handleGetSampleSourceRequest(BNetworkOperation *op);
     void handleGetSamplePreviewRequest(BNetworkOperation *op);
     void handleAddSampleRequest(BNetworkOperation *op);
+    void handleUpdateSampleRequest(BNetworkOperation *op);
     void handleDeleteSampleRequest(BNetworkOperation *op);
     void handleUpdateAccountRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);

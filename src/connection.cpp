@@ -46,6 +46,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("get_sample_source", (InternalHandler) &Connection::handleGetSampleSourceRequest);
     installRequestHandler("get_sample_preview", (InternalHandler) &Connection::handleGetSamplePreviewRequest);
     installRequestHandler("add_sample", (InternalHandler) &Connection::handleAddSampleRequest);
+    installRequestHandler("update_sample", (InternalHandler) &Connection::handleUpdateSampleRequest);
     installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
     installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
     installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
@@ -240,7 +241,6 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery(qs, q, ":login", mlogin) )
         return retErr(op, out, "Failed to authorize"); //TODO
-    endDBOperation();
     mauthorized = (q.value("password").toByteArray() == pwd);
     out.insert("authorized", mauthorized);
     if (!mauthorized)
@@ -259,8 +259,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         out.insert( "real_name", q.value("real_name") );
         out.insert( "avatar", q.value("avatar") );
     }
-    log( tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) );
-    sendReply(op, out);
+    retOk(op, out, tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel));
 }
 
 void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
@@ -281,15 +280,11 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery(qs, slist, ":update_dt", dtms) || !execQuery(qds, dslist, ":update_dt", dtms) )
         return retErr( op, out, tr("Getting samples list failed", "log text") );
-    endDBOperation();
-    log( tr("Last update time:", "log text") + " " + dt.toString() + " " +
-         tr("New update time:", "log text") + " " + dtn.toString() );
     out.insert("update_dt", dtn);
     out.insert("samples", slist);
     out.insert("deleted_samples", dslist);
-    log( tr("New samples:", "log text") + " " + QString::number( slist.size() ) + " " +
-         tr("Deleted samples", "log text") + " " + QString::number( dslist.size() ) );
-    sendReply(op, out);
+    retOk(op, out, tr("New samples:", "log text") + " " + QString::number( slist.size() ) + " "
+          + tr("Deleted samples", "log text") + " " + QString::number( dslist.size() ));
 }
 
 void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
@@ -306,14 +301,13 @@ void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery("SELECT modified_dt FROM samples WHERE id = :id", q, ":id", id) || q.isEmpty() )
         return retErr( op, out, tr("Getting sample source failed", "log text") );
-    endDBOperation();
     out.insert("update_dt", dtn);
     if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
         return retOk( op, out, "cache_ok", true, tr("Cache is up to date", "log text") );
     if ( !addTextFile( out, sampleSourceFileName(id) ) )
         return retErr( op, out, tr("Getting sample source failed", "log text") );
     addFiles( out, sampleAuxiliaryFileNames(id) );
-    sendReply(op, out);
+    retOk(op, out);
 }
 
 void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
@@ -321,22 +315,21 @@ void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get sample preview request", "log text") );
     //TODO: Implement error notification
-    if ( !checkRights() || !beginDBOperation() )
-        return retErr( op, out, tr("Getting sample preview failed", "log text") );
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
+    if ( !id || !checkRights() || !beginDBOperation() )
+        return retErr( op, out, tr("Getting sample preview failed", "log text") );
     QDateTime dt = in.value("last_update_dt").toDateTime();
     QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery("SELECT modified_dt FROM samples WHERE id = :id", q, ":id", id) || q.isEmpty() )
         return retErr( op, out, tr("Getting sample preview failed", "log text") );
-    endDBOperation();
     out.insert("update_dt", dtn);
     if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
         return retOk( op, out, "cache_ok", true, tr("Cache is up to date", "log text") );
     if ( !addFile( out, samplePreviewFileName(id) ) )
         return retErr( op, out, tr("Getting sample preview failed", "log text") );
-    sendReply(op, out);
+    retOk(op, out);
 }
 
 void Connection::handleAddSampleRequest(BNetworkOperation *op)
@@ -365,13 +358,56 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
         BDirTools::rmdir(tpath);
         return retErr( op, out, tr("Adding sample failed", "log text") );
     }
-    endDBOperation();
     QString sid = QString::number( iid.toLongLong() );
     QString npath = BDirTools::findResource("samples", BDirTools::UserOnly) + "/" + sid;
     if ( sid.isEmpty() || !BDirTools::renameDir(tpath, npath) )
         return retErr( op, out, tr("Adding sample failed", "log text") );
-    out.insert("ok", true);
-    sendReply(op, out);
+    retOk(op, out, "ok", true);
+}
+
+void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Update sample request", "log text") );
+    //TODO: Implement error notification
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("id").toULongLong();
+    QString title = in.value("title").toString();
+    bool isModer = maccessLevel >= ModeratorLevel;
+    int type = 0;
+    int rating = 0;
+    if (isModer)
+    {
+        bool ok = false;
+        type = in.value("type").toInt(&ok);
+        bool ok2 = false;
+        rating = in.value("rating").toInt(&ok2);
+        if ( !ok || !ok2 || !bRange(Unverified, Rejected).contains(type) || !bRange(0, 100).contains(rating) )
+            return retErr( op, out, tr("Updating sample failed", "log text") );
+    }
+    QString qs = "SELECT author, type FROM samples WHERE id = :id";
+    QVariantMap q;
+    if (!checkRights() || !id || title.isEmpty() || !beginDBOperation() || !execQuery(qs, ":id", id)
+        || (q.value("author").toString() != mlogin && !isModer) || (q.value("type").toInt() == Approved && !isModer))
+        return retErr( op, out, tr("Updating sample failed", "log text") );
+    qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
+    QVariantMap bv;
+    bv.insert(":title", title);
+    bv.insert( ":tags", in.value("tags").toStringList().join(", ") );
+    bv.insert( ":comment", in.value("comment") );
+    bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
+    bv.insert(":id", id);
+    if (isModer)
+    {
+        qs += ", type = :type, rating = :rating, admin_remark = :adm_rem";
+        bv.insert(":type", type);
+        bv.insert(":rating",  rating);
+        bv.insert( ":adm_rem", in.value("admin_remark") );
+    }
+    qs += " WHERE id = :id";
+    if ( !execQuery(qs, 0, bv) )
+        return retErr( op, out, tr("Updating sample failed", "log text") );
+    retOk(op, out, "ok", true);
 }
 
 void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
@@ -383,9 +419,9 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     quint64 id = in.value("id").toULongLong();
     QVariantMap m;
     if ( !checkRights() || !id || !beginDBOperation() ||
-         !execQuery("SELECT author FROM samples WHERE id = :id", m, ":id", id) )
+         !execQuery("SELECT author, type FROM samples WHERE id = :id", m, ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
-    if (m.value("author").toString() != mlogin && maccessLevel < AdminLevel)
+    if ((m.value("author").toString() != mlogin || m.value("type").toInt() == Approved) && maccessLevel < AdminLevel)
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     if ( !execQuery("DELETE FROM samples WHERE id = :id", ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
@@ -400,9 +436,7 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     if ( !BDirTools::rmdir( BDirTools::findResource( "samples/" + QString::number(id) ) ) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
-    endDBOperation();
-    out.insert("ok", true);
-    sendReply(op, out);
+    retOk(op, out, "ok", true);
 }
 
 void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
@@ -423,9 +457,7 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     if ( !checkRights() || !testUserInfo(in) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Updating account failed", "log text") );
-    endDBOperation();
-    out.insert("ok", true);
-    sendReply(op, out);
+    retOk(op, out, "ok", true);
 }
 
 void Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -448,9 +480,7 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
     bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     if ( !checkRights(AdminLevel) || testUserInfo(in, true) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Adding user failed", "log text") );
-    endDBOperation();
-    out.insert("ok", true);
-    sendReply(op, out);
+    retOk(op, out, "ok", true);
 }
 
 void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
@@ -468,14 +498,13 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( login.isEmpty() || !execQuery(qs, q, ":login", login) || q.isEmpty() )
         return retErr( op, out, tr("Getting user info failed", "log text") );
-    endDBOperation();
     out.insert("update_dt", dtn);
     if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
         return retOk( op, out, "cache_ok", true, tr("Cache is up to date", "log text") );
     out.insert( "access_level", q.value("access_level") );
     out.insert( "real_name", q.value("real_name") );
     out.insert( "avatar", q.value("avatar") );
-    sendReply(op, out);
+    retOk(op, out);
 }
 
 bool Connection::checkRights(AccessLevel minLevel) const
@@ -487,7 +516,7 @@ void Connection::retOk(BNetworkOperation *op, const QVariantMap &out, const QStr
 {
     if (!op)
         return;
-    endDBOperation(true);
+    endDBOperation();
     if ( !msg.isEmpty() )
         log(msg);
     sendReply(op, out);
