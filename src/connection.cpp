@@ -41,6 +41,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     maccessLevel = NoLevel;
     mdb = new QSqlDatabase( QSqlDatabase::addDatabase( "QSQLITE", uniqueId().toString() ) );
     mdb->setDatabaseName( BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly) );
+    installRequestHandler("register", (InternalHandler) &Connection::handleRegisterRequest);
     installRequestHandler("authorize", (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler("get_samples_list", (InternalHandler) &Connection::handleGetSamplesListRequest);
     installRequestHandler("get_sample_source", (InternalHandler) &Connection::handleGetSampleSourceRequest);
@@ -49,6 +50,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("update_sample", (InternalHandler) &Connection::handleUpdateSampleRequest);
     installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
     installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
+    installRequestHandler("generate_invite", (InternalHandler) &Connection::handleGenerateInviteRequest);
     installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler("get_user_info", (InternalHandler) &Connection::handleGetUserInfoRequest);
     QTimer::singleShot( 15 * BeQt::Second, this, SLOT( testAuthorization() ) );
@@ -224,6 +226,54 @@ bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
 
 /*============================== Private methods ===========================*/
 
+void Connection::handleRegisterRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    QVariantMap in = op->variantData().toMap();
+    QString invite = in.value("invite").toString();
+    if (!invite.isEmpty())
+    {
+        if (invite.at(0) != '{')
+            invite.prepend('{');
+        if (invite.at(invite.length() - 1) != '}')
+            invite.append('}');
+    }
+    QUuid uuid(invite.toLatin1());
+    QString login = in.value("login").toString();
+    QByteArray pwd = in.value("password").toByteArray();
+    log(tr("Register request:", "log text") + " " + login);
+    //TODO: Implement error notification
+    if ( uuid.isNull() || login.isEmpty() || pwd.isEmpty() || !beginDBOperation() )
+        return retErr(op, out, tr("Registration failed", "log text") );
+    QDateTime dtn = QDateTime::currentDateTimeUtc();
+    QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
+    QVariantMap q;
+    QVariantMap bv;
+    bv.insert(":uuid", uuid.toString());
+    bv.insert(":exp_dt", dtn.toMSecsSinceEpoch());
+    bool ok = false;
+    if (!execQuery(qs, q, bv) || q.value("id", 0).toLongLong(&ok) <= 0 || !ok)
+        return retErr(op, out, "Registration failed");
+    qint64 id = q.value("id").toLongLong();
+    qs = "SELECT id FROM users WHERE login = :login";
+    q.clear();
+    bv.clear();
+    if (!execQuery(qs, q, ":login", login) || q.value("id", 0).toLongLong() > 0)
+        return retErr(op, out, "Registration failed");
+    if (!execQuery("DELETE FROM invites WHERE id = :id", ":id", id))
+        return retErr(op, out, "Registration failed");
+    qs = "INSERT INTO users (login, password, access_level, modified_dt) VALUES (:login, :pwd, :alvl, :mod_dt)";
+    bv.insert(":login", login);
+    bv.insert(":pwd", pwd);
+    bv.insert(":alvl", UserLevel);
+    bv.insert(":mod_dt", dtn.toMSecsSinceEpoch());
+    if (!execQuery(qs, 0, bv))
+         return retErr(op, out, "Registration failed");
+    retOk(op, out, "ok", true, tr("Registered", "log text"));
+    op->waitForFinished();
+    close();
+}
+
 void Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
     QVariantMap out;
@@ -236,11 +286,11 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     if ( mlogin.isEmpty() || pwd.isEmpty() || !beginDBOperation() )
         return retErr(op, out, tr("Authorization failed", "log text") );
-    QString qs = "SELECT password, access_level, real_name, avatar, modified_dt FROM users WHERE login=:login";
+    QString qs = "SELECT password, access_level, real_name, avatar, modified_dt FROM users WHERE login = :login";
     QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     if ( !execQuery(qs, q, ":login", mlogin) )
-        return retErr(op, out, "Failed to authorize"); //TODO
+        return retErr(op, out, "Authorization failed");
     mauthorized = (q.value("password").toByteArray() == pwd);
     out.insert("authorized", mauthorized);
     if (!mauthorized)
@@ -458,6 +508,28 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     if ( !checkRights() || !testUserInfo(in) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Updating account failed", "log text") );
     retOk(op, out, "ok", true);
+}
+
+void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Generate invite request", "log text") );
+    //TODO: Implement error notification
+    QVariantMap in = op->variantData().toMap();
+    QDateTime expiresDT = in.value("expires_dt").toDateTime();
+    if (expiresDT.isValid() && expiresDT.timeSpec() != Qt::UTC)
+        expiresDT = expiresDT.toUTC();
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    QUuid uuid = QUuid::createUuid();
+    QString qs = "INSERT INTO invites (uuid, user, expires_dt, created_dt) VALUES (:uuid, :user, :exp_dt, :cr_dt)";
+    QVariantMap bv;
+    bv.insert(":uuid", uuid.toString());
+    bv.insert(":user", mlogin);
+    bv.insert(":exp_dt", expiresDT.isValid() ? expiresDT.toMSecsSinceEpoch() : dt.addDays(3).toMSecsSinceEpoch());
+    bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
+    if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, 0, bv))
+        return retErr( op, out, tr("Generating invite failed", "log text") );
+    retOk(op, out, "uuid", uuid);
 }
 
 void Connection::handleAddUserRequest(BNetworkOperation *op)

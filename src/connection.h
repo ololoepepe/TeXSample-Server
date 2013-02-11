@@ -52,6 +52,7 @@ private:
     static bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
     static bool testUserInfo(const QVariantMap &m, bool isNew = false);
 private:
+    void handleRegisterRequest(BNetworkOperation *op);
     void handleAuthorizeRequest(BNetworkOperation *op);
     void handleGetSamplesListRequest(BNetworkOperation *op);
     void handleGetSampleSourceRequest(BNetworkOperation *op);
@@ -60,6 +61,7 @@ private:
     void handleUpdateSampleRequest(BNetworkOperation *op);
     void handleDeleteSampleRequest(BNetworkOperation *op);
     void handleUpdateAccountRequest(BNetworkOperation *op);
+    void handleGenerateInviteRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
     void handleGetUserInfoRequest(BNetworkOperation *op);
     bool checkRights(AccessLevel minLevel = UserLevel) const;
