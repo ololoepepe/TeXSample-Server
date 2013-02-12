@@ -62,6 +62,7 @@ private:
     void handleDeleteSampleRequest(BNetworkOperation *op);
     void handleUpdateAccountRequest(BNetworkOperation *op);
     void handleGenerateInviteRequest(BNetworkOperation *op);
+    void handleGetInvitesListRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
     void handleGetUserInfoRequest(BNetworkOperation *op);
     bool checkRights(AccessLevel minLevel = UserLevel) const;

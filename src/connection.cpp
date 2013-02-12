@@ -51,6 +51,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
     installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
     installRequestHandler("generate_invite", (InternalHandler) &Connection::handleGenerateInviteRequest);
+    installRequestHandler("get_invites_list", (InternalHandler) &Connection::handleGetInvitesListRequest);
     installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler("get_user_info", (InternalHandler) &Connection::handleGetUserInfoRequest);
     QTimer::singleShot( 15 * BeQt::Second, this, SLOT( testAuthorization() ) );
@@ -530,6 +531,37 @@ void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
     if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, 0, bv))
         return retErr( op, out, tr("Generating invite failed", "log text") );
     retOk(op, out, "uuid", uuid);
+}
+
+void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Get invites list request", "log text") );
+    //TODO: Implement error notification
+    QString qs = "SELECT uuid, expires_dt FROM invites WHERE user = :user AND expires_dt > :exp_dt";
+    QVariantList vl;
+    QVariantMap bv;
+    bv.insert(":user", mlogin);
+    bv.insert(":exp_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, vl, bv))
+        return retErr( op, out, tr("Getting invites list failed", "log text") );
+    if (!vl.isEmpty())
+    {
+        foreach ( int i, bRange(0, vl.size() - 1) )
+        {
+            QVariantMap m = vl.at(i).toMap();
+            QString inv = m.value("uuid").toString();
+            m.insert("uuid", inv.mid(1, inv.length() - 2));
+            QDateTime dt;
+            dt.setTimeSpec(Qt::UTC);
+            dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());
+            m.insert("expires_dt", dt);
+            vl[i] = m;
+        }
+    }
+    out.insert("list", vl);
+    out.insert("ok", true);
+    retOk(op, out);
 }
 
 void Connection::handleAddUserRequest(BNetworkOperation *op)
