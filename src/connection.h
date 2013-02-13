@@ -51,6 +51,7 @@ private:
     static bool addTextFile(QVariantMap &target, const QString &fileName);
     static QString tmpPath(const QUuid &uuid);
     static bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
+    static bool compile(const QString &path, const QVariantMap &in, int *exitCode = 0, QString *log = 0);
     static bool testUserInfo(const QVariantMap &m, bool isNew = false);
 private:
     void handleRegisterRequest(BNetworkOperation *op);
@@ -66,6 +67,7 @@ private:
     void handleGetInvitesListRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
     void handleGetUserInfoRequest(BNetworkOperation *op);
+    void handleCompileRequest(BNetworkOperation *op);
     bool checkRights(AccessLevel minLevel = UserLevel) const;
     void retOk( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
     void retOk( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,

@@ -54,6 +54,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler("get_invites_list", (InternalHandler) &Connection::handleGetInvitesListRequest);
     installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler("get_user_info", (InternalHandler) &Connection::handleGetUserInfoRequest);
+    installRequestHandler("compile", (InternalHandler) &Connection::handleCompileRequest);
     QTimer::singleShot( 15 * BeQt::Second, this, SLOT( testAuthorization() ) );
 }
 
@@ -202,6 +203,49 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
     }
     if (log)
         *log = BDirTools::readTextFile(path + "/" + bfn + ".log"); //TODO: Maybe use UTF-8 codec?
+    return true;
+}
+
+bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCode, QString *log)
+{
+    QString cmd = in.value("compiler").toString();
+    QString fn = QFileInfo(in.value("file_name").toString()).fileName();
+    QString text = in.value("text").toString();
+    static const QStringList compilers = QStringList() << "tex" << "latex" << "pdftex" << "pdflatex";
+    if (path.isEmpty() || cmd.isEmpty() || !compilers.contains(cmd)
+        || fn.isEmpty() || text.isEmpty() || !BDirTools::mkpath(path))
+        return false;
+    if (!BDirTools::writeTextFile(path + "/" + fn, text, "UTF-8"))
+    {
+        BDirTools::rmdir(path);
+        return false;
+    }
+    foreach (const QVariant &v, in.value("aux_files").toList())
+    {
+        QVariantMap m = v.toMap();
+        QString fn = QFileInfo(m.value("file_name").toString()).fileName();
+        if (!BDirTools::writeFile(path + "/" + fn, m.value("data").toByteArray()))
+        {
+            BDirTools::rmdir(path);
+            return false;
+        }
+    }
+    QProcess proc;
+    proc.setWorkingDirectory(path);
+    QStringList args;
+    args << ("-interaction=nonstopmode");
+    args << ("\"" + fn + "\"");
+    proc.start(cmd, args);
+    if ( !proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(5 * BeQt::Minute) )
+    {
+        proc.kill();
+        BDirTools::rmdir(path);
+        return false;
+    }
+    if (exitCode)
+        *exitCode = proc.exitCode();
+    if (log)
+        *log = BDirTools::readTextFile(path + "/" + fn + ".log"); //TODO: Maybe use UTF-8 codec?
     return true;
 }
 
@@ -599,6 +643,31 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     out.insert( "access_level", q.value("access_level") );
     out.insert( "real_name", q.value("real_name") );
     out.insert( "avatar", q.value("avatar") );
+    retOk(op, out);
+}
+
+void Connection::handleCompileRequest(BNetworkOperation *op)
+{
+    QVariantMap out;
+    log( tr("Compile request", "log text") );
+    //TODO: Implement error notification
+    if (!checkRights())
+        return retErr(op, out, tr("Compilation failed", "log text"));
+    QVariantMap in = op->variantData().toMap();
+    QString tpath = tmpPath(uniqueId());
+    QString log;
+    int exitCode = -1;
+    bool b = compile(tmpPath(uniqueId()), in, &exitCode, &log);
+    out.insert("exit_code", exitCode);
+    out.insert("log", log);
+    if (!b)
+        return retErr(op, out, tr("Compilation failed", "log text"));
+    bool ok = false;
+    QByteArray ba = BDirTools::readFile(tpath + "/" + in.value("file_name").toString(), -1, &ok);
+    BDirTools::rmdir(tpath);
+    if (!ok)
+        return retErr(op, out, "log", log, tr("Compilation failed", "log text"));
+    in.insert("pdf", ba);
     retOk(op, out);
 }
 
