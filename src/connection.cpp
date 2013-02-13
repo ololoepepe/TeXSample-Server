@@ -158,11 +158,11 @@ bool Connection::addTextFile(QVariantMap &target, const QString &fileName)
     return true;
 }
 
-QString Connection::userTmpPath(const QString &login)
+QString Connection::tmpPath(const QUuid &uuid)
 {
-    if ( login.isEmpty() )
+    if (uuid.isNull())
         return "";
-    return BDirTools::findResource("tmp", BDirTools::UserOnly) + "/" + login;
+    return BDirTools::findResource("tmp", BDirTools::UserOnly) + "/" + BeQt::pureUuidText(uuid);
 }
 
 bool Connection::compileSample(const QString &path, const QVariantMap &in, QString *log)
@@ -231,15 +231,7 @@ void Connection::handleRegisterRequest(BNetworkOperation *op)
 {
     QVariantMap out;
     QVariantMap in = op->variantData().toMap();
-    QString invite = in.value("invite").toString();
-    if (!invite.isEmpty())
-    {
-        if (invite.at(0) != '{')
-            invite.prepend('{');
-        if (invite.at(invite.length() - 1) != '}')
-            invite.append('}');
-    }
-    QUuid uuid(invite.toLatin1());
+    QUuid uuid = in.value("invite").toUuid();
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
     log(tr("Register request:", "log text") + " " + login);
@@ -390,7 +382,7 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     QString title = in.value("title").toString();
-    QString tpath = userTmpPath(mlogin);
+    QString tpath = tmpPath(uniqueId());
     QString log;
     if ( !checkRights() || title.isEmpty() || !beginDBOperation() )
         return retErr( op, out, "log", log, tr("Adding sample failed", "log text") );
@@ -550,8 +542,7 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
         foreach ( int i, bRange(0, vl.size() - 1) )
         {
             QVariantMap m = vl.at(i).toMap();
-            QString inv = m.value("uuid").toString();
-            m.insert("uuid", inv.mid(1, inv.length() - 2));
+            m.insert("uuid", QUuid(m.value("uuid").toString()));
             QDateTime dt;
             dt.setTimeSpec(Qt::UTC);
             dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());

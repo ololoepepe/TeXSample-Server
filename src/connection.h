@@ -6,6 +6,7 @@ class BGenericSocket;
 class BNetworkOperation;
 
 class QSqlDatabase;
+class QUuid;
 
 #include <BNetworkConnection>
 
@@ -48,7 +49,7 @@ private:
     static bool addFile(QVariantList &target, const QString &fileName);
     static int addFiles(QVariantMap &target, const QStringList &fileNames);
     static bool addTextFile(QVariantMap &target, const QString &fileName);
-    static QString userTmpPath(const QString &login);
+    static QString tmpPath(const QUuid &uuid);
     static bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
     static bool testUserInfo(const QVariantMap &m, bool isNew = false);
 private:
