@@ -231,22 +231,26 @@ bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCo
         }
     }
     QProcess proc;
+    proc.setProcessChannelMode(QProcess::MergedChannels);
     proc.setWorkingDirectory(path);
     QStringList args;
+    QStringList options = in.value("options").toStringList();
+    QStringList commands = in.value("commands").toStringList();
     args << ("-interaction=nonstopmode");
-    args << ("\"" + fn + "\"");
+    if (!options.isEmpty())
+        args << options;
+    args << ("\"" + path + "/" + fn + "\"");
+    if (!commands.isEmpty())
+        args << commands;
     proc.start(cmd, args);
-    if ( !proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(5 * BeQt::Minute) )
+    if (!proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(5 * BeQt::Minute))
     {
         proc.kill();
         BDirTools::rmdir(path);
         return false;
     }
-    if (exitCode)
-        *exitCode = proc.exitCode();
-    if (log)
-        *log = BDirTools::readTextFile(path + "/" + fn + ".log"); //TODO: Maybe use UTF-8 codec?
-    return true;
+    //TODO: Run makeindex and dvips if needed
+    return bRet(exitCode, proc.exitCode(), log, QString::fromUtf8(proc.readAll()), true);
 }
 
 bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
@@ -657,18 +661,18 @@ void Connection::handleCompileRequest(BNetworkOperation *op)
     QString tpath = tmpPath(uniqueId());
     QString log;
     int exitCode = -1;
-    bool b = compile(tmpPath(uniqueId()), in, &exitCode, &log);
+    bool b = compile(tpath, in, &exitCode, &log);
     out.insert("exit_code", exitCode);
     out.insert("log", log);
     if (!b)
         return retErr(op, out, tr("Compilation failed", "log text"));
     bool ok = false;
-    QByteArray ba = BDirTools::readFile(tpath + "/" + in.value("file_name").toString(), -1, &ok);
+    QString fn = QFileInfo(in.value("file_name").toString()).baseName() + ".pdf";
+    QByteArray ba = BDirTools::readFile(tpath + "/" + fn, -1, &ok);
     BDirTools::rmdir(tpath);
     if (!ok)
-        return retErr(op, out, "log", log, tr("Compilation failed", "log text"));
-    in.insert("pdf", ba);
-    retOk(op, out);
+        return retErr(op, out, tr("Compilation failed", "log text"));
+    retOk(op, out, "pdf", ba);
 }
 
 bool Connection::checkRights(AccessLevel minLevel) const
