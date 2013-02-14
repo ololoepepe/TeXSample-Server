@@ -674,12 +674,16 @@ void Connection::handleCompileRequest(BNetworkOperation *op)
     if (!b)
         return retErr(op, out, tr("Compilation failed", "log text"));
     bool ok = false;
-    QString fn = QFileInfo(in.value("file_name").toString()).baseName() + ".pdf";
-    QByteArray ba = BDirTools::readFile(tpath + "/" + fn, -1, &ok);
+    QString bfn = QFileInfo(in.value("file_name").toString()).baseName();
+    foreach (const QString &suff, QStringList() << "pdf" << "aux" << "idx" << "log" << "out")
+    {
+        QByteArray ba = BDirTools::readFile(tpath + "/" + bfn + "." + suff, -1, &ok);
+        if (!ok)
+            break;
+        out.insert(suff, ba);
+    }
     BDirTools::rmdir(tpath);
-    if (!ok)
-        return retErr(op, out, tr("Compilation failed", "log text"));
-    retOk(op, out, "pdf", ba);
+    ok ? retOk(op, out, "ok", true) : retErr(op, out, tr("Compilation failed", "log text"));
 }
 
 bool Connection::checkRights(AccessLevel minLevel) const
