@@ -53,6 +53,10 @@ private:
     static bool compileSample(const QString &path, const QVariantMap &in, QString *log = 0);
     static bool compile(const QString &path, const QVariantMap &in, int *exitCode = 0, QString *log = 0);
     static bool testUserInfo(const QVariantMap &m, bool isNew = false);
+    static int execSampleCompiler(const QString &path, const QString &jobName, QString *log = 0);
+    static int execProjectCompiler(const QString &path, const QString &fileName, const QString &cmd,
+                                   const QStringList &commands, const QStringList &options, QString *log = 0);
+    static int execMakeindex(const QString &path, const QString &fileName);
 private:
     void handleRegisterRequest(BNetworkOperation *op);
     void handleAuthorizeRequest(BNetworkOperation *op);

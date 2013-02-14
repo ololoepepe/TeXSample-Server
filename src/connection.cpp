@@ -189,14 +189,10 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
             return false;
         }
     }
-    QStringList args = QStringList() << ("-jobname=" + bfn)
-                                     << ("\\input texsample.tex \\input \"" + bfn + ".tex\" \\end{document}");
-    if (BeQt::execProcess(path, "pdflatex", args, 5 * BeQt::Second, 2 * BeQt::Minute) < 0)
-    {
+    bool b = !execSampleCompiler(path, bfn, log);
+    if (!b)
         BDirTools::rmdir(path);
-        return false;
-    }
-    return bRet(log, BDirTools::readTextFile(path + "/" + bfn + ".log"), true); //TODO: Maybe use UTF-8?
+    return b;
 }
 
 bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCode, QString *log)
@@ -223,12 +219,16 @@ bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCo
             return false;
         }
     }
-    QStringList args = QStringList() << "-interaction=nonstopmode" << in.value("options").toStringList()
-                                     << ("\"" + path + "/" + fn + "\"") << in.value("commands").toStringList();
-    args.removeAll("");
-    int code = BeQt::execProcess(path, cmd, args, 5 * BeQt::Second, 5 * BeQt::Minute, log); //TODO: Maybe use UTF-8?
+    QStringList options = in.value("options").toStringList();
+    QStringList commands = in.value("commands").toStringList();
+    int code = execProjectCompiler(path, fn, cmd, options, commands, log);
+    if (!code && in.value("makeindex").toBool() && !execMakeindex(path, fn))
+        code = execProjectCompiler(path, fn, cmd, options, commands, log);
     if (code < 0)
+    {
         BDirTools::rmdir(path);
+        return bRet(exitCode, code, false);
+    }
     return bRet(exitCode, code, code >= 0);
 }
 
@@ -250,6 +250,34 @@ bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
     if (m.value("avatar").toByteArray().size() > MaxAvatarSize)
         return false;
     return true;
+}
+
+int Connection::execSampleCompiler(const QString &path, const QString &jobName, QString *log)
+{
+    QString tmpName = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
+    if (!QFile::rename(path + "/" + jobName + ".tex", path + "/" + tmpName))
+        return -3;
+    QStringList args = QStringList() << "-interaction=nonstopmode" << ("-jobname=" + jobName)
+                                     << ("\\input texsample.tex \\input " + tmpName + " \\end{document}");
+    int code = BeQt::execProcess(path, "pdflatex", args, 5 * BeQt::Second, 2 * BeQt::Minute);
+    if (!QFile::rename(path + "/" + tmpName, path + "/" + jobName + ".tex"))
+        return -3;
+    return bRet(log, (code >= 0) ? BDirTools::readTextFile(path + "/" + jobName + ".log") : QString(), code);
+    //TODO: Maybe use UTF-8?
+}
+
+int Connection::execProjectCompiler(const QString &path, const QString &fileName, const QString &cmd,
+                                    const QStringList &commands, const QStringList &options, QString *log)
+{
+    QStringList args = QStringList() << "-interaction=nonstopmode" << commands << (path + "/" + fileName) << options;
+    args.removeAll("");
+    return BeQt::execProcess(path, cmd, args, 5 * BeQt::Second, 5 * BeQt::Minute, log);
+}
+
+int Connection::execMakeindex(const QString &path, const QString &fileName)
+{
+    return BeQt::execProcess(path, "makeindex", QStringList() << (path + "/" + fileName),
+                             5 * BeQt::Second, BeQt::Minute);
 }
 
 /*============================== Private methods ===========================*/
