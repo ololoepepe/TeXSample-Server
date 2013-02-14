@@ -189,21 +189,14 @@ bool Connection::compileSample(const QString &path, const QVariantMap &in, QStri
             return false;
         }
     }
-    QProcess proc;
-    proc.setWorkingDirectory(path);
-    QStringList args;
-    args << ("-jobname=" + bfn);
-    args << ("\\input texsample.tex \\input \"" + bfn + ".tex\" \\end{document}");
-    proc.start("pdflatex", args);
-    if ( !proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(2 * BeQt::Minute) )
+    QStringList args = QStringList() << ("-jobname=" + bfn)
+                                     << ("\\input texsample.tex \\input \"" + bfn + ".tex\" \\end{document}");
+    if (BeQt::execProcess(path, "pdflatex", args, 5 * BeQt::Second, 2 * BeQt::Minute) < 0)
     {
-        proc.kill();
         BDirTools::rmdir(path);
         return false;
     }
-    if (log)
-        *log = BDirTools::readTextFile(path + "/" + bfn + ".log"); //TODO: Maybe use UTF-8 codec?
-    return true;
+    return bRet(log, BDirTools::readTextFile(path + "/" + bfn + ".log"), true); //TODO: Maybe use UTF-8?
 }
 
 bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCode, QString *log)
@@ -230,27 +223,13 @@ bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCo
             return false;
         }
     }
-    QProcess proc;
-    proc.setProcessChannelMode(QProcess::MergedChannels);
-    proc.setWorkingDirectory(path);
-    QStringList args;
-    QStringList options = in.value("options").toStringList();
-    QStringList commands = in.value("commands").toStringList();
-    args << ("-interaction=nonstopmode");
-    if (!options.isEmpty())
-        args << options;
-    args << ("\"" + path + "/" + fn + "\"");
-    if (!commands.isEmpty())
-        args << commands;
-    proc.start(cmd, args);
-    if (!proc.waitForStarted(5 * BeQt::Second) || !proc.waitForFinished(5 * BeQt::Minute))
-    {
-        proc.kill();
+    QStringList args = QStringList() << "-interaction=nonstopmode" << in.value("options").toStringList()
+                                     << ("\"" + path + "/" + fn + "\"") << in.value("commands").toStringList();
+    args.removeAll("");
+    int code = BeQt::execProcess(path, cmd, args, 5 * BeQt::Second, 5 * BeQt::Minute, log); //TODO: Maybe use UTF-8?
+    if (code < 0)
         BDirTools::rmdir(path);
-        return false;
-    }
-    //TODO: Run makeindex and dvips if needed
-    return bRet(exitCode, proc.exitCode(), log, QString::fromUtf8(proc.readAll()), true);
+    return bRet(exitCode, code, code >= 0);
 }
 
 bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
