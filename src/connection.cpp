@@ -222,8 +222,11 @@ bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCo
     QStringList options = in.value("options").toStringList();
     QStringList commands = in.value("commands").toStringList();
     int code = execProjectCompiler(path, fn, cmd, options, commands, log);
-    if (!code && in.value("makeindex").toBool() && !execMakeindex(path, fn))
+    bool makeindex = text.contains("\\input texsample.tex") && in.value("makeindex").toBool(); //TODO: Improve
+    if (!code && makeindex && !execTool(path, fn, "makeindex"))
         code = execProjectCompiler(path, fn, cmd, options, commands, log);
+    if (!code && !cmd.contains("pdf") && in.value("dvips").toBool())
+        execTool(path, fn, "dvips");
     if (code < 0)
     {
         BDirTools::rmdir(path);
@@ -274,9 +277,9 @@ int Connection::execProjectCompiler(const QString &path, const QString &fileName
     return BeQt::execProcess(path, cmd, args, 5 * BeQt::Second, 5 * BeQt::Minute, log);
 }
 
-int Connection::execMakeindex(const QString &path, const QString &fileName)
+int Connection::execTool(const QString &path, const QString &fileName, const QString &tool)
 {
-    return BeQt::execProcess(path, "makeindex", QStringList() << (path + "/" + fileName),
+    return BeQt::execProcess(path, tool, QStringList() << (path + "/" + QFileInfo(fileName).baseName()),
                              5 * BeQt::Second, BeQt::Minute);
 }
 
@@ -675,7 +678,11 @@ void Connection::handleCompileRequest(BNetworkOperation *op)
         return retErr(op, out, tr("Compilation failed", "log text"));
     bool ok = false;
     QString bfn = QFileInfo(in.value("file_name").toString()).baseName();
-    foreach (const QString &suff, QStringList() << "pdf" << "aux" << "idx" << "log" << "out")
+    bool pdf = in.value("compiler").toString().contains("pdf");
+    QStringList suffixes = QStringList() << "aux" << "idx" << "log" << "out" << (pdf ? "pdf" : "dvi");
+    if (!pdf && in.value("dvips").toBool())
+        suffixes << "ps";
+    foreach (const QString &suff, suffixes)
     {
         QByteArray ba = BDirTools::readFile(tpath + "/" + bfn + "." + suff, -1, &ok);
         if (!ok)

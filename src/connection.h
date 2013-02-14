@@ -56,7 +56,7 @@ private:
     static int execSampleCompiler(const QString &path, const QString &jobName, QString *log = 0);
     static int execProjectCompiler(const QString &path, const QString &fileName, const QString &cmd,
                                    const QStringList &commands, const QStringList &options, QString *log = 0);
-    static int execMakeindex(const QString &path, const QString &fileName);
+    static int execTool(const QString &path, const QString &fileName, const QString &tool);
 private:
     void handleRegisterRequest(BNetworkOperation *op);
     void handleAuthorizeRequest(BNetworkOperation *op);
