@@ -243,7 +243,7 @@ bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
             return false;
         bool ok = false;
         int lvl = m.value("access_level", NoLevel).toInt(&ok);
-        if ( !ok || !bRange(NoLevel, AdminLevel).contains(lvl) )
+        if (!ok || !bRange(NoLevel, AdminLevel).contains(lvl))
             return false;
     }
     if ( m.value("password").toByteArray().isEmpty() )
@@ -483,7 +483,7 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         type = in.value("type").toInt(&ok);
         bool ok2 = false;
         rating = in.value("rating").toInt(&ok2);
-        if ( !ok || !ok2 || !bRange(Unverified, Rejected).contains(type) || !bRange(0, 100).contains(rating) )
+        if (!ok || !ok2 || !bRange(Unverified, Rejected).contains(type) || !bRange(0, 100).contains(rating))
             return retErr( op, out, tr("Updating sample failed", "log text") );
     }
     QString qs = "SELECT author, type FROM samples WHERE id = :id";
@@ -595,18 +595,15 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     bv.insert(":exp_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, vl, bv))
         return retErr( op, out, tr("Getting invites list failed", "log text") );
-    if (!vl.isEmpty())
+    foreach (int i, bRangeD(0, vl.size() - 1))
     {
-        foreach ( int i, bRange(0, vl.size() - 1) )
-        {
-            QVariantMap m = vl.at(i).toMap();
-            m.insert("uuid", QUuid(m.value("uuid").toString()));
-            QDateTime dt;
-            dt.setTimeSpec(Qt::UTC);
-            dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());
-            m.insert("expires_dt", dt);
-            vl[i] = m;
-        }
+        QVariantMap m = vl.at(i).toMap();
+        m.insert("uuid", QUuid(m.value("uuid").toString()));
+        QDateTime dt;
+        dt.setTimeSpec(Qt::UTC);
+        dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());
+        m.insert("expires_dt", dt);
+        vl[i] = m;
     }
     out.insert("list", vl);
     out.insert("ok", true);
@@ -775,9 +772,7 @@ bool Connection::execQuery(const QString &query, QVariantMap &values, const QVar
     if ( !q.next() )
         return true;
     QSqlRecord r = q.record();
-    if ( r.isEmpty() )
-        return true;
-    foreach ( int i, bRange(0, r.count() - 1) )
+    foreach ( int i, bRangeD(0, r.count() - 1) )
         values.insert( r.fieldName(i), r.value(i) );
     return true;
 }
@@ -800,9 +795,8 @@ bool Connection::execQuery(const QString &query, QVariantList &values, const QVa
     {
         QSqlRecord r = q.record();
         QVariantMap m;
-        if ( !r.isEmpty() )
-            foreach ( int i, bRange(0, r.count() - 1) )
-                m.insert( r.fieldName(i), r.value(i) );
+        foreach (int i, bRangeD(0, r.count() - 1))
+            m.insert( r.fieldName(i), r.value(i) );
         values << m;
     }
     return true;
