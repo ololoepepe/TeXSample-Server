@@ -676,7 +676,10 @@ void Connection::handleCompileRequest(BNetworkOperation *op)
     bool ok = false;
     QString bfn = QFileInfo(in.value("file_name").toString()).baseName();
     bool pdf = in.value("compiler").toString().contains("pdf");
-    QStringList suffixes = QStringList() << "aux" << "idx" << "log" << "out" << "toc" << (pdf ? "pdf" : "dvi");
+    QStringList suffixes = QStringList() << (pdf ? "pdf" : "dvi");
+    foreach (const QString &suff, QStringList() << "aux" << "idx" << "ilg" << "ind" << "log" << "out" << "toc")
+        if (QFile(tpath + "/" + bfn + "." + suff).exists())
+            suffixes << suff;
     if (!pdf && in.value("dvips").toBool())
         suffixes << "ps";
     foreach (const QString &suff, suffixes)
