@@ -65,6 +65,20 @@ Connection::~Connection()
     QSqlDatabase::removeDatabase( uniqueId().toString() );
 }
 
+/*============================== Public methods ============================*/
+
+QString Connection::login() const
+{
+    return mauthorized ? mlogin : QString();
+}
+
+/*============================== Purotected methods ========================*/
+
+void Connection::log(const QString &text, BLogger::Level lvl)
+{
+    BNetworkConnection::log((mauthorized ? ("[" + mlogin + "] ") : QString()) + text, lvl);
+}
+
 /*============================== Static private methods ====================*/
 
 QString Connection::sampleSourceFileName(quint64 id)

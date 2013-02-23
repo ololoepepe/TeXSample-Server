@@ -9,6 +9,7 @@ class QSqlDatabase;
 class QUuid;
 
 #include <BNetworkConnection>
+#include <BLogger>
 
 #include <QObject>
 #include <QString>
@@ -27,6 +28,10 @@ class Connection : public BNetworkConnection
 public:
     explicit Connection(BNetworkServer *server, BGenericSocket *socket);
     ~Connection();
+public:
+    QString login() const;
+protected:
+    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
     enum AccessLevel
     {

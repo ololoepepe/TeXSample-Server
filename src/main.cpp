@@ -34,6 +34,7 @@ int main(int argc, char *argv[])
 #endif
     int ret = 0;
     BCoreApplication bapp;
+    BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
     BCoreApplication::logger()->setFileName(BCoreApplication::location(BCoreApplication::DataPath,
                                                                        BCoreApplication::UserResources) + "/log.txt");
     BCoreApplication::installTranslator( new BTranslator("beqt") );
