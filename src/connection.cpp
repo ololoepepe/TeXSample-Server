@@ -374,7 +374,10 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         out.insert( "real_name", q.value("real_name") );
         out.insert( "avatar", q.value("avatar") );
     }
-    retOk(op, out, tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel));
+    QString msg = tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) + "\n"
+            + tr("Using:", "log text") + " TeX Creator: " + in.value("editor_ver").toString()
+            + "; BeQt: " + in.value("beqt_ver").toString() + "; Qt: " + in.value("qt_ver").toString();
+    retOk(op, out, msg);
 }
 
 void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
