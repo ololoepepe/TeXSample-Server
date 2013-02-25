@@ -23,6 +23,7 @@
 #include <QFileInfo>
 #include <QSqlRecord>
 #include <QProcess>
+#include <QTcpSocket>
 
 #include <QDebug>
 
@@ -37,6 +38,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
 {
     setCriticalBufferSize(BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
+    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
     mauthorized = false;
     maccessLevel = NoLevel;
     mdb = new QSqlDatabase( QSqlDatabase::addDatabase( "QSQLITE", uniqueId().toString() ) );
@@ -375,7 +377,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         out.insert( "avatar", q.value("avatar") );
     }
     QString msg = tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) + "\n"
-            + tr("Using:", "log text") + " TeX Creator: " + in.value("editor_ver").toString()
+            + in.value("os_ver").toString() + "; TeX Creator: " + in.value("editor_ver").toString()
             + "; BeQt: " + in.value("beqt_ver").toString() + "; Qt: " + in.value("qt_ver").toString();
     retOk(op, out, msg);
 }
