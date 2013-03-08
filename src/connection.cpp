@@ -228,7 +228,12 @@ bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCo
     foreach (const QVariant &v, in.value("aux_files").toList())
     {
         QVariantMap m = v.toMap();
+        QString subpath = m.value("subpath").toString();
+        if (!subpath.isEmpty() && !BDirTools::mkpath(path + "/" + subpath))
+            return false;
         QString fn = QFileInfo(m.value("file_name").toString()).fileName();
+        if (!subpath.isEmpty())
+            fn.prepend(subpath + "/");
         if (!BDirTools::writeFile(path + "/" + fn, m.value("data").toByteArray()))
         {
             BDirTools::rmdir(path);

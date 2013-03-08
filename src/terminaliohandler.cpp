@@ -45,7 +45,8 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
         foreach (BNetworkConnection *c, mserver->connections())
         {
             Connection *cc = static_cast<Connection *>(c);
-            BTerminalIOHandler::writeLine(cc->login() + " " + cc->peerAddress() + " " + cc->uniqueId().toString());
+            BTerminalIOHandler::writeLine("[" + cc->login() + "] [" + cc->peerAddress()
+                                          + "] " + cc->uniqueId().toString());
         }
     }
     else if (args.first() == "--kick")
