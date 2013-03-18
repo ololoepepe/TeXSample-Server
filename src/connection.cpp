@@ -40,6 +40,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
     mauthorized = false;
+    muserId = 0;
     maccessLevel = NoLevel;
     mdb = new QSqlDatabase( QSqlDatabase::addDatabase( "QSQLITE", uniqueId().toString() ) );
     mdb->setDatabaseName( BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly) );
@@ -317,12 +318,12 @@ void Connection::handleRegisterRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     if ( uuid.isNull() || login.isEmpty() || pwd.isEmpty() || !beginDBOperation() )
         return retErr(op, out, tr("Registration failed", "log text") );
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
+    qint64 dtn = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
     QVariantMap q;
     QVariantMap bv;
     bv.insert(":uuid", uuid.toString());
-    bv.insert(":exp_dt", dtn.toMSecsSinceEpoch());
+    bv.insert(":exp_dt", dtn);
     bool ok = false;
     if (!execQuery(qs, q, bv) || q.value("id", 0).toLongLong(&ok) <= 0 || !ok)
         return retErr(op, out, "Registration failed");
@@ -334,11 +335,13 @@ void Connection::handleRegisterRequest(BNetworkOperation *op)
         return retErr(op, out, "Registration failed");
     if (!execQuery("DELETE FROM invites WHERE id = :id", ":id", id))
         return retErr(op, out, "Registration failed");
-    qs = "INSERT INTO users (login, password, access_level, modified_dt) VALUES (:login, :pwd, :alvl, :mod_dt)";
+    qs = "INSERT INTO users (login, password, access_level, created_dt, modified_dt) "
+            "VALUES (:login, :pwd, :alvl, :cr_dt, :mod_dt)";
     bv.insert(":login", login);
     bv.insert(":pwd", pwd);
     bv.insert(":alvl", UserLevel);
-    bv.insert(":mod_dt", dtn.toMSecsSinceEpoch());
+    bv.insert(":cr_dt", dtn);
+    bv.insert(":mod_dt", dtn);
     if (!execQuery(qs, 0, bv))
          return retErr(op, out, "Registration failed");
     retOk(op, out, "ok", true, tr("Registered", "log text"));
@@ -368,6 +371,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     if (!mauthorized)
         return retOk( op, out, tr("Authorization failed", "log text") );
     maccessLevel = q.value("access_level", NoLevel).toInt(); //TODO: Check validity
+    muserId = userId(mlogin);
     setCriticalBufferSize(200 * BeQt::Megabyte);
     out.insert("update_dt", dtn);
     if ( dt.isValid() && dt.toMSecsSinceEpoch() > q.value("modified_dt").toLongLong() )
@@ -397,14 +401,20 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QDateTime dt = in.value("last_update_dt").toDateTime();
     qint64 dtms = dt.toMSecsSinceEpoch();
-    QString qs = "SELECT id, title, author, type, tags, rating, comment, admin_remark, modified_dt "
-                 "FROM samples WHERE modified_dt >= :update_dt";
+    QString qs = "SELECT id, author_id, title, type, tags, rating, comment, admin_remark, created_dt, modified_dt "
+            "FROM samples WHERE modified_dt >= :update_dt";
     QString qds = "SELECT id FROM deleted_samples WHERE deleted_dt >= :update_dt";
     QVariantList slist;
     QVariantList dslist;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
-    if ( !execQuery(qs, slist, ":update_dt", dtms) || !execQuery(qds, dslist, ":update_dt", dtms) )
+    if (!execQuery(qs, slist, ":update_dt", dtms) || !execQuery(qds, dslist, ":update_dt", dtms))
         return retErr( op, out, tr("Getting samples list failed", "log text") );
+    foreach (int i, bRangeD(0, slist.size() - 1))
+    {
+        QVariantMap m = slist.at(i).toMap();
+        m.insert("author", userLogin(m.value("author_id").toULongLong()));
+        slist[i] = m;
+    }
     out.insert("update_dt", dtn);
     out.insert("samples", slist);
     out.insert("deleted_samples", dslist);
@@ -469,14 +479,16 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     if ( !checkRights() || title.isEmpty() || !beginDBOperation() )
         return retErr( op, out, "log", log, tr("Adding sample failed", "log text") );
     out.insert("log", log);
-    QString qs = "INSERT INTO samples (title, author, tags, comment, modified_dt) "
-                 "VALUES (:title, :author, :tags, :comment, :modified_dt)";
+    QString qs = "INSERT INTO samples (title, author_id, tags, comment, created_dt, modified_dt) "
+                 "VALUES (:title, :author_id, :tags, :comment, :created_dt, :modified_dt)";
     QVariantMap bv;
+    qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     bv.insert(":title", title);
-    bv.insert(":author", mlogin);
+    bv.insert(":author_id", muserId);
     bv.insert( ":tags", in.value("tags").toStringList().join(", ") );
     bv.insert( ":comment", in.value("comment").toString() );
-    bv.insert( ":modified_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
+    bv.insert(":created_dt", dt);
+    bv.insert(":modified_dt", dt);
     QVariant iid;
     if ( !execQuery(qs, &iid, bv) || !compileSample(tpath, in, &log) )
     {
@@ -510,10 +522,11 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         if (!ok || !ok2 || !bRange(Unverified, Rejected).contains(type) || !bRange(0, 100).contains(rating))
             return retErr( op, out, tr("Updating sample failed", "log text") );
     }
-    QString qs = "SELECT author, type FROM samples WHERE id = :id";
+    QString qs = "SELECT author_id, type FROM samples WHERE id = :id";
     QVariantMap q;
     if (!checkRights() || !id || title.isEmpty() || !beginDBOperation() || !execQuery(qs, ":id", id)
-        || (q.value("author").toString() != mlogin && !isModer) || (q.value("type").toInt() == Approved && !isModer))
+        || (q.value("author_id").toULongLong() != muserId && !isModer) ||
+        (q.value("type").toInt() == Approved && !isModer))
         return retErr( op, out, tr("Updating sample failed", "log text") );
     qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
     QVariantMap bv;
@@ -544,17 +557,18 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     quint64 id = in.value("id").toULongLong();
     QVariantMap m;
     if ( !checkRights() || !id || !beginDBOperation() ||
-         !execQuery("SELECT author, type FROM samples WHERE id = :id", m, ":id", id) )
+         !execQuery("SELECT author_id, type FROM samples WHERE id = :id", m, ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
-    if ((m.value("author").toString() != mlogin || m.value("type").toInt() == Approved) && maccessLevel < AdminLevel)
+    quint64 uid = m.value("author_id").toULongLong();
+    if ((uid != muserId || m.value("type").toInt() == Approved) && maccessLevel < AdminLevel)
         return retErr( op, out, tr("Deleting sample failed", "log text") );
     if ( !execQuery("DELETE FROM samples WHERE id = :id", ":id", id) )
         return retErr( op, out, tr("Deleting sample failed", "log text") );
-    QString qs = "INSERT INTO deleted_samples (id, user, reason, deleted_dt) "
-                 "VALUES (:id, :user, :reason, :deleted_dt)";
+    QString qs = "INSERT INTO deleted_samples (id, creator_id, reason, deleted_dt) "
+                 "VALUES (:id, :cr_id, :reason, :deleted_dt)";
     QVariantMap bv;
     bv.insert(":id", id);
-    bv.insert(":user", mlogin);
+    bv.insert(":cr_id", uid);
     bv.insert( ":reason", in.value("reason") );
     bv.insert( ":deleted_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
     if ( !execQuery(qs, 0, bv) )
@@ -596,10 +610,10 @@ void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
         expiresDT = expiresDT.toUTC();
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QUuid uuid = QUuid::createUuid();
-    QString qs = "INSERT INTO invites (uuid, user, expires_dt, created_dt) VALUES (:uuid, :user, :exp_dt, :cr_dt)";
+    QString qs = "INSERT INTO invites (uuid, creator_id, expires_dt, created_dt) VALUES (:uuid, :user, :exp_dt, :cr_dt)";
     QVariantMap bv;
     bv.insert(":uuid", uuid.toString());
-    bv.insert(":user", mlogin);
+    bv.insert(":creator_id", muserId);
     bv.insert(":exp_dt", expiresDT.isValid() ? expiresDT.toMSecsSinceEpoch() : dt.addDays(3).toMSecsSinceEpoch());
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, 0, bv))
@@ -612,10 +626,10 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     QVariantMap out;
     log( tr("Get invites list request", "log text") );
     //TODO: Implement error notification
-    QString qs = "SELECT uuid, expires_dt FROM invites WHERE user = :user AND expires_dt > :exp_dt";
+    QString qs = "SELECT uuid, expires_dt FROM invites WHERE creator_id = :cr_id AND expires_dt > :exp_dt";
     QVariantList vl;
     QVariantMap bv;
-    bv.insert(":user", mlogin);
+    bv.insert(":cr_id", muserId);
     bv.insert(":exp_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     if (!checkRights(ModeratorLevel) || !beginDBOperation() || !execQuery(qs, vl, bv))
         return retErr( op, out, tr("Getting invites list failed", "log text") );
@@ -643,16 +657,18 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
     int lvl = in.value("access_level", NoLevel).toInt();
-    QString qs = "INSERT INTO users (login, password, access_level, real_name, avatar, modified_dt) "
-                 "VALUES (:login, :pwd, :alvl, :rname, :avatar, :mod_dt)";
+    QString qs = "INSERT INTO users (login, password, access_level, real_name, avatar, created_dt, modified_dt) "
+                 "VALUES (:login, :pwd, :alvl, :rname, :avatar, :cr_dt, :mod_dt)";
     QVariantMap bv;
+    qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     bv.insert(":login", login);
     bv.insert(":pwd", pwd);
     bv.insert(":alvl", lvl);
     bv.insert( ":rname", in.value("real_name") );
     bv.insert( ":avatar", in.value("avatar") );
-    bv.insert( ":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch() );
-    if ( !checkRights(AdminLevel) || testUserInfo(in, true) || !beginDBOperation() || !execQuery(qs, 0, bv) )
+    bv.insert(":cr_dt", dt);
+    bv.insert(":mod_dt", dt);
+    if ( !checkRights(AdminLevel) || !testUserInfo(in, true) || !beginDBOperation() || !execQuery(qs, 0, bv) )
         return retErr( op, out, tr("Adding user failed", "log text") );
     retOk(op, out, "ok", true);
 }
@@ -720,6 +736,28 @@ void Connection::handleCompileRequest(BNetworkOperation *op)
 bool Connection::checkRights(AccessLevel minLevel) const
 {
     return mauthorized && maccessLevel >= minLevel;
+}
+
+quint64 Connection::userId(const QString &login)
+{
+    if (login.isEmpty() || !mdb->isOpen())
+        return 0;
+    QVariantMap q;
+    if (!execQuery("SELECT id FROM users WHERE login = :login", q, ":login", login) || q.isEmpty())
+        return 0;
+    bool ok = false;
+    quint64 id = q.value("id").toULongLong(&ok);
+    return ok ? id : 0;
+}
+
+QString Connection::userLogin(quint64 id)
+{
+    if (!id || !mdb->isOpen())
+        return "";
+    QVariantMap q;
+    if (!execQuery("SELECT login FROM users WHERE id = :id", q, ":id", id) || q.isEmpty())
+        return "";
+    return q.value("login").toString();
 }
 
 void Connection::retOk(BNetworkOperation *op, const QVariantMap &out, const QString &msg)

@@ -78,6 +78,8 @@ private:
     void handleGetUserInfoRequest(BNetworkOperation *op);
     void handleCompileRequest(BNetworkOperation *op);
     bool checkRights(AccessLevel minLevel = UserLevel) const;
+    quint64 userId(const QString &login);
+    QString userLogin(quint64 id);
     void retOk( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
     void retOk( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
                 const QString &msg = QString() );
@@ -103,6 +105,7 @@ private:
 private:
     bool mauthorized;
     QString mlogin;
+    quint64 muserId;
     int maccessLevel;
     QSqlDatabase *mdb;
 };
