@@ -1,6 +1,8 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+class Database;
+
 class BNetworkServer;
 class BGenericSocket;
 class BNetworkOperation;
@@ -80,24 +82,12 @@ private:
     bool checkRights(AccessLevel minLevel = UserLevel) const;
     quint64 userId(const QString &login);
     QString userLogin(quint64 id);
-    void retOk( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
-    void retOk( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
-                const QString &msg = QString() );
-    void retErr( BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString() );
-    void retErr( BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
-                 const QString &msg = QString() );
-    bool beginDBOperation();
-    bool endDBOperation(bool success = true);
-    bool execQuery(const QString &query, QVariantMap &values, const QVariantMap &boundValues = QVariantMap(),
-                   QVariant *insertId = 0);
-    bool execQuery(const QString &query, QVariantList &values, const QVariantMap &boundValues = QVariantMap(),
-                   QVariant *insertId = 0);
-    bool execQuery(const QString &query, QVariantMap &values, const QString &boundKey, const QVariant &boundValue,
-                   QVariant *insertId = 0);
-    bool execQuery(const QString &query, QVariantList &values, const QString &boundKey, const QVariant &boundValue,
-                   QVariant *insertId = 0);
-    bool execQuery( const QString &query, QVariant *insertId = 0, const QVariantMap &boundValues = QVariantMap() );
-    bool execQuery(const QString &query, const QString &boundKey, const QVariant &boundValue, QVariant *insertId = 0);
+    void retOk(BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString());
+    void retOk(BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
+               const QString &msg = QString());
+    void retErr(BNetworkOperation *op, const QVariantMap &out, const QString &msg = QString());
+    void retErr(BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
+                const QString &msg = QString());
 private slots:
     void testAuthorization();
 private:
@@ -107,7 +97,7 @@ private:
     QString mlogin;
     quint64 muserId;
     int maccessLevel;
-    QSqlDatabase *mdb;
+    Database *mdb;
 };
 
 #endif // CONNECTION_H

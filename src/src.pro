@@ -20,12 +20,16 @@ SOURCES += \
     main.cpp \
     terminaliohandler.cpp \
     server.cpp \
-    connection.cpp
+    connection.cpp \
+    database.cpp \
+    sqlqueryresult.cpp
 
 HEADERS += \
     terminaliohandler.h \
     server.h \
-    connection.h
+    connection.h \
+    database.h \
+    sqlqueryresult.h
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts
