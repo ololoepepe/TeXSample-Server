@@ -39,7 +39,7 @@ int main(int argc, char *argv[])
                                                                        BCoreApplication::UserResources) + "/log.txt");
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
-    BDirTools::createUserLocations(QStringList() << "samples" << "tmp");
+    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users");
     BCoreApplication::loadSettings();
     if ( !testDatabase() )
         return 0;

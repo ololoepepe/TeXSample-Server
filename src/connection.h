@@ -9,6 +9,7 @@ class BNetworkOperation;
 
 class QSqlDatabase;
 class QUuid;
+class QByteArray;
 
 #include <BNetworkConnection>
 #include <BLogger>
@@ -64,6 +65,9 @@ private:
     static int execProjectCompiler(const QString &path, const QString &fileName, const QString &cmd,
                                    const QStringList &commands, const QStringList &options, QString *log = 0);
     static int execTool(const QString &path, const QString &fileName, const QString &tool);
+    static bool saveUserAvatar(quint64 id, const QByteArray &avatar);
+    static QByteArray loadUserAvatar(quint64 id, bool *ok = 0);
+    static bool loadUserAvatar(quint64 id, QByteArray &avatar);
 private:
     void handleRegisterRequest(BNetworkOperation *op);
     void handleAuthorizeRequest(BNetworkOperation *op);

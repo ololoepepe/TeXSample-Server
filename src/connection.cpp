@@ -12,9 +12,7 @@
 #include <QByteArray>
 #include <QString>
 #include <QTimer>
-#include <QSqlDatabase>
 #include <QUuid>
-//#include <QSqlQuery>
 #include <QVariant>
 #include <QVariantMap>
 #include <QVariantList>
@@ -23,7 +21,6 @@
 #include <QRegExp>
 #include <QDir>
 #include <QFileInfo>
-//#include <QSqlRecord>
 #include <QProcess>
 #include <QTcpSocket>
 
@@ -45,8 +42,6 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     muserId = 0;
     maccessLevel = NoLevel;
     mdb = new Database(uniqueId().toString(), BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
-    //mdb = new QSqlDatabase( QSqlDatabase::addDatabase( "QSQLITE", uniqueId().toString() ) );
-    //mdb->setDatabaseName( BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly) );
     installRequestHandler("register", (InternalHandler) &Connection::handleRegisterRequest);
     installRequestHandler("authorize", (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler("get_samples_list", (InternalHandler) &Connection::handleGetSamplesListRequest);
@@ -306,6 +301,29 @@ int Connection::execTool(const QString &path, const QString &fileName, const QSt
                              5 * BeQt::Second, BeQt::Minute);
 }
 
+bool Connection::saveUserAvatar(quint64 id, const QByteArray &avatar)
+{
+    if (!id)
+        return false;
+    QString fn = BDirTools::findResource("users", BDirTools::UserOnly) + "/" + QString::number(id) + "/avatar.dat";
+    return BDirTools::writeFile(fn, avatar);
+}
+
+QByteArray Connection::loadUserAvatar(quint64 id, bool *ok)
+{
+    if (!id)
+        return bRet(ok, false, QByteArray());
+    QString fn = BDirTools::findResource("users/" + QString::number(id) + "/avatar.dat", BDirTools::UserOnly);
+    return BDirTools::readFile(fn, -1, ok);
+}
+
+bool Connection::loadUserAvatar(quint64 id, QByteArray &avatar)
+{
+    bool ok = false;
+    avatar = loadUserAvatar(id, &ok);
+    return ok;
+}
+
 /*============================== Private methods ===========================*/
 
 void Connection::handleRegisterRequest(BNetworkOperation *op)
@@ -357,7 +375,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     if (mlogin.isEmpty() || pwd.isEmpty() || !mdb->beginDBOperation())
         return retErr(op, out, tr("Authorization failed", "log text"));
-    QString qs = "SELECT password, access_level, real_name, avatar, modified_dt FROM users WHERE login = :login";
+    QString qs = "SELECT password, access_level, real_name, modified_dt FROM users WHERE login = :login";
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     SqlQueryResult r = mdb->execQuery(qs, ":login", mlogin);
     if (!r.success())
@@ -379,7 +397,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     {
         out.insert("access_level", maccessLevel);
         out.insert("real_name", r.value().value("real_name"));
-        out.insert("avatar", r.value().value("avatar"));
+        out.insert("avatar", loadUserAvatar(muserId));
     }
     QString msg = tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) + "\n"
             + in.value("os_ver").toString() + "; TeX Creator: " + in.value("editor_ver").toString()
@@ -586,16 +604,15 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     QByteArray pwd = in.value("password").toByteArray();
-    QByteArray ava = in.value("avatar").toByteArray();
-    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, avatar = :avatar, modified_dt = :mod_dt "
+    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, modified_dt = :mod_dt "
                  "WHERE login = :login";
     QVariantMap bv;
     bv.insert(":login", mlogin);
     bv.insert(":pwd", pwd);
     bv.insert(":rname", in.value("real_name"));
-    bv.insert(":avatar", ava);
     bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (!checkRights() || !testUserInfo(in) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv))
+    if (!checkRights() || !testUserInfo(in) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv)
+        || !saveUserAvatar(muserId, in.value("avatar").toByteArray()))
         return retErr(op, out, tr("Updating account failed", "log text"));
     retOk(op, out, "ok", true);
 }
@@ -660,18 +677,20 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
     int lvl = in.value("access_level", NoLevel).toInt();
-    QString qs = "INSERT INTO users (login, password, access_level, real_name, avatar, created_dt, modified_dt) "
-                 "VALUES (:login, :pwd, :alvl, :rname, :avatar, :cr_dt, :mod_dt)";
+    QString qs = "INSERT INTO users (login, password, access_level, real_name, created_dt, modified_dt) "
+                 "VALUES (:login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
     QVariantMap bv;
     qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     bv.insert(":login", login);
     bv.insert(":pwd", pwd);
     bv.insert(":alvl", lvl);
     bv.insert(":rname", in.value("real_name"));
-    bv.insert(":avatar", in.value("avatar"));
     bv.insert(":cr_dt", dt);
     bv.insert(":mod_dt", dt);
-    if (!checkRights(AdminLevel) || !testUserInfo(in, true) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv))
+    QByteArray ava = in.value("avatar").toByteArray();
+    SqlQueryResult r;
+    if (!checkRights(AdminLevel) || !testUserInfo(in, true) || !mdb->beginDBOperation()
+        || !(r = mdb->execQuery(qs, bv)) || !saveUserAvatar(r.insertId().toULongLong(), ava))
         return retErr(op, out, tr("Adding user failed", "log text"));
     retOk(op, out, "ok", true);
 }
@@ -686,7 +705,7 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
     QDateTime dt = in.value("last_update_dt").toDateTime();
-    QString qs = "SELECT access_level, real_name, avatar, modified_dt FROM users WHERE login = :login";
+    QString qs = "SELECT access_level, real_name, modified_dt FROM users WHERE login = :login";
     //QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     SqlQueryResult r;
@@ -697,7 +716,7 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
         return retOk(op, out, "cache_ok", true, tr("Cache is up to date", "log text"));
     out.insert("access_level", r.value().value("access_level"));
     out.insert("real_name", r.value().value("real_name"));
-    out.insert("avatar", r.value().value("avatar"));
+    out.insert("avatar", loadUserAvatar(userId(login)));
     retOk(op, out);
 }
 
