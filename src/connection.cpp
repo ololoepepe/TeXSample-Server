@@ -26,6 +26,10 @@
 
 #include <QDebug>
 
+#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
+Q_DECLARE_METATYPE(QUuid)
+#endif
+
 /*============================================================================
 ================================ Connection ==================================
 ============================================================================*/
@@ -330,7 +334,8 @@ void Connection::handleRegisterRequest(BNetworkOperation *op)
 {
     QVariantMap out;
     QVariantMap in = op->variantData().toMap();
-    QUuid uuid = in.value("invite").toUuid();
+    //QUuid uuid = in.value("invite").toUuid();
+    QUuid uuid = in.value("invite").value<QUuid>();
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
     log(tr("Register request:", "log text") + " " + login);
@@ -637,7 +642,8 @@ void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     if (!checkRights(ModeratorLevel) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv))
         return retErr(op, out, tr("Generating invite failed", "log text"));
-    retOk(op, out, "uuid", uuid);
+    //retOk(op, out, "uuid", uuid);
+    retOk(op, out, "uuid", QVariant::fromValue(uuid));
 }
 
 void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
@@ -656,7 +662,8 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     foreach (int i, bRangeD(0, vl.size() - 1))
     {
         QVariantMap m = vl.at(i).toMap();
-        m.insert("uuid", QUuid(m.value("uuid").toString()));
+        //m.insert("uuid", QUuid(m.value("uuid").toString()));
+        m.insert("uuid", m.value("uuid"));
         QDateTime dt;
         dt.setTimeSpec(Qt::UTC);
         dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());
