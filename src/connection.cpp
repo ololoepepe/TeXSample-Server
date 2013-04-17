@@ -75,6 +75,17 @@ QString Connection::login() const
     return mauthorized ? mlogin : QString();
 }
 
+QString Connection::info() const
+{
+    if (!mauthorized)
+        return "";
+    QString s = "[" + mlogin + "] [" + peerAddress() + "] " + uniqueId().toString() + "\n";
+    s += tr("Access level:", "info") + " " + QString::number(maccessLevel) + "; "
+            + tr("OS:", "info") + " " + minfo.osVersion + "\n";
+    s += "TeX Creator: " + minfo.editorVersion + "; BeQt: " + minfo.beqtVersion + "; Qt: " + minfo.qtVersion;
+    return s;
+}
+
 /*============================== Purotected methods ========================*/
 
 void Connection::log(const QString &text, BLogger::Level lvl)
@@ -334,7 +345,6 @@ void Connection::handleRegisterRequest(BNetworkOperation *op)
 {
     QVariantMap out;
     QVariantMap in = op->variantData().toMap();
-    //QUuid uuid = in.value("invite").toUuid();
     QUuid uuid = in.value("invite").value<QUuid>();
     QString login = in.value("login").toString();
     QByteArray pwd = in.value("password").toByteArray();
@@ -404,10 +414,8 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         out.insert("real_name", r.value().value("real_name"));
         out.insert("avatar", loadUserAvatar(muserId));
     }
-    QString msg = tr("Authorized with access level:", "log text") + " " + QString::number(maccessLevel) + "\n"
-            + in.value("os_ver").toString() + "; TeX Creator: " + in.value("editor_ver").toString()
-            + "; BeQt: " + in.value("beqt_ver").toString() + "; Qt: " + in.value("qt_ver").toString();
-    retOk(op, out, msg);
+    minfo = Info(in);
+    retOk(op, out, tr("Authorized:", "log text") + "\n" + info());
 }
 
 void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
@@ -577,7 +585,6 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
-    //QVariantMap m;
     if (!checkRights() || !id || !mdb->beginDBOperation())
         return retErr(op, out, tr("Deleting sample failed", "log text"));
     SqlQueryResult r = mdb->execQuery("SELECT author_id, type FROM samples WHERE id = :id", ":id", id);
@@ -642,7 +649,6 @@ void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     if (!checkRights(ModeratorLevel) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv))
         return retErr(op, out, tr("Generating invite failed", "log text"));
-    //retOk(op, out, "uuid", uuid);
     retOk(op, out, "uuid", QVariant::fromValue(uuid));
 }
 
@@ -662,7 +668,6 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     foreach (int i, bRangeD(0, vl.size() - 1))
     {
         QVariantMap m = vl.at(i).toMap();
-        //m.insert("uuid", QUuid(m.value("uuid").toString()));
         m.insert("uuid", m.value("uuid"));
         QDateTime dt;
         dt.setTimeSpec(Qt::UTC);
@@ -713,7 +718,6 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QString login = in.value("login").toString();
     QDateTime dt = in.value("last_update_dt").toDateTime();
     QString qs = "SELECT access_level, real_name, modified_dt FROM users WHERE login = :login";
-    //QVariantMap q;
     QDateTime dtn = QDateTime::currentDateTimeUtc();
     SqlQueryResult r;
     if (login.isEmpty() || !mdb->execQuery(qs, r, ":login", login) || r.value().isEmpty())

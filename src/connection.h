@@ -33,6 +33,7 @@ public:
     ~Connection();
 public:
     QString login() const;
+    QString info() const;
 protected:
     void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
@@ -48,6 +49,22 @@ private:
         Unverified = 0,
         Approved,
         Rejected
+    };
+private:
+    struct Info
+    {
+        QString osVersion;
+        QString editorVersion;
+        QString beqtVersion;
+        QString qtVersion;
+        //
+        Info(const QVariantMap &map = QVariantMap())
+        {
+            osVersion = map.value("os_ver").toString();
+            editorVersion = map.value("editor_ver").toString();
+            beqtVersion = map.value("beqt_ver").toString();
+            qtVersion = map.value("qt_ver").toString();
+        }
     };
 private:
     static QString sampleSourceFileName(quint64 id);
@@ -102,6 +119,7 @@ private:
     quint64 muserId;
     int maccessLevel;
     Database *mdb;
+    Info minfo;
 };
 
 #endif // CONNECTION_H

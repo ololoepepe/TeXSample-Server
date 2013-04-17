@@ -22,8 +22,8 @@ TerminalIOHandler::TerminalIOHandler(Server *server, QObject *parent) :
     BTerminalIOHandler(parent)
 {
     mserver = server;
-    installHandler("quit", (InternalHandler) &TerminalIOHandler::handleQuit);
-    installHandler("exit", (InternalHandler) &TerminalIOHandler::handleQuit);
+    installHandler("quit", &BeQt::handleQuit);
+    installHandler("exit", &BeQt::handleQuit);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
 }
 
@@ -72,6 +72,30 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
                     QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
                     break;
                 }
+            }
+        }
+    }
+    else if (args.first() == "--info")
+    {
+        if (args.size() < 2)
+            return;
+        QUuid uuid = BeQt::uuidFromText(args.at(1));
+        if (uuid.isNull())
+        {
+            foreach (BNetworkConnection *c, mserver->connections())
+            {
+                Connection *cc = static_cast<Connection *>(c);
+                if (cc->login() == args.at(1))
+                    writeLine(cc->info());
+            }
+        }
+        else
+        {
+            foreach (BNetworkConnection *c, mserver->connections())
+            {
+                Connection *cc = static_cast<Connection *>(c);
+                if (cc->uniqueId() == uuid)
+                    writeLine(cc->info());
             }
         }
     }
