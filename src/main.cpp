@@ -1,5 +1,8 @@
 #include "terminaliohandler.h"
 #include "server.h"
+#include "registrationserver.h"
+
+#include <TeXSampleGlobal>
 
 #include <BCoreApplication>
 #include <BDirTools>
@@ -19,6 +22,7 @@ bool testDatabase();
 
 int main(int argc, char *argv[])
 {
+    tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
     QCoreApplication::setApplicationVersion("1.0.0-pa1");
@@ -46,6 +50,8 @@ int main(int argc, char *argv[])
     Server server;
     TerminalIOHandler handler(&server);
     server.listen("0.0.0.0", 9041);
+    RegistrationServer rserver;
+    rserver.listen("0.0.0.0", 9042);
     ret = app.exec();
     BCoreApplication::saveSettings();
     return ret;

@@ -86,7 +86,7 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->login() == args.at(1))
-                    writeLine(cc->info());
+                    writeLine(cc->infoString());
             }
         }
         else
@@ -95,7 +95,7 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->uniqueId() == uuid)
-                    writeLine(cc->info());
+                    writeLine(cc->infoString());
             }
         }
     }

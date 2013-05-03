@@ -16,20 +16,38 @@ isEmpty(BEQT_PREFIX) {
 }
 include($${BEQT_PREFIX}/depend.pri)
 
+isEmpty(TSMP_PREFIX) {
+    #TODO: Add MacOS support
+    mac|unix {
+        TSMP_PREFIX=/usr/share/texsample
+    } else:win32 {
+        TSMP_PREFIX=$$(systemdrive)/PROGRA~1/TeXSample
+    }
+}
+include($${TSMP_PREFIX}/depend.pri)
+
 SOURCES += \
     main.cpp \
     terminaliohandler.cpp \
     server.cpp \
     connection.cpp \
     database.cpp \
-    sqlqueryresult.cpp
+    sqlqueryresult.cpp \
+    registrationserver.cpp \
+    registrationconnection.cpp \
+    global.cpp \
+    storage.cpp
 
 HEADERS += \
     terminaliohandler.h \
     server.h \
     connection.h \
     database.h \
-    sqlqueryresult.h
+    sqlqueryresult.h \
+    registrationserver.h \
+    registrationconnection.h \
+    global.h \
+    storage.h
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts

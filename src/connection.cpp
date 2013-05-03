@@ -1,6 +1,20 @@
 #include "connection.h"
 #include "database.h"
 #include "sqlqueryresult.h"
+#include "global.h"
+#include "storage.h"
+#include "terminaliohandler.h"
+
+#include <TAccessLevel>
+#include <TUserInfo>
+#include <TSampleInfo>
+#include <TeXSample>
+#include <TOperationResult>
+#include <TProject>
+#include <TCompilerParameters>
+#include <TCompiledProject>
+#include <TCompilationResult>
+#include <TInviteInfo>
 
 #include <BNetworkConnection>
 #include <BNetworkServer>
@@ -26,10 +40,6 @@
 
 #include <QDebug>
 
-#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
-Q_DECLARE_METATYPE(QUuid)
-#endif
-
 /*============================================================================
 ================================ Connection ==================================
 ============================================================================*/
@@ -42,29 +52,36 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     setCriticalBufferSize(BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
+    mstorage = new Storage(BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources));
     mauthorized = false;
     muserId = 0;
-    maccessLevel = NoLevel;
     mdb = new Database(uniqueId().toString(), BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
-    installRequestHandler("register", (InternalHandler) &Connection::handleRegisterRequest);
-    installRequestHandler("authorize", (InternalHandler) &Connection::handleAuthorizeRequest);
-    installRequestHandler("get_samples_list", (InternalHandler) &Connection::handleGetSamplesListRequest);
-    installRequestHandler("get_sample_source", (InternalHandler) &Connection::handleGetSampleSourceRequest);
-    installRequestHandler("get_sample_preview", (InternalHandler) &Connection::handleGetSamplePreviewRequest);
-    installRequestHandler("add_sample", (InternalHandler) &Connection::handleAddSampleRequest);
-    installRequestHandler("update_sample", (InternalHandler) &Connection::handleUpdateSampleRequest);
-    installRequestHandler("delete_sample", (InternalHandler) &Connection::handleDeleteSampleRequest);
-    installRequestHandler("update_account", (InternalHandler) &Connection::handleUpdateAccountRequest);
-    installRequestHandler("generate_invite", (InternalHandler) &Connection::handleGenerateInviteRequest);
-    installRequestHandler("get_invites_list", (InternalHandler) &Connection::handleGetInvitesListRequest);
-    installRequestHandler("add_user", (InternalHandler) &Connection::handleAddUserRequest);
-    installRequestHandler("get_user_info", (InternalHandler) &Connection::handleGetUserInfoRequest);
-    installRequestHandler("compile", (InternalHandler) &Connection::handleCompileRequest);
+    installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
+    installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
+    installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
+    installRequestHandler(Texsample::UpdateAccountRequest, (InternalHandler) &Connection::handleUpdateAccountRequest);
+    installRequestHandler(Texsample::GetUserInfoRequest, (InternalHandler) &Connection::handleGetUserInfoRequest);
+    installRequestHandler(Texsample::AddSampleRequest, (InternalHandler) &Connection::handleAddSampleRequest);
+    installRequestHandler(Texsample::EditSampleRequest, (InternalHandler) &Connection::handleEditSampleRequest);
+    installRequestHandler(Texsample::DeleteSampleRequest, (InternalHandler) &Connection::handleDeleteSampleRequest);
+    installRequestHandler(Texsample::GetSamplesListRequest,
+                          (InternalHandler) &Connection::handleGetSamplesListRequest);
+    installRequestHandler(Texsample::GetSampleSourceRequest,
+                          (InternalHandler) &Connection::handleGetSampleSourceRequest);
+    installRequestHandler(Texsample::GetSamplePreviewRequest,
+                          (InternalHandler) &Connection::handleGetSamplePreviewRequest);
+    installRequestHandler(Texsample::GenerateInvitesRequest,
+                          (InternalHandler) &Connection::handleGenerateInvitesRequest);
+    installRequestHandler(Texsample::GetInvitesListRequest,
+                          (InternalHandler) &Connection::handleGetInvitesListRequest);
+    installRequestHandler(Texsample::CompileProjectRequest,
+                          (InternalHandler) &Connection::handleCompileProjectRequest);
     QTimer::singleShot(15 * BeQt::Second, this, SLOT(testAuthorization()));
 }
 
 Connection::~Connection()
 {
+    delete mstorage;
     delete mdb;
 }
 
@@ -75,14 +92,21 @@ QString Connection::login() const
     return mauthorized ? mlogin : QString();
 }
 
-QString Connection::info() const
+TClientInfo Connection::clientInfo() const
+{
+    return mclientInfo;
+}
+
+QString Connection::infoString(const QString &format) const
 {
     if (!mauthorized)
         return "";
-    QString s = "[" + mlogin + "] [" + peerAddress() + "] " + uniqueId().toString() + "\n";
-    s += tr("Access level:", "info") + " " + QString::number(maccessLevel) + "; "
-            + tr("OS:", "info") + " " + minfo.osVersion + "\n";
-    s += "TeX Creator: " + minfo.editorVersion + "; BeQt: " + minfo.beqtVersion + "; Qt: " + minfo.qtVersion;
+    QString f = !format.isEmpty() ? format : QString("%l %p %u\n%a; %o\n%e; %t; %b; %q");
+    QString s = mclientInfo.toString(f);
+    s.replace("%l", "[" + mlogin + "]");
+    s.replace("%p", "[" + peerAddress() + "]");
+    s.replace("%u", uniqueId().toString());
+    s.replace("%a", tr("Access level:", "info") + " " + maccessLevel.string());
     return s;
 }
 
@@ -194,80 +218,6 @@ QString Connection::tmpPath(const QUuid &uuid)
     return BDirTools::findResource("tmp", BDirTools::UserOnly) + "/" + BeQt::pureUuidText(uuid);
 }
 
-bool Connection::compileSample(const QString &path, const QVariantMap &in, QString *log)
-{
-    QString fn = in.value("file_name").toString();
-    QString text = in.value("text").toString();
-    if ( path.isEmpty() || fn.isEmpty() || text.isEmpty() || !BDirTools::mkpath(path) )
-        return false;
-    QString bfn = QFileInfo(fn).baseName();
-    if ( !BDirTools::writeTextFile(path + "/" + bfn + ".tex", text, "UTF-8") )
-    {
-        BDirTools::rmdir(path);
-        return false;
-    }
-    foreach ( const QVariant &v, in.value("aux_files").toList() )
-    {
-        QVariantMap m = v.toMap();
-        QString fn = m.value("file_name").toString();
-        QByteArray ba = m.value("data").toByteArray();
-        if ( !BDirTools::writeFile( path + "/" + QFileInfo(fn).fileName(), ba ) )
-        {
-            BDirTools::rmdir(path);
-            return false;
-        }
-    }
-    bool b = !execSampleCompiler(path, bfn, log);
-    if (!b)
-        BDirTools::rmdir(path);
-    return b;
-}
-
-bool Connection::compile(const QString &path, const QVariantMap &in, int *exitCode, QString *log)
-{
-    QString cmd = in.value("compiler").toString();
-    QString fn = QFileInfo(in.value("file_name").toString()).fileName();
-    QString text = in.value("text").toString();
-    static const QStringList compilers = QStringList() << "tex" << "latex" << "pdftex" << "pdflatex";
-    if (path.isEmpty() || cmd.isEmpty() || !compilers.contains(cmd)
-        || fn.isEmpty() || text.isEmpty() || !BDirTools::mkpath(path))
-        return false;
-    if (!BDirTools::writeTextFile(path + "/" + fn, text, "UTF-8"))
-    {
-        BDirTools::rmdir(path);
-        return false;
-    }
-    foreach (const QVariant &v, in.value("aux_files").toList())
-    {
-        QVariantMap m = v.toMap();
-        QString subpath = m.value("subpath").toString();
-        if (!subpath.isEmpty() && !BDirTools::mkpath(path + "/" + subpath))
-            return false;
-        QString fn = QFileInfo(m.value("file_name").toString()).fileName();
-        if (!subpath.isEmpty())
-            fn.prepend(subpath + "/");
-        if (!BDirTools::writeFile(path + "/" + fn, m.value("data").toByteArray()))
-        {
-            BDirTools::rmdir(path);
-            return false;
-        }
-    }
-    QStringList options = in.value("options").toStringList();
-    QStringList commands = in.value("commands").toStringList();
-    int code = execProjectCompiler(path, fn, cmd, options, commands, log);
-    bool makeindex = text.contains("\\input texsample.tex") && in.value("makeindex").toBool(); //TODO: Improve
-    if (!code && makeindex && !execTool(path, fn, "makeindex"))
-        code = execProjectCompiler(path, fn, cmd, options, commands, log);
-    if (!code && !cmd.contains("pdf") && in.value("dvips").toBool())
-        execTool(path, fn, "dvips");
-    if (code < 0)
-    {
-        BDirTools::rmdir(path);
-        return bRet(exitCode, code, false);
-    }
-    return bRet(exitCode, code, code >= 0);
-}
-
 bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
 {
     if (isNew)
@@ -275,8 +225,8 @@ bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
         if ( m.value("login").toString().isEmpty() )
             return false;
         bool ok = false;
-        int lvl = m.value("access_level", NoLevel).toInt(&ok);
-        if (!ok || !bRange(NoLevel, AdminLevel).contains(lvl))
+        int lvl = m.value("access_level", TAccessLevel::NoLevel).toInt(&ok);
+        if (!ok || !bRange(TAccessLevel::NoLevel, TAccessLevel::AdminLevel).contains(lvl))
             return false;
     }
     if ( m.value("password").toByteArray().isEmpty() )
@@ -288,258 +238,124 @@ bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
     return true;
 }
 
-int Connection::execSampleCompiler(const QString &path, const QString &jobName, QString *log)
+TOperationResult Connection::notAuthorizedResult()
 {
-    QString tmpName = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
-    if (!QFile::rename(path + "/" + jobName + ".tex", path + "/" + tmpName))
-        return -3;
-    QStringList args = QStringList() << "-interaction=nonstopmode" << ("-jobname=" + jobName)
-                                     << ("\\input texsample.tex \\input " + tmpName + " \\end{document}");
-    int code = BeQt::execProcess(path, "pdflatex", args, 5 * BeQt::Second, 2 * BeQt::Minute);
-    if (!QFile::rename(path + "/" + tmpName, path + "/" + jobName + ".tex"))
-        return -3;
-    return bRet(log, (code >= 0) ? BDirTools::readTextFile(path + "/" + jobName + ".log") : QString(), code);
-    //TODO: Maybe use UTF-8?
-}
-
-int Connection::execProjectCompiler(const QString &path, const QString &fileName, const QString &cmd,
-                                    const QStringList &commands, const QStringList &options, QString *log)
-{
-    QStringList args = QStringList() << "-interaction=nonstopmode" << commands << (path + "/" + fileName) << options;
-    args.removeAll("");
-    return BeQt::execProcess(path, cmd, args, 5 * BeQt::Second, 5 * BeQt::Minute, log);
-}
-
-int Connection::execTool(const QString &path, const QString &fileName, const QString &tool)
-{
-    return BeQt::execProcess(path, tool, QStringList() << (path + "/" + QFileInfo(fileName).baseName()),
-                             5 * BeQt::Second, BeQt::Minute);
-}
-
-bool Connection::saveUserAvatar(quint64 id, const QByteArray &avatar)
-{
-    if (!id)
-        return false;
-    QString fn = BDirTools::findResource("users", BDirTools::UserOnly) + "/" + QString::number(id) + "/avatar.dat";
-    return BDirTools::writeFile(fn, avatar);
-}
-
-QByteArray Connection::loadUserAvatar(quint64 id, bool *ok)
-{
-    if (!id)
-        return bRet(ok, false, QByteArray());
-    QString fn = BDirTools::findResource("users/" + QString::number(id) + "/avatar.dat", BDirTools::UserOnly);
-    return BDirTools::readFile(fn, -1, ok);
-}
-
-bool Connection::loadUserAvatar(quint64 id, QByteArray &avatar)
-{
-    bool ok = false;
-    avatar = loadUserAvatar(id, &ok);
-    return ok;
+    return TOperationResult(tr("Not authorized", "errorString"));
 }
 
 /*============================== Private methods ===========================*/
 
-void Connection::handleRegisterRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    QVariantMap in = op->variantData().toMap();
-    QUuid uuid = in.value("invite").value<QUuid>();
-    QString login = in.value("login").toString();
-    QByteArray pwd = in.value("password").toByteArray();
-    log(tr("Register request:", "log text") + " " + login);
-    //TODO: Implement error notification
-    if (uuid.isNull() || login.isEmpty() || pwd.isEmpty() || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Registration failed", "log text") );
-    qint64 dtn = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
-    bool ok = false;
-    SqlQueryResult r = mdb->execQuery(qs, ":uuid", uuid.toString(), ":exp_dt", dtn);
-    if (!r.success() || r.value().value("id", 0).toLongLong(&ok) <= 0 || !ok)
-        return retErr(op, out, "Registration failed");
-    qint64 id = r.value().value("id", 0).toLongLong();
-    qs = "SELECT id FROM users WHERE login = :login";
-    if (!mdb->execQuery(qs, r, ":login", login) || r.value().value("id", 0).toLongLong() > 0
-        || !mdb->execQuery("DELETE FROM invites WHERE id = :id", ":id", id))
-        return retErr(op, out, "Registration failed");
-    qs = "INSERT INTO users (login, password, access_level, created_dt, modified_dt) "
-            "VALUES (:login, :pwd, :alvl, :cr_dt, :mod_dt)";
-    QVariantMap bv;
-    bv.insert(":login", login);
-    bv.insert(":pwd", pwd);
-    bv.insert(":alvl", UserLevel);
-    bv.insert(":cr_dt", dtn);
-    bv.insert(":mod_dt", dtn);
-    if (!mdb->execQuery(qs, bv))
-         return retErr(op, out, "Registration failed");
-    retOk(op, out, "ok", true, tr("Registered", "log text"));
-    op->waitForFinished();
-    close();
-}
-
 void Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    //TODO: Handle situations where the client is already authorized
+    if (muserId)
+        return Global::sendReply(op, TOperationResult(true));
     QVariantMap in = op->variantData().toMap();
-    mlogin = in.value("login").toString();
-    QByteArray pwd = in.value("password").toByteArray();
-    QDateTime dt = in.value("last_update_dt").toDateTime();
-    log(tr("Authorize request:", "log text") + " " + mlogin);
-    //TODO: Implement error notification
-    if (mlogin.isEmpty() || pwd.isEmpty() || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Authorization failed", "log text"));
-    QString qs = "SELECT password, access_level, real_name, modified_dt FROM users WHERE login = :login";
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
-    SqlQueryResult r = mdb->execQuery(qs, ":login", mlogin);
-    if (!r.success())
-        return retErr(op, out, "Authorization failed");
-    mauthorized = (r.value().value("password").toByteArray() == pwd);
-    out.insert("authorized", mauthorized);
-    if (!mauthorized)
-        return retOk(op, out, tr("Authorization failed", "log text"));
-    maccessLevel = r.value().value("access_level", NoLevel).toInt(); //TODO: Check validity
-    muserId = userId(mlogin);
+    QString login = in.value("login").toString();
+    QByteArray password = in.value("password").toByteArray();
+    log(tr("Authorize request:", "log text") + " " + login);
+    if (login.isEmpty() || password.isEmpty())
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    quint64 id = mstorage->userId(login, password);
+    if (!id)
+        return Global::sendReply(op, TOperationResult(tr("No such user", "errorString")));
+    mlogin = login;
+    mclientInfo = in.value("client_info").value<TClientInfo>();
+    muserId = id;
+    maccessLevel = mstorage->userAccessLevel(id);
+    mauthorized = true; //TODO: Use muserId instead
     setCriticalBufferSize(200 * BeQt::Megabyte);
-    out.insert("update_dt", dtn);
-    if (dt.isValid() && dt.toMSecsSinceEpoch() > r.value().value("modified_dt").toLongLong())
-    {
-        log( tr("Cache is up to date", "log text") );
+    log(tr("Authorized", "log text"));
+    TerminalIOHandler::writeLine(infoString("%u\n%a; %o\n%e; %t; %b; %q"));
+    QVariantMap out;
+    out.insert("user_id", id);
+    out.insert("access_level", maccessLevel);
+    Global::sendReply(op, out, TOperationResult(true));
+}
+
+void Connection::handleAddUserRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    log(tr("Add user request:", "log text") + " " + info.login());
+    if (!info.isValid(TUserInfo::AddContext))
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    Global::sendReply(op, mstorage->addUser(info));
+}
+
+void Connection::handleEditUserRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    log(tr("Edit user request", "log text"));
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    Global::sendReply(op, mstorage->editUser(info));
+}
+
+void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    log(tr("Update account request", "log text"));
+    if (!info.isValid(TUserInfo::AddContext))
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    if (info.id() != muserId)
+        return Global::sendReply(op, TOperationResult("This is not your account")); //TODO
+    info.setContext(TUserInfo::EditContext);
+    info.setAccessLevel(maccessLevel);
+    Global::sendReply(op, mstorage->editUser(info));
+}
+
+void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("user_id").toULongLong();
+    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    log(tr("Get user info request", "log text"));
+    TUserInfo info;
+    bool cacheOk = false;
+    TOperationResult r = mstorage->getUserInfo(id, info, updateDT, cacheOk);
+    if (!r)
+        Global::sendReply(op, r);
+    QVariantMap out;
+    out.insert("update_dt", updateDT);
+    if (cacheOk)
         out.insert("cache_ok", true);
-    }
     else
-    {
-        out.insert("access_level", maccessLevel);
-        out.insert("real_name", r.value().value("real_name"));
-        out.insert("avatar", loadUserAvatar(muserId));
-    }
-    minfo = Info(in);
-    retOk(op, out, tr("Authorized:", "log text") + "\n" + info());
-}
-
-void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    log( tr("Get samples list request", "log text") );
-    //TODO: Implement error notification
-    if (!checkRights() || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Getting samples list failed", "log text"));
-    QVariantMap in = op->variantData().toMap();
-    QDateTime dt = in.value("last_update_dt").toDateTime();
-    qint64 dtms = dt.toMSecsSinceEpoch();
-    QString qs = "SELECT id, author_id, title, type, tags, rating, comment, admin_remark, created_dt, modified_dt "
-            "FROM samples WHERE modified_dt >= :update_dt";
-    QString qds = "SELECT id FROM deleted_samples WHERE deleted_dt >= :update_dt";
-    SqlQueryResult r = mdb->execQuery(qs, ":update_dt", dtms);
-    SqlQueryResult rd = mdb->execQuery(qds, ":update_dt", dtms);
-    if (!r.success() || !rd.success())
-        return retErr(op, out, tr("Getting samples list failed", "log text"));
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
-    QVariantList slist = r.values();
-    QVariantList dslist = rd.values();
-    foreach (int i, bRangeD(0, slist.size() - 1))
-    {
-        QVariantMap m = slist.at(i).toMap();
-        m.insert("author", userLogin(m.value("author_id").toULongLong()));
-        slist[i] = m;
-    }
-    out.insert("update_dt", dtn);
-    out.insert("samples", slist);
-    out.insert("deleted_samples", dslist);
-    retOk(op, out, tr("New samples:", "log text") + " " + QString::number( slist.size() ) + " "
-          + tr("Deleted samples", "log text") + " " + QString::number( dslist.size() ));
-}
-
-void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    log( tr("Get sample source request", "log text") );
-    //TODO: Implement error notification
-    if (!checkRights() || !mdb->beginDBOperation())
-        return retErr( op, out, tr("Getting sample source failed", "log text") );
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("id").toULongLong();
-    QDateTime dt = in.value("last_update_dt").toDateTime();
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
-    SqlQueryResult r = mdb->execQuery("SELECT modified_dt FROM samples WHERE id = :id", ":id", id);
-    if (!r.success() || r.value().isEmpty())
-        return retErr( op, out, tr("Getting sample source failed", "log text") );
-    out.insert("update_dt", dtn);
-    if (dt.isValid() && dt.toMSecsSinceEpoch() > r.value().value("modified_dt").toLongLong())
-        return retOk(op, out, "cache_ok", true, tr("Cache is up to date", "log text"));
-    if (!addTextFile(out, sampleSourceFileName(id)))
-        return retErr(op, out, tr("Getting sample source failed", "log text"));
-    addFiles(out, sampleAuxiliaryFileNames(id));
-    retOk(op, out);
-}
-
-void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    log( tr("Get sample preview request", "log text") );
-    //TODO: Implement error notification
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("id").toULongLong();
-    if (!id || !checkRights() || !mdb->beginDBOperation())
-        return retErr( op, out, tr("Getting sample preview failed", "log text") );
-    QDateTime dt = in.value("last_update_dt").toDateTime();
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
-    SqlQueryResult r = mdb->execQuery("SELECT modified_dt FROM samples WHERE id = :id", ":id", id);
-    if (!r.success() || r.value().isEmpty())
-        return retErr(op, out, tr("Getting sample preview failed", "log text"));
-    out.insert("update_dt", dtn);
-    if (dt.isValid() && dt.toMSecsSinceEpoch() > r.value().value("modified_dt").toLongLong())
-        return retOk(op, out, "cache_ok", true, tr("Cache is up to date", "log text"));
-    if (!addFile(out, samplePreviewFileName(id)))
-        return retErr(op, out, tr("Getting sample preview failed", "log text"));
-    retOk(op, out);
+        out.insert("user_info", info);
+    Global::sendReply(op, out, r);
 }
 
 void Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    log( tr("Add sample request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
     QVariantMap in = op->variantData().toMap();
-    QString title = in.value("title").toString();
-    QString tpath = tmpPath(uniqueId());
-    QString log;
-    if (!checkRights() || title.isEmpty() || !mdb->beginDBOperation())
-        return retErr(op, out, "log", log, tr("Adding sample failed", "log text"));
-    out.insert("log", log);
-    QString qs = "INSERT INTO samples (title, author_id, tags, comment, created_dt, modified_dt) "
-                 "VALUES (:title, :author_id, :tags, :comment, :created_dt, :modified_dt)";
-    QVariantMap bv;
-    qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    bv.insert(":title", title);
-    bv.insert(":author_id", muserId);
-    bv.insert(":tags", in.value("tags").toStringList().join(", "));
-    bv.insert(":comment", in.value("comment").toString());
-    bv.insert(":created_dt", dt);
-    bv.insert(":modified_dt", dt);
-    SqlQueryResult r = mdb->execQuery(qs, bv);
-    if (!r.success() || !compileSample(tpath, in, &log))
-    {
-        BDirTools::rmdir(tpath);
-        return retErr(op, out, tr("Adding sample failed", "log text"));
-    }
-    QString sid = QString::number(r.insertId().toLongLong());
-    QString npath = BDirTools::findResource("samples", BDirTools::UserOnly) + "/" + sid;
-    if ( sid.isEmpty() || !BDirTools::renameDir(tpath, npath) )
-        return retErr(op, out, tr("Adding sample failed", "log text"));
-    retOk(op, out, "ok", true);
+    TProject project = in.value("project").value<TProject>();
+    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
+    log(tr("Add sample request", "log text"));
+    Global::sendReply(op, "compilation_result", mstorage->addSample(muserId, project, info));
 }
 
-void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
+void Connection::handleEditSampleRequest(BNetworkOperation *)
 {
-    QVariantMap out;
+    /*QVariantMap out;
     log( tr("Update sample request", "log text") );
     //TODO: Implement error notification
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("id").toULongLong();
     QString title = in.value("title").toString();
-    bool isModer = maccessLevel >= ModeratorLevel;
+    bool isModer = maccessLevel >= TAccessLevel::ModeratorLevel;
     int type = 0;
     int rating = 0;
     if (isModer)
@@ -548,7 +364,8 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         type = in.value("type").toInt(&ok);
         bool ok2 = false;
         rating = in.value("rating").toInt(&ok2);
-        if (!ok || !ok2 || !bRange(Unverified, Rejected).contains(type) || !bRange(0, 100).contains(rating))
+        if (!ok || !ok2 || !bRange(TSampleInfo::Unverified, TSampleInfo::Rejected).contains(type)
+                || !bRange(0, 100).contains(rating))
             return retErr(op, out, tr("Updating sample failed", "log text"));
     }
     QString qs = "SELECT author_id, type FROM samples WHERE id = :id";
@@ -556,7 +373,7 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         return retErr(op, out, tr("Updating sample failed", "log text"));
     SqlQueryResult r = mdb->execQuery(qs, ":id", id);
     if (!r.success() || (r.value().value("author_id").toULongLong() != muserId && !isModer) ||
-        (r.value().value("type").toInt() == Approved && !isModer))
+        (r.value().value("type").toInt() == TSampleInfo::Approved && !isModer))
         return retErr(op, out, tr("Updating sample failed", "log text"));
     qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
     QVariantMap bv;
@@ -575,199 +392,148 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
     qs += " WHERE id = :id";
     if (!mdb->execQuery(qs, bv))
         return retErr(op, out, tr("Updating sample failed", "log text"));
-    retOk(op, out, "ok", true);
+    retOk(op, out, "ok", true);*/
 }
 
 void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    log( tr("Delete sample request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
     QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("id").toULongLong();
-    if (!checkRights() || !id || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    SqlQueryResult r = mdb->execQuery("SELECT author_id, type FROM samples WHERE id = :id", ":id", id);
-    if (!r.success())
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    quint64 uid = r.value().value("author_id").toULongLong();
-    if ((uid != muserId || r.value().value("type").toInt() == Approved) && maccessLevel < AdminLevel)
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    if (!mdb->execQuery("DELETE FROM samples WHERE id = :id", ":id", id))
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    QString qs = "INSERT INTO deleted_samples (id, creator_id, reason, deleted_dt) "
-                 "VALUES (:id, :cr_id, :reason, :deleted_dt)";
-    QVariantMap bv;
-    bv.insert(":id", id);
-    bv.insert(":cr_id", uid);
-    bv.insert(":reason", in.value("reason"));
-    bv.insert(":deleted_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (!mdb->execQuery(qs, bv))
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    if (!BDirTools::rmdir(BDirTools::findResource("samples/" + QString::number(id))))
-        return retErr(op, out, tr("Deleting sample failed", "log text"));
-    retOk(op, out, "ok", true);
+    quint64 id = in.value("sample_id").toULongLong();
+    QString reason = in.value("reason").toString();
+    log(tr("Delete sample request", "log text"));
+    quint64 authId = mstorage->authorId(id);
+    if (authId != muserId && maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("This is not your sample")); //TODO
+    Global::sendReply(op, mstorage->deleteSample(id, reason));
 }
 
-void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
+void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    log( tr("Update account request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
     QVariantMap in = op->variantData().toMap();
-    QByteArray pwd = in.value("password").toByteArray();
-    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, modified_dt = :mod_dt "
-                 "WHERE login = :login";
-    QVariantMap bv;
-    bv.insert(":login", mlogin);
-    bv.insert(":pwd", pwd);
-    bv.insert(":rname", in.value("real_name"));
-    bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (!checkRights() || !testUserInfo(in) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv)
-        || !saveUserAvatar(muserId, in.value("avatar").toByteArray()))
-        return retErr(op, out, tr("Updating account failed", "log text"));
-    retOk(op, out, "ok", true);
+    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    log(tr("Get samples list request", "log text"));
+    TSampleInfo::SamplesList newSamples;
+    Texsample::IdList deletedSamples;
+    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT);
+    if (!r)
+        Global::sendReply(op, r);
+    QVariantMap out;
+    out.insert("update_dt", updateDT);
+    if (!newSamples.isEmpty())
+        out.insert("new_sample_infos", QVariant::fromValue(newSamples));
+    if (!deletedSamples.isEmpty())
+        out.insert("deleted_sample_infos", QVariant::fromValue(deletedSamples));
+    Global::sendReply(op, out, r);
 }
 
-void Connection::handleGenerateInviteRequest(BNetworkOperation *op)
+void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    log( tr("Generate invite request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
     QVariantMap in = op->variantData().toMap();
-    QDateTime expiresDT = in.value("expires_dt").toDateTime();
-    if (expiresDT.isValid() && expiresDT.timeSpec() != Qt::UTC)
-        expiresDT = expiresDT.toUTC();
-    QDateTime dt = QDateTime::currentDateTimeUtc();
-    QUuid uuid = QUuid::createUuid();
-    QString qs = "INSERT INTO invites (uuid, creator_id, expires_dt, created_dt) "
-            "VALUES (:uuid, :user, :exp_dt, :cr_dt)";
-    QVariantMap bv;
-    bv.insert(":uuid", uuid.toString());
-    bv.insert(":creator_id", muserId);
-    bv.insert(":exp_dt", expiresDT.isValid() ? expiresDT.toMSecsSinceEpoch() : dt.addDays(3).toMSecsSinceEpoch());
-    bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
-    if (!checkRights(ModeratorLevel) || !mdb->beginDBOperation() || !mdb->execQuery(qs, bv))
-        return retErr(op, out, tr("Generating invite failed", "log text"));
-    retOk(op, out, "uuid", QVariant::fromValue(uuid));
+    quint64 id = in.value("sample_id").toULongLong();
+    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    log(tr("Get sample source request", "log text"));
+    TProject project;
+    bool cacheOk = false;
+    TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
+    qDebug() << project.size();
+    if (!r)
+        Global::sendReply(op, r);
+    QVariantMap out;
+    out.insert("update_dt", updateDT);
+    if (cacheOk)
+        out.insert("cache_ok", true);
+    else
+        out.insert("project", project);
+    Global::sendReply(op, out, r);
+}
+
+void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("sample_id").toULongLong();
+    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    log(tr("Get sample preview request", "log text"));
+    TProjectFile file;
+    bool cacheOk = false;
+    TOperationResult r = mstorage->getSamplePreview(id, file, updateDT, cacheOk);
+    if (!r)
+        Global::sendReply(op, r);
+    QVariantMap out;
+    out.insert("update_dt", updateDT);
+    if (cacheOk)
+        out.insert("cache_ok", true);
+    else
+        out.insert("project_file", file);
+    Global::sendReply(op, out, r);
+}
+
+void Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return Global::sendReply(op, TOperationResult("Only moderator can do this")); //TODO
+    QVariantMap in = op->variantData().toMap();
+    QDateTime expiresDT = in.value("expiration_dt").toDateTime().toUTC();
+    quint8 count = in.value("count").toUInt();
+    log(tr("Generate invites request", "log text"));
+    TInviteInfo::InvitesList invites;
+    TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, invites);
+    if (!r)
+        Global::sendReply(op, r);
+    QVariantMap out;
+    out.insert("invite_infos", QVariant::fromValue(invites));
+    Global::sendReply(op, out, r);
 }
 
 void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
 {
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return Global::sendReply(op, TOperationResult("Only moderator can do this")); //TODO
+    log(tr("Get invites list request", "log text"));
+    TInviteInfo::InvitesList invites;
+    TOperationResult r = mstorage->getInvitesList(muserId, invites);
+    if (!r)
+        Global::sendReply(op, r);
     QVariantMap out;
-    log( tr("Get invites list request", "log text") );
-    //TODO: Implement error notification
-    QString qs = "SELECT uuid, expires_dt FROM invites WHERE creator_id = :cr_id AND expires_dt > :exp_dt";
-    QVariantMap bv;
-    bv.insert(":cr_id", muserId);
-    bv.insert(":exp_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    SqlQueryResult r;
-    if (!checkRights(ModeratorLevel) || !mdb->beginDBOperation() || !mdb->execQuery(qs, r, bv))
-        return retErr(op, out, tr("Getting invites list failed", "log text"));
-    QVariantList vl = r.values();
-    foreach (int i, bRangeD(0, vl.size() - 1))
-    {
-        QVariantMap m = vl.at(i).toMap();
-        m.insert("uuid", m.value("uuid"));
-        QDateTime dt;
-        dt.setTimeSpec(Qt::UTC);
-        dt.setMSecsSinceEpoch(m.value("expires_dt").toLongLong());
-        m.insert("expires_dt", dt);
-        vl[i] = m;
-    }
-    out.insert("list", vl);
-    out.insert("ok", true);
-    retOk(op, out);
+    out.insert("invite_infos", QVariant::fromValue(invites));
+    Global::sendReply(op, out, r);
 }
 
-void Connection::handleAddUserRequest(BNetworkOperation *op)
+void Connection::handleCompileProjectRequest(BNetworkOperation *op)
 {
-    QVariantMap out;
-    log( tr("Add user request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, "compilation_result", TCompilationResult(notAuthorizedResult()));
     QVariantMap in = op->variantData().toMap();
-    QString login = in.value("login").toString();
-    QByteArray pwd = in.value("password").toByteArray();
-    int lvl = in.value("access_level", NoLevel).toInt();
-    QString qs = "INSERT INTO users (login, password, access_level, real_name, created_dt, modified_dt) "
-                 "VALUES (:login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
-    QVariantMap bv;
-    qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    bv.insert(":login", login);
-    bv.insert(":pwd", pwd);
-    bv.insert(":alvl", lvl);
-    bv.insert(":rname", in.value("real_name"));
-    bv.insert(":cr_dt", dt);
-    bv.insert(":mod_dt", dt);
-    QByteArray ava = in.value("avatar").toByteArray();
-    SqlQueryResult r;
-    if (!checkRights(AdminLevel) || !testUserInfo(in, true) || !mdb->beginDBOperation()
-        || !(r = mdb->execQuery(qs, bv)) || !saveUserAvatar(r.insertId().toULongLong(), ava))
-        return retErr(op, out, tr("Adding user failed", "log text"));
-    retOk(op, out, "ok", true);
+    TProject project = in.value("project").value<TProject>();
+    TCompilerParameters parameters = in.value("parameters").value<TCompilerParameters>();
+    log(tr("Compile request", "log text"));
+    QString path = QDir::tempPath() + "/texsample-server/compiler/" + BeQt::pureUuidText(uniqueId());
+    TCompiledProject compiledProject;
+    TCompilationResult *mr = parameters.makeindexEnabled() ? new TCompilationResult : 0;
+    TCompilationResult *dr = parameters.dvipsEnabled() ? new TCompilationResult : 0;
+    TCompilationResult r = Global::compileProject(path, project, parameters, &compiledProject, mr, dr);
+    QVariantMap out;
+    if (mr)
+        out.insert("makeindex_result", *mr);
+    if (dr)
+        out.insert("dvips_result", *dr);
+    if (r)
+        out.insert("compiled_project", compiledProject);
+    return Global::sendReply(op, out, "compilation_result", r);
 }
 
-void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    log( tr("Get user info request", "log text") );
-    //TODO: Implement error notification
-    if (!checkRights() || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Getting user info failed", "log text"));
-    QVariantMap in = op->variantData().toMap();
-    QString login = in.value("login").toString();
-    QDateTime dt = in.value("last_update_dt").toDateTime();
-    QString qs = "SELECT access_level, real_name, modified_dt FROM users WHERE login = :login";
-    QDateTime dtn = QDateTime::currentDateTimeUtc();
-    SqlQueryResult r;
-    if (login.isEmpty() || !mdb->execQuery(qs, r, ":login", login) || r.value().isEmpty())
-        return retErr(op, out, tr("Getting user info failed", "log text"));
-    out.insert("update_dt", dtn);
-    if (dt.isValid() && dt.toMSecsSinceEpoch() > r.value().value("modified_dt").toLongLong())
-        return retOk(op, out, "cache_ok", true, tr("Cache is up to date", "log text"));
-    out.insert("access_level", r.value().value("access_level"));
-    out.insert("real_name", r.value().value("real_name"));
-    out.insert("avatar", loadUserAvatar(userId(login)));
-    retOk(op, out);
-}
-
-void Connection::handleCompileRequest(BNetworkOperation *op)
-{
-    QVariantMap out;
-    log( tr("Compile request", "log text") );
-    //TODO: Implement error notification
-    if (!checkRights())
-        return retErr(op, out, tr("Compilation failed", "log text"));
-    QVariantMap in = op->variantData().toMap();
-    QString tpath = tmpPath(uniqueId());
-    QString log;
-    int exitCode = -1;
-    bool b = compile(tpath, in, &exitCode, &log);
-    out.insert("exit_code", exitCode);
-    out.insert("log", log);
-    if (!b)
-        return retErr(op, out, tr("Compilation failed", "log text"));
-    bool ok = false;
-    QString bfn = QFileInfo(in.value("file_name").toString()).baseName();
-    bool pdf = in.value("compiler").toString().contains("pdf");
-    QStringList suffixes = QStringList() << (pdf ? "pdf" : "dvi");
-    foreach (const QString &suff, QStringList() << "aux" << "idx" << "ilg" << "ind" << "log" << "out" << "toc")
-        if (QFile(tpath + "/" + bfn + "." + suff).exists())
-            suffixes << suff;
-    if (!pdf && in.value("dvips").toBool())
-        suffixes << "ps";
-    foreach (const QString &suff, suffixes)
-    {
-        QByteArray ba = BDirTools::readFile(tpath + "/" + bfn + "." + suff, -1, &ok);
-        if (!ok)
-            break;
-        out.insert(suff, ba);
-    }
-    BDirTools::rmdir(tpath);
-    ok ? retOk(op, out, "ok", true) : retErr(op, out, tr("Compilation failed", "log text"));
-}
-
-bool Connection::checkRights(AccessLevel minLevel) const
+bool Connection::checkRights(TAccessLevel minLevel) const
 {
     return mauthorized && maccessLevel >= minLevel;
 }
