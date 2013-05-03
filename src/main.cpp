@@ -25,7 +25,7 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0-pa1");
+    QCoreApplication::setApplicationVersion("1.0.0-pa2");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if defined(BUILTIN_RESOURCES)
