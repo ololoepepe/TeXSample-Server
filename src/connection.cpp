@@ -347,52 +347,18 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
     Global::sendReply(op, "compilation_result", mstorage->addSample(muserId, project, info));
 }
 
-void Connection::handleEditSampleRequest(BNetworkOperation *)
+void Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
-    /*QVariantMap out;
-    log( tr("Update sample request", "log text") );
-    //TODO: Implement error notification
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
     QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("id").toULongLong();
-    QString title = in.value("title").toString();
-    bool isModer = maccessLevel >= TAccessLevel::ModeratorLevel;
-    int type = 0;
-    int rating = 0;
-    if (isModer)
-    {
-        bool ok = false;
-        type = in.value("type").toInt(&ok);
-        bool ok2 = false;
-        rating = in.value("rating").toInt(&ok2);
-        if (!ok || !ok2 || !bRange(TSampleInfo::Unverified, TSampleInfo::Rejected).contains(type)
-                || !bRange(0, 100).contains(rating))
-            return retErr(op, out, tr("Updating sample failed", "log text"));
-    }
-    QString qs = "SELECT author_id, type FROM samples WHERE id = :id";
-    if (!checkRights() || !id || title.isEmpty() || !mdb->beginDBOperation())
-        return retErr(op, out, tr("Updating sample failed", "log text"));
-    SqlQueryResult r = mdb->execQuery(qs, ":id", id);
-    if (!r.success() || (r.value().value("author_id").toULongLong() != muserId && !isModer) ||
-        (r.value().value("type").toInt() == TSampleInfo::Approved && !isModer))
-        return retErr(op, out, tr("Updating sample failed", "log text"));
-    qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
-    QVariantMap bv;
-    bv.insert(":title", title);
-    bv.insert(":tags", in.value("tags").toStringList().join(", "));
-    bv.insert(":comment", in.value("comment"));
-    bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    bv.insert(":id", id);
-    if (isModer)
-    {
-        qs += ", type = :type, rating = :rating, admin_remark = :adm_rem";
-        bv.insert(":type", type);
-        bv.insert(":rating",  rating);
-        bv.insert(":adm_rem", in.value("admin_remark"));
-    }
-    qs += " WHERE id = :id";
-    if (!mdb->execQuery(qs, bv))
-        return retErr(op, out, tr("Updating sample failed", "log text"));
-    retOk(op, out, "ok", true);*/
+    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
+    TProject project = in.value("project").value<TProject>();
+    log(tr("Edit sample request", "log text"));
+    quint64 authId = mstorage->authorId(info.id());
+    if (authId != muserId && maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("This is not your sample")); //TODO
+    Global::sendReply(op, "compilation_result", mstorage->editSample(info, project));
 }
 
 void Connection::handleDeleteSampleRequest(BNetworkOperation *op)

@@ -214,7 +214,6 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
-    QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
     if (!project.removeTexsampleInput())
         return TCompilationResult(tr("Failed to prepare project", "errorString"));
     if (!mdb->beginDBOperation())
@@ -236,6 +235,7 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
+    QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
     TCompilationResult cr = Global::compileProject(tpath, project);
     if (!cr)
     {
@@ -248,6 +248,71 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         mdb->endDBOperation(false);
         BDirTools::rmdir(tpath);
         return fileSystemErrorResult();
+    }
+    if (!mdb->endDBOperation(true))
+        return databaseErrorResult();
+    return cr;
+}
+
+TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project)
+{
+    if (!info.isValid(TSampleInfo::EditContext) && !info.isValid(TSampleInfo::UpdateContext))
+        return invalidParametersResult();
+    if (!isValid())
+        return invalidInstanceResult();
+    if (project.isValid() && !project.removeTexsampleInput())
+        return TCompilationResult(tr("Failed to prepare project", "errorString"));
+    if (!mdb->beginDBOperation())
+        return databaseErrorResult();
+    QString qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
+    QVariantMap bv;
+    bv.insert(":title", info.title());
+    bv.insert(":tags", info.tags());
+    bv.insert(":comment", info.comment());
+    bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    bv.insert(":id", info.id());
+    if (info.context() == TSampleInfo::EditContext)
+    {
+        qs += ", type = :type, rating = :rating, admin_remark = :adm_rem";
+        bv.insert(":type", info.type());
+        bv.insert(":rating", info.rating());
+        bv.insert(":adm_rem", info.adminRemark());
+    }
+    if (project.isValid())
+    {
+        qs += ", file_name = :fname";
+        bv.insert(":fname", project.rootFileName());
+    }
+    qs += " WHERE id = :id";
+    SqlQueryResult qr = mdb->execQuery(qs, bv);
+    if (!qr)
+    {
+        mdb->endDBOperation(false);
+        return queryErrorResult();
+    }
+    TCompilationResult cr(true);
+    if (project.isValid())
+    {
+        QString spath = RootDir + "/samples/" + QString::number(info.id());
+        if (!BDirTools::rmdir(spath))
+        {
+            mdb->endDBOperation(false);
+            return fileSystemErrorResult();
+        }
+        QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
+        cr = Global::compileProject(tpath, project);
+        if (!cr)
+        {
+            mdb->endDBOperation(false);
+            BDirTools::rmdir(tpath);
+            return cr;
+        }
+        if (!BDirTools::renameDir(tpath, spath))
+        {
+            mdb->endDBOperation(false);
+            BDirTools::rmdir(tpath);
+            return fileSystemErrorResult();
+        }
     }
     if (!mdb->endDBOperation(true))
         return databaseErrorResult();

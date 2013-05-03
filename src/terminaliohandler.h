@@ -9,6 +9,7 @@ class QStringList;
 #include <BTerminalIOHandler>
 
 #include <QObject>
+#include <QElapsedTimer>
 
 /*============================================================================
 ================================ TerminalIOHandler ===========================
@@ -22,8 +23,10 @@ public:
 private:
     void handleQuit(const QString &cmd, const QStringList &args);
     void handleUser(const QString &cmd, const QStringList &args);
+    void handleUptime(const QString &cmd, const QStringList &args);
 private:
     Server *mserver;
+    QElapsedTimer melapsedTimer;
 };
 
 #endif // TERMINALIOHANDLER_H

@@ -3,6 +3,7 @@
 #include "connection.h"
 
 #include <BNetworkConnection>
+#include <BeQt>
 
 #include <QObject>
 #include <QString>
@@ -11,6 +12,7 @@
 #include <QList>
 #include <QUuid>
 #include <QMetaObject>
+#include <QElapsedTimer>
 
 /*============================================================================
 ================================ TerminalIOHandler ===========================
@@ -22,9 +24,11 @@ TerminalIOHandler::TerminalIOHandler(Server *server, QObject *parent) :
     BTerminalIOHandler(parent)
 {
     mserver = server;
+    melapsedTimer.start();
     installHandler("quit", &BeQt::handleQuit);
     installHandler("exit", &BeQt::handleQuit);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
+    installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
 }
 
 /*============================== Private methods ===========================*/
@@ -99,4 +103,20 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
             }
         }
     }
+}
+
+void TerminalIOHandler::handleUptime(const QString &, const QStringList &)
+{
+    qint64 elapsed = melapsedTimer.elapsed();
+    QString days = QString::number(elapsed / (24 * BeQt::Hour));
+    elapsed %= (24 * BeQt::Hour);
+    QString hours = QString::number(elapsed / BeQt::Hour);
+    hours.prepend(QString().fill('0', 2 - hours.length()));
+    elapsed %= BeQt::Hour;
+    QString minutes = QString::number(elapsed / BeQt::Minute);
+    minutes.prepend(QString().fill('0', 2 - minutes.length()));
+    elapsed %= BeQt::Minute;
+    QString seconds = QString::number(elapsed / BeQt::Second);
+    seconds.prepend(QString().fill('0', 2 - seconds.length()));
+    writeLine(tr("Uptime:", "") + " " + days + " " + tr("days", "") + " " + hours + ":" + minutes + ":" + seconds);
 }

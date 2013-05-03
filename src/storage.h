@@ -43,7 +43,7 @@ public:
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
     TCompilationResult addSample(quint64 userId, TProject project, const TSampleInfo &info);
-    //
+    TCompilationResult editSample(const TSampleInfo &info, TProject project);
     TOperationResult deleteSample(quint64 id, const QString &reason);
     TOperationResult getSampleSource(quint64 id, TProject &project, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplePreview(quint64 id, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
