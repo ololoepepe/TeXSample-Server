@@ -1,76 +1,72 @@
-#include "userserver.h"
-#include "databaseinteractor.h"
-#include "../include/texsampleserver.h"
+#include "terminaliohandler.h"
+#include "server.h"
+#include "registrationserver.h"
 
-#include <bterminaliohandler.h>
-#include <bcore.h>
+#include <TeXSampleGlobal>
 
-#include <QCoreApplication>
-#include <QStringList>
-#include <QString>
+#include <BCoreApplication>
+#include <BDirTools>
+#include <BTranslator>
+#include <BLogger>
+
 #include <QObject>
+#include <QString>
+#include <QStringList>
+#include <QCoreApplication>
 #include <QDir>
+#include <QFileInfo>
 
 #include <QDebug>
 
-#define connect QObject::connect
+bool testDatabase();
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
-    //initializing application
-    QCoreApplication *app = new QCoreApplication(argc, argv);
+    tRegister();
+    QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0pa2");
+    QCoreApplication::setApplicationVersion("1.0.0-pa2");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
-    //initializing BCore
-#if defined(Q_OS_UNIX)
-    QCoreApplication::addLibraryPath("/usr/lib/texsample-server/qt4/plugins");
+#if defined(BUILTIN_RESOURCES)
+    Q_INIT_RESOURCE(texsample_server);
+    Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    BCore::init();
-    BCore::setPath("samples", "samples");
-    BCore::createUserPath("samples");
-    BCore::loadSettings();
-    BCore::setLocale( QLocale::system() );
-    //starting server
-    BTerminalIOHandler::writeLine( QObject::tr("This is TeXSample Server version", "stdout text") +
-                                   " " + QCoreApplication::applicationVersion() );
-    BTerminalIOHandler::write(QObject::tr("Login:", "stdout text") + " ");
-    QString login = BTerminalIOHandler::readLine();
-    if ( login.isEmpty() )
-    {
-        BTerminalIOHandler::writeLine( QObject::tr("Invalid login", "stdout text") );
-        return 0;
-    }
-    BTerminalIOHandler::write(QObject::tr("Password:", "stdout text") + " ");
-    BTerminalIOHandler::setStdinEchoEnabled(false);
-    QString password = BTerminalIOHandler::readLine();
-    BTerminalIOHandler::setStdinEchoEnabled(true);
-    BTerminalIOHandler::write("\n");
-    if ( password.isEmpty() )
-    {
-        BTerminalIOHandler::writeLine( QObject::tr("Invalid password", "stdout text") );
-        return 0;
-    }
-    DatabaseInteractor::setAdminInfo(login, password);
-    if ( !DatabaseInteractor::checkAdmin() )
-    {
-        BTerminalIOHandler::writeLine( QObject::tr("Failed to connect to database", "stdout text") );
-        return 0;
-    }
-    UserServer *srv = new UserServer;
+#if defined(Q_OS_UNIX)
+    QCoreApplication::addLibraryPath( QDir( QCoreApplication::applicationDirPath() +
+                                            "../lib/texsample-server" ).absolutePath() );
+#endif
     int ret = 0;
-    if ( srv->listen("0.0.0.0", TexSampleServer::ServerPort) )
-    {
-        BTerminalIOHandler::writeLine( QObject::tr("Server successfully started", "stdout text") );
-        ret = app->exec();
-    }
-    else
-    {
-        BTerminalIOHandler::writeLine( QObject::tr("Failed to start server", "stdout text") );
-        ret = 1;
-    }
-    srv->deleteLater();
-    BCore::saveSettings();
+    BCoreApplication bapp;
+    BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
+    BCoreApplication::logger()->setFileName(BCoreApplication::location(BCoreApplication::DataPath,
+                                                                       BCoreApplication::UserResources) + "/log.txt");
+    BCoreApplication::installTranslator( new BTranslator("beqt") );
+    BCoreApplication::installTranslator( new BTranslator("texsample-server") );
+    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users");
+    BCoreApplication::loadSettings();
+    if ( !testDatabase() )
+        return 0;
+    Server server;
+    TerminalIOHandler handler(&server);
+    server.listen("0.0.0.0", 9041);
+    RegistrationServer rserver;
+    rserver.listen("0.0.0.0", 9042);
+    ret = app.exec();
+    BCoreApplication::saveSettings();
     return ret;
+}
+
+bool testDatabase()
+{
+    bLog("Testing database existence");
+    QString fn = BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly);
+    QFileInfo fi(fn);
+    if ( fn.isEmpty() || !fi.exists() || !fi.isFile() || !fi.size() )
+    {
+        bLog("Database does not exist", BLogger::FatalLevel);
+        return false;
+    }
+    bLog("Database exists, OK");
+    return true;
 }

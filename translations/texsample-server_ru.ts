@@ -2,184 +2,246 @@
 <!DOCTYPE TS>
 <TS version="2.0" language="ru_RU">
 <context>
-    <name>QObject</name>
+    <name>Connection</name>
     <message>
-        <location filename="../../src/main.cpp" line="36"/>
-        <source>This is TeXSample Server version</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Это TeXSample Server версии</translation>
+        <location filename="../src/connection.cpp" line="389"/>
+        <source>Authorize request:</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="38"/>
-        <source>Login:</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Логин:</translation>
+        <location filename="../src/connection.cpp" line="392"/>
+        <location filename="../src/connection.cpp" line="401"/>
+        <source>Authorization failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="42"/>
-        <source>Invalid login</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Неверный логин</translation>
+        <location filename="../src/connection.cpp" line="424"/>
+        <source>Get samples list request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="52"/>
-        <source>Invalid password</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Неверный пароль</translation>
+        <location filename="../src/connection.cpp" line="427"/>
+        <location filename="../src/connection.cpp" line="437"/>
+        <source>Getting samples list failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="58"/>
-        <source>Failed to connect to database</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Не удалось подключиться к базе данных</translation>
+        <location filename="../src/connection.cpp" line="450"/>
+        <source>New samples:</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="65"/>
-        <source>Server successfully started</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Сервер успешно запущен</translation>
+        <location filename="../src/connection.cpp" line="451"/>
+        <source>Deleted samples</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="70"/>
-        <source>Failed to start server</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Не удалось запустить сервер</translation>
+        <location filename="../src/connection.cpp" line="457"/>
+        <source>Get sample source request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../../src/main.cpp" line="45"/>
-        <source>Password:</source>
-        <comment>stdout text</comment>
-        <translation type="unfinished">Пароль:</translation>
+        <location filename="../src/connection.cpp" line="460"/>
+        <location filename="../src/connection.cpp" line="467"/>
+        <location filename="../src/connection.cpp" line="472"/>
+        <source>Getting sample source failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="408"/>
+        <location filename="../src/connection.cpp" line="470"/>
+        <location filename="../src/connection.cpp" line="493"/>
+        <location filename="../src/connection.cpp" line="727"/>
+        <source>Cache is up to date</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="83"/>
+        <source>Access level:</source>
+        <comment>info</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="84"/>
+        <source>OS:</source>
+        <comment>info</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="351"/>
+        <source>Register request:</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="354"/>
+        <source>Registration failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="376"/>
+        <source>Registered</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="418"/>
+        <source>Authorized:</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="480"/>
+        <source>Get sample preview request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="485"/>
+        <location filename="../src/connection.cpp" line="490"/>
+        <location filename="../src/connection.cpp" line="495"/>
+        <source>Getting sample preview failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="502"/>
+        <source>Add sample request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="509"/>
+        <location filename="../src/connection.cpp" line="525"/>
+        <location filename="../src/connection.cpp" line="530"/>
+        <source>Adding sample failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="537"/>
+        <source>Update sample request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="552"/>
+        <location filename="../src/connection.cpp" line="556"/>
+        <location filename="../src/connection.cpp" line="560"/>
+        <location filename="../src/connection.cpp" line="577"/>
+        <source>Updating sample failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="584"/>
+        <source>Delete sample request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="589"/>
+        <location filename="../src/connection.cpp" line="592"/>
+        <location filename="../src/connection.cpp" line="595"/>
+        <location filename="../src/connection.cpp" line="597"/>
+        <location filename="../src/connection.cpp" line="606"/>
+        <location filename="../src/connection.cpp" line="608"/>
+        <source>Deleting sample failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="615"/>
+        <source>Update account request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="628"/>
+        <source>Updating account failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="635"/>
+        <source>Generate invite request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="651"/>
+        <source>Generating invite failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="658"/>
+        <source>Get invites list request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="666"/>
+        <source>Getting invites list failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="686"/>
+        <source>Add user request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="706"/>
+        <source>Adding user failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="713"/>
+        <source>Get user info request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="716"/>
+        <location filename="../src/connection.cpp" line="724"/>
+        <source>Getting user info failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="737"/>
+        <source>Compile request</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="740"/>
+        <location filename="../src/connection.cpp" line="749"/>
+        <location filename="../src/connection.cpp" line="767"/>
+        <source>Compilation failed</source>
+        <comment>log text</comment>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
-    <name>UserConnection</name>
+    <name>TerminalIOHandler</name>
     <message>
-        <location filename="../../src/userconnection.cpp" line="134"/>
-        <location filename="../../src/userconnection.cpp" line="166"/>
-        <location filename="../../src/userconnection.cpp" line="291"/>
-        <location filename="../../src/userconnection.cpp" line="313"/>
-        <location filename="../../src/userconnection.cpp" line="352"/>
-        <location filename="../../src/userconnection.cpp" line="403"/>
-        <location filename="../../src/userconnection.cpp" line="417"/>
-        <source>Internal error</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Внутренняя ошибка</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="171"/>
-        <source>Compilation failed</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Компиляция не удалась</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="174"/>
-        <source>Compilation was successful</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Компиляция прошла успешно</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="220"/>
-        <source>Authorization failed. Now closing connection...</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Авторизация не удалась. Соединение закрывается...</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="225"/>
-        <source>Authorized as:</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Авторизован как:</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="239"/>
-        <source>Editor:</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Редактор:</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="240"/>
-        <source>Plugin:</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Плагин:</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="247"/>
-        <source>Get PDF request</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Запрос на получение PDF</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="253"/>
-        <source>Get sample request</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Запрос на получение сэмпла</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="259"/>
-        <source>Send sample request</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Запрос на отправку сэмпла</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="276"/>
-        <source>Invalid data</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Некорректные данные</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="283"/>
-        <source>Sample with this name already exists</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Сэмпл с таким именем уже существует</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="367"/>
-        <source>Not authorized</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Не авторизован</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="340"/>
-        <location filename="../../src/userconnection.cpp" line="387"/>
-        <source>Invalid id</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Неверный id</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="320"/>
-        <source>Sample successfully added</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Сэмпл успешно добавлен</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="327"/>
-        <source>Delete sample request</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Запрос на удаление сэмпла</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="346"/>
-        <source>You are not the author of this sample</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Вы не являетесь автором этого сэмпла</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="356"/>
-        <source>Sample successfully deleted</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Сэмпл успешно удален</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="394"/>
-        <source>No such sample</source>
-        <comment>reply text</comment>
-        <translation type="unfinished">Нет такого сэмпла</translation>
-    </message>
-    <message>
-        <location filename="../../src/userconnection.cpp" line="461"/>
-        <source>Authorization timeout. Closing connection...</source>
-        <comment>log text</comment>
-        <translation type="unfinished">Превышено время ожидания авторизации. Соединение закрывается...</translation>
+        <location filename="../src/terminaliohandler.cpp" line="41"/>
+        <source>Users:</source>
+        <translation type="unfinished"></translation>
     </message>
 </context>
 </TS>

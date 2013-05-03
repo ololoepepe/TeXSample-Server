@@ -1,5 +1,0 @@
-=== TeXSample Server 1.0.0a1 (04 October 2012) ===
-    * Now using BeQt 1.0.x
-
-=== TeXSample Server 0.1.0pa1 (11 September 2012) ===
-    * First pre-alpha version
