@@ -214,8 +214,6 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
-    if (!project.removeTexsampleInput())
-        return TCompilationResult(tr("Failed to prepare project", "errorString"));
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
     QString qs = "INSERT INTO samples (title, file_name, author_id, tags, comment, created_dt, modified_dt) "
@@ -235,6 +233,7 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
+    project.removeRestrictedCommands();
     QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
     TCompilationResult cr = Global::compileProject(tpath, project);
     if (!cr)
@@ -260,8 +259,6 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
-    if (project.isValid() && !project.removeTexsampleInput())
-        return TCompilationResult(tr("Failed to prepare project", "errorString"));
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
     QString qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
@@ -293,12 +290,14 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
     TCompilationResult cr(true);
     if (project.isValid())
     {
+        project.removeRestrictedCommands();
         QString spath = RootDir + "/samples/" + QString::number(info.id());
         if (!BDirTools::rmdir(spath))
         {
             mdb->endDBOperation(false);
             return fileSystemErrorResult();
         }
+        project.removeRestrictedCommands();
         QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
         cr = Global::compileProject(tpath, project);
         if (!cr)
