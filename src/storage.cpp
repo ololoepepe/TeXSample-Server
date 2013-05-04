@@ -59,6 +59,21 @@ TOperationResult Storage::fileSystemErrorResult()
     return TOperationResult(tr("File system error", "errorString"));
 }
 
+void Storage::lockGlobal()
+{
+    mglobalMutex.lock();
+}
+
+bool Storage::tryLockGlobal()
+{
+    return mglobalMutex.tryLock();
+}
+
+void Storage::unlockGlobal()
+{
+    mglobalMutex.unlock();
+}
+
 /*============================== Public constructors =======================*/
 
 Storage::Storage(const QString &rootDir) :
@@ -75,11 +90,25 @@ Storage::~Storage()
 
 /*============================== Public methods ============================*/
 
+void Storage::lock()
+{
+    mmutex.lock();
+}
+
+bool Storage::tryLock()
+{
+    return mmutex.tryLock();
+}
+
+void Storage::unlock()
+{
+    mmutex.unlock();
+}
+
 TOperationResult Storage::addUser(const TUserInfo &info)
 {
     if (!info.isValid(TUserInfo::AddContext))
         return invalidParametersResult();
-    //QMutexLocker locker(&mmutex);
     if (!isValid())
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
@@ -122,7 +151,6 @@ TOperationResult Storage::editUser(const TUserInfo &info)
 {
     if (!info.isValid(TUserInfo::EditContext))
         return invalidParametersResult();
-    //QMutexLocker locker(&mmutex);
     if (!isValid())
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
@@ -150,7 +178,6 @@ TOperationResult Storage::getUserInfo(quint64 userId, TUserInfo &info, QDateTime
 {
     if (!userId)
         return invalidParametersResult();
-    //QMutexLocker locker(&mmutex);
     if (!isValid())
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
@@ -187,7 +214,6 @@ TOperationResult Storage::getShortUserInfo(quint64 userId, TUserInfo &info)
 {
     if (!userId)
         return invalidParametersResult();
-    //QMutexLocker locker(&mmutex);
     if (!isValid())
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
@@ -216,10 +242,11 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "INSERT INTO samples (title, file_name, author_id, tags, comment, created_dt, modified_dt) "
-                 "VALUES (:title, :fname, :author_id, :tags, :comment, :created_dt, :modified_dt)";
+    QString qs = "INSERT INTO samples (extra_authors, title, file_name, author_id, tags, comment, created_dt,"
+            "modified_dt) VALUES (:ext_auth, :title, :fname, :author_id, :tags, :comment, :created_dt, :modified_dt)";
     QVariantMap bv;
     qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+    bv.insert(":ext_auth", info.extraAuthorsString());
     bv.insert(":title", info.title());
     bv.insert(":fname", info.fileName());
     bv.insert(":author_id", userId);
@@ -261,10 +288,12 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "UPDATE samples SET title = :title, tags = :tags, comment = :comment, modified_dt = :mod_dt";
+    QString qs = "UPDATE samples SET extra_authors = :ext_auth, title = :title, tags = :tags, comment = :comment, "
+            "modified_dt = :mod_dt";
     QVariantMap bv;
+    bv.insert(":ext_auth", info.extraAuthorsString());
     bv.insert(":title", info.title());
-    bv.insert(":tags", info.tags());
+    bv.insert(":tags", info.tagsString());
     bv.insert(":comment", info.comment());
     bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     bv.insert(":id", info.id());
@@ -398,21 +427,22 @@ TOperationResult Storage::getSamplePreview(quint64 id, TProjectFile &file, QDate
 TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, Texsample::IdList &deletedSamples,
                                          QDateTime &updateDT)
 {
-    //QMutexLocker locker(&mmutex);
     if (!isValid())
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qsNew = "SELECT id, author_id, title, file_name, type, tags, rating, comment, admin_remark, created_dt, "
-            "modified_dt FROM samples WHERE modified_dt >= :update_dt";
-    QString qsDeleted = "SELECT id FROM deleted_samples WHERE deleted_dt >= :update_dt";
+    QString qsNew = "SELECT id, author_id, extra_authors, title, file_name, type, tags, rating, comment, "
+            "admin_remark, created_dt, modified_dt FROM samples WHERE modified_dt >= :update_dt";
+    QString qsDeleted = "SELECT id, created_dt FROM deleted_samples "
+            "WHERE deleted_dt >= :update_dt AND created_dt < :update_dt_hack";
     SqlQueryResult rNew = mdb->execQuery(qsNew, ":update_dt", updateDT.toMSecsSinceEpoch());
     if (!rNew)
     {
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
-    SqlQueryResult rDeleted = mdb->execQuery(qsDeleted, ":update_dt", updateDT.toMSecsSinceEpoch());
+    SqlQueryResult rDeleted = mdb->execQuery(qsDeleted, ":update_dt", updateDT.toMSecsSinceEpoch(),
+                                             ":update_dt_hack", updateDT.toMSecsSinceEpoch());
     if (!rDeleted)
     {
         mdb->endDBOperation(false);
@@ -433,6 +463,7 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         if (!ur)
             return ur;
         info.setAuthor(uinfo);
+        info.setExtraAuthors(m.value("extra_authors").toString());
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
@@ -526,7 +557,6 @@ bool Storage::deleteInvite(quint64 id)
 {
     if (!id)
         return false;
-    //QMutexLocker locker(&mmutex);
     if (!isValid() || !mdb->beginDBOperation())
         return false;
     bool b = mdb->execQuery("DELETE FROM invites WHERE id = :id", ":id", id);
@@ -539,7 +569,6 @@ quint64 Storage::userId(const QString &login, const QByteArray &password)
     static const QString QSNoPassword = "SELECT id FROM users WHERE login = :login";
     if (login.isEmpty())
         return 0;
-    //QMutexLocker locker(&mmutex);
     if (!isValid() || !mdb->beginDBOperation())
         return 0;
     SqlQueryResult r = !password.isEmpty() ? mdb->execQuery(QSPassword, ":login", login, ":pwd", password) :
@@ -597,7 +626,6 @@ TAccessLevel Storage::userAccessLevel(quint64 userId)
 {
     if (!userId)
         return TAccessLevel();
-    //QMutexLocker locker(&mmutex);
     if (!isValid() || !mdb->beginDBOperation())
         return TAccessLevel();
     SqlQueryResult r = mdb->execQuery("SELECT access_level FROM users WHERE id = :id", ":id", userId);
@@ -609,7 +637,6 @@ quint64 Storage::inviteId(const QString &inviteCode)
 {
     if (BeQt::uuidFromText(inviteCode).isNull())
         return 0;
-    //QMutexLocker locker(&mmutex);
     if (!isValid() || !mdb->beginDBOperation())
         return 0;
     QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
@@ -639,3 +666,7 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
         return bRet(ok, false, QByteArray());
     return BDirTools::readFile(RootDir + "/users/" + QString::number(userId) + "/avatar.dat", -1, ok);
 }
+
+/*============================== Static private members ====================*/
+
+QMutex Storage::mglobalMutex;

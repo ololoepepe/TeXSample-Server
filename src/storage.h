@@ -34,10 +34,16 @@ public:
     static TOperationResult databaseErrorResult();
     static TOperationResult queryErrorResult();
     static TOperationResult fileSystemErrorResult();
+    static void lockGlobal();
+    static bool tryLockGlobal();
+    static void unlockGlobal();
 public:
     explicit Storage(const QString &rootDir);
     ~Storage();
 public:
+    void lock();
+    bool tryLock();
+    void unlock();
     TOperationResult addUser(const TUserInfo &info);
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
@@ -68,8 +74,10 @@ private:
 private:
     const QString RootDir;
 private:
+    static QMutex mglobalMutex;
+private:
     Database *mdb;
-    //QMutex mmutex;
+    QMutex mmutex;
 };
 
 #endif // STORAGE_H
