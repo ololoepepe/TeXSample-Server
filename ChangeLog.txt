@@ -1,0 +1,12 @@
+=== TeX Creator 1.0.0 (xx May 2013) ===
+    * Use new BeQt version (2.0.0)
+    * Fully revise application structure
+    * Revise user interface
+    * Change TeXSample service access protocol (delete all data)
+    * Add new TeXSample service features
+    * Revise application resources system
+    * Improve building and installing and deploying system
+    * Change the license to GNU LGPL
+
+=== TeXSample Server 0.1.0-pa1 (12 September 2012) ===
+    * First alpha release

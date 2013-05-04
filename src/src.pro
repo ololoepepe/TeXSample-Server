@@ -1,7 +1,7 @@
 TEMPLATE = app
 TARGET = texsample-server
 
-CONFIG += release
+CONFIG += console release
 
 QT = core network sql
 BEQT = core network
@@ -52,6 +52,10 @@ HEADERS += \
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts
 
+##############################################################################
+################################ Generating translations #####################
+##############################################################################
+
 #Gets a file name
 #Returns the given file name.
 #On Windows slash characters will be replaced by backslashes
@@ -66,9 +70,53 @@ for(fileName, translationsTs) {
     system(lrelease $$nativeFileName($${fileName}))
 }
 
-contains(CONFIG, builtin_resources) {
+contains(TSRV_CONFIG, builtin_resources) {
     RESOURCES += \
         texsample_server.qrc \
         ../translations/texsample_server_translations.qrc
     DEFINES += BUILTIN_RESOURCES
 }
+
+##############################################################################
+################################ Installing ##################################
+##############################################################################
+
+!contains(TSRV_CONFIG, no_install) {
+
+#mac {
+    #isEmpty(PREFIX):PREFIX=/Library
+    #TODO: Add ability to create bundles
+#} else:unix:!mac {
+#TODO: Add MacOS support
+mac|unix {
+    isEmpty(PREFIX):PREFIX=/usr
+    equals(PREFIX, "/")|equals(PREFIX, "/usr")|equals(PREFIX, "/usr/local") {
+        isEmpty(BINARY_INSTALLS_PATH):BINARY_INSTALLS_PATH=$${PREFIX}/lib/texsample-server
+        isEmpty(RESOURCES_INSTALLS_PATH):RESOURCES_INSTALLS_PATH=$${PREFIX}/share/texsample-server
+    } else {
+        isEmpty(BINARY_INSTALLS_PATH):BINARY_INSTALLS_PATH=$${PREFIX}/lib
+        isEmpty(RESOURCES_INSTALLS_PATH):RESOURCES_INSTALLS_PATH=$${PREFIX}
+    }
+} else:win32 {
+    isEmpty(PREFIX):PREFIX=$$(systemdrive)/PROGRA~1/TeXSample-Server
+    isEmpty(BINARY_INSTALLS_PATH):BINARY_INSTALLS_PATH=$${PREFIX}
+}
+
+##############################################################################
+################################ Binaries ####################################
+##############################################################################
+
+target.path = $${BINARY_INSTALLS_PATH}
+INSTALLS = target
+
+##############################################################################
+################################ Translations ################################
+##############################################################################
+
+!contains(TSRV_CONFIG, builtin_resources) {
+    installsTranslations.files=$$files($${PWD}/../translations/*.qm)
+    installsTranslations.path=$${RESOURCES_INSTALLS_PATH}/translations
+    INSTALLS += installsTranslations
+}
+
+} #end !contains(TSRV_CONFIG, no_install)
