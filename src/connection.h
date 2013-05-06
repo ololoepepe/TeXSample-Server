@@ -62,6 +62,7 @@ private:
     void handleGetUserInfoRequest(BNetworkOperation *op);
     void handleAddSampleRequest(BNetworkOperation *op);
     void handleEditSampleRequest(BNetworkOperation *op);
+    void handleUpdateSampleRequest(BNetworkOperation *op);
     void handleDeleteSampleRequest(BNetworkOperation *op);
     void handleGetSamplesListRequest(BNetworkOperation *op);
     void handleGetSampleSourceRequest(BNetworkOperation *op);

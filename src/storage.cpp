@@ -158,9 +158,10 @@ TOperationResult Storage::editUser(const TUserInfo &info)
     QString qs = "UPDATE users SET password = :pwd, real_name = :rname, access_level = :alvl, modified_dt = :mod_dt "
                  "WHERE id = :id";
     QVariantMap bv;
+    bv.insert(":id", info.id());
     bv.insert(":pwd", info.password());
     bv.insert(":rname", info.realName());
-    bv.insert(":alvl", info.accessLevel());
+    bv.insert(":alvl", (int) info.accessLevel());
     bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     if (!mdb->execQuery(qs, bv))
     {
@@ -260,6 +261,7 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
+    project.rootFile()->setFileName(info.fileName());
     project.removeRestrictedCommands();
     QString tpath = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
     TCompilationResult cr = Global::compileProject(tpath, project);
@@ -286,10 +288,13 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
+    QString pfn = sampleFileName(info.id());
+    if (pfn.isEmpty())
+        return databaseErrorResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "UPDATE samples SET extra_authors = :ext_auth, title = :title, tags = :tags, comment = :comment, "
-            "modified_dt = :mod_dt";
+    QString qs = "UPDATE samples SET extra_authors = :ext_auth, title = :title, tags = :tags,"
+            "comment = :comment, modified_dt = :mod_dt";
     QVariantMap bv;
     bv.insert(":ext_auth", info.extraAuthorsString());
     bv.insert(":title", info.title());
@@ -304,10 +309,10 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         bv.insert(":rating", info.rating());
         bv.insert(":adm_rem", info.adminRemark());
     }
-    if (project.isValid())
+    if (pfn != info.fileName())
     {
-        qs += ", file_name = :fname";
-        bv.insert(":fname", project.rootFileName());
+        qs += " file_name = :fname";
+        bv.insert(":fname", info.fileName());
     }
     qs += " WHERE id = :id";
     SqlQueryResult qr = mdb->execQuery(qs, bv);
@@ -316,11 +321,18 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
+    QString spath = RootDir + "/samples/" + QString::number(info.id());
+    if (pfn != info.fileName() && !project.isValid()
+            && !QFile::rename(spath + "/" + pfn, spath + "/" + info.fileName()))
+    {
+        mdb->endDBOperation(false);
+        return fileSystemErrorResult();
+    }
     TCompilationResult cr(true);
     if (project.isValid())
     {
+        project.rootFile()->setFileName(info.fileName());
         project.removeRestrictedCommands();
-        QString spath = RootDir + "/samples/" + QString::number(info.id());
         if (!BDirTools::rmdir(spath))
         {
             mdb->endDBOperation(false);

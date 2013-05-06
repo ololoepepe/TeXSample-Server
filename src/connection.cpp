@@ -63,6 +63,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler(Texsample::GetUserInfoRequest, (InternalHandler) &Connection::handleGetUserInfoRequest);
     installRequestHandler(Texsample::AddSampleRequest, (InternalHandler) &Connection::handleAddSampleRequest);
     installRequestHandler(Texsample::EditSampleRequest, (InternalHandler) &Connection::handleEditSampleRequest);
+    installRequestHandler(Texsample::UpdateSampleRequest, (InternalHandler) &Connection::handleUpdateSampleRequest);
     installRequestHandler(Texsample::DeleteSampleRequest, (InternalHandler) &Connection::handleDeleteSampleRequest);
     installRequestHandler(Texsample::GetSamplesListRequest,
                           (InternalHandler) &Connection::handleGetSamplesListRequest);
@@ -295,6 +296,8 @@ void Connection::handleEditUserRequest(BNetworkOperation *op)
     log(tr("Edit user request", "log text"));
     if (maccessLevel < TAccessLevel::AdminLevel)
         return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    if (maccessLevel >= TAccessLevel::AdminLevel)
+        info.setAccessLevel(maccessLevel);
     Global::sendReply(op, mstorage->editUser(info));
 }
 
@@ -305,7 +308,7 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log(tr("Update account request", "log text"));
-    if (!info.isValid(TUserInfo::AddContext))
+    if (!info.isValid(TUserInfo::UpdateContext))
         return Global::sendReply(op, Storage::invalidParametersResult());
     if (info.id() != muserId)
         return Global::sendReply(op, TOperationResult("This is not your account")); //TODO
@@ -355,9 +358,24 @@ void Connection::handleEditSampleRequest(BNetworkOperation *op)
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
     log(tr("Edit sample request", "log text"));
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    Global::sendReply(op, "compilation_result", mstorage->editSample(info, project));
+}
+
+void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
+    TProject project = in.value("project").value<TProject>();
+    log(tr("Update sample request", "log text"));
     quint64 authId = mstorage->authorId(info.id());
-    if (authId != muserId && maccessLevel < TAccessLevel::AdminLevel)
+    if (authId != muserId)
         return Global::sendReply(op, TOperationResult("This is not your sample")); //TODO
+    if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
+        return Global::sendReply(op, TOperationResult("You can not modify approved sample")); //TODO
     Global::sendReply(op, "compilation_result", mstorage->editSample(info, project));
 }
 
