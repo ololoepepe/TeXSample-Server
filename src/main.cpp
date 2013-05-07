@@ -15,6 +15,7 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QDateTime>
 
 #include <QDebug>
 
@@ -38,12 +39,13 @@ int main(int argc, char *argv[])
 #endif
     int ret = 0;
     BCoreApplication bapp;
+    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
     BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
-    BCoreApplication::logger()->setFileName(BCoreApplication::location(BCoreApplication::DataPath,
-                                                                       BCoreApplication::UserResources) + "/log.txt");
+    QString logfn = BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources) + "/logs/";
+    logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
+    BCoreApplication::logger()->setFileName(logfn);
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
-    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users");
     BCoreApplication::loadSettings();
     if ( !testDatabase() )
         return 0;

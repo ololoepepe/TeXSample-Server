@@ -155,14 +155,18 @@ TOperationResult Storage::editUser(const TUserInfo &info)
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, access_level = :alvl, modified_dt = :mod_dt "
-                 "WHERE id = :id";
+    QString qs = "UPDATE users SET real_name = :rname, access_level = :alvl, modified_dt = :mod_dt";
     QVariantMap bv;
     bv.insert(":id", info.id());
-    bv.insert(":pwd", info.password());
     bv.insert(":rname", info.realName());
     bv.insert(":alvl", (int) info.accessLevel());
     bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    if (!info.password().isEmpty())
+    {
+        qs += ", password = :pwd";
+        bv.insert(":pwd", info.password());
+    }
+    qs += " WHERE id = :id";
     if (!mdb->execQuery(qs, bv))
     {
         mdb->endDBOperation(false);
@@ -495,7 +499,7 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
 TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                           TInviteInfo::InvitesList &invites)
 {
-    if (!userId || !expiresDT.isValid() || !count)
+    if (!userId || !expiresDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
