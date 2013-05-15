@@ -1,6 +1,4 @@
 #include "connection.h"
-#include "database.h"
-#include "sqlqueryresult.h"
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
@@ -53,9 +51,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
     mstorage = new Storage(BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources));
-    mauthorized = false;
     muserId = 0;
-    mdb = new Database(uniqueId().toString(), BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
@@ -83,14 +79,13 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
 Connection::~Connection()
 {
     delete mstorage;
-    delete mdb;
 }
 
 /*============================== Public methods ============================*/
 
 QString Connection::login() const
 {
-    return mauthorized ? mlogin : QString();
+    return muserId ? mlogin : QString();
 }
 
 TClientInfo Connection::clientInfo() const
@@ -100,7 +95,7 @@ TClientInfo Connection::clientInfo() const
 
 QString Connection::infoString(const QString &format) const
 {
-    if (!mauthorized)
+    if (!muserId)
         return "";
     QString f = !format.isEmpty() ? format : QString("%l %p %u\n%a; %o\n%e; %t; %b; %q");
     QString s = mclientInfo.toString(f);
@@ -115,129 +110,10 @@ QString Connection::infoString(const QString &format) const
 
 void Connection::log(const QString &text, BLogger::Level lvl)
 {
-    BNetworkConnection::log((mauthorized ? ("[" + mlogin + "] ") : QString()) + text, lvl);
+    BNetworkConnection::log((muserId ? ("[" + mlogin + "] ") : QString()) + text, lvl);
 }
 
 /*============================== Static private methods ====================*/
-
-QString Connection::sampleSourceFileName(quint64 id)
-{
-    if (!id)
-        return "";
-    QString path = BDirTools::findResource( "samples/" + QString::number(id) );
-    if ( path.isEmpty() )
-        return "";
-    QStringList files = QDir(path).entryList(QStringList() << "*.tex", QDir::Files);
-    return (files.size() == 1) ? ( path + "/" + files.first() ) : QString();
-}
-
-QString Connection::samplePreviewFileName(quint64 id)
-{
-    if (!id)
-        return "";
-    QString tfn = sampleSourceFileName(id);
-    if ( tfn.isEmpty() )
-        return "";
-    QFileInfo fi(tfn);
-    QString fn = fi.path() + "/" + fi.baseName() + ".pdf";
-    fi.setFile(fn);
-    return ( fi.exists() && fi.isFile() ) ? fn : QString();
-}
-
-QStringList Connection::sampleAuxiliaryFileNames(quint64 id)
-{
-    QStringList list;
-    if (!id)
-        return list;
-    QString tfn = sampleSourceFileName(id);
-    if ( tfn.isEmpty() )
-        return list;
-    QFileInfo fi(tfn);
-    QString path = fi.path();
-    QStringList files = QDir(path).entryList(QDir::Files);
-    static const QStringList Suffixes = QStringList() << "aux" << "idx" << "log" << "out" << "pdf" << "tex" << "toc";
-    foreach (const QString &suff, Suffixes)
-        files.removeAll(fi.baseName() + "." + suff);
-    foreach (const QString &fn, files)
-        list << path + "/" + fn;
-    return list;
-}
-
-bool Connection::addFile(QVariantMap &target, const QString &fileName)
-{
-    if ( fileName.isEmpty() )
-        return false;
-    bool ok = false;
-    QByteArray ba = BDirTools::readFile(fileName, -1, &ok);
-    if (!ok)
-        return false;
-    target.insert( "file_name", QFileInfo(fileName).fileName() );
-    target.insert("data", ba);
-    return true;
-}
-
-bool Connection::addFile(QVariantList &target, const QString &fileName)
-{
-    QVariantMap m;
-    if ( !addFile(m, fileName) )
-        return false;
-    target << m;
-    return true;
-}
-
-int Connection::addFiles(QVariantMap &target, const QStringList &fileNames)
-{
-    if ( fileNames.isEmpty() )
-        return 0;
-    QVariantList list;
-    int count = 0;
-    foreach (const QString &fn, fileNames)
-        if ( addFile(list, fn) )
-            ++count;
-    if ( !list.isEmpty() )
-        target.insert("aux_files", list);
-    return count;
-}
-
-bool Connection::addTextFile(QVariantMap &target, const QString &fileName)
-{
-    if ( fileName.isEmpty() )
-        return false;
-    bool ok = false;
-    QString text = BDirTools::readTextFile(fileName, "UTF-8", &ok);
-    if (!ok)
-        return false;
-    target.insert( "file_name", QFileInfo(fileName).fileName() );
-    target.insert("text", text);
-    return true;
-}
-
-QString Connection::tmpPath(const QUuid &uuid)
-{
-    if (uuid.isNull())
-        return "";
-    return BDirTools::findResource("tmp", BDirTools::UserOnly) + "/" + BeQt::pureUuidText(uuid);
-}
-
-bool Connection::testUserInfo(const QVariantMap &m, bool isNew)
-{
-    if (isNew)
-    {
-        if ( m.value("login").toString().isEmpty() )
-            return false;
-        bool ok = false;
-        int lvl = m.value("access_level", TAccessLevel::NoLevel).toInt(&ok);
-        if (!ok || !bRange(TAccessLevel::NoLevel, TAccessLevel::AdminLevel).contains(lvl))
-            return false;
-    }
-    if ( m.value("password").toByteArray().isEmpty() )
-        return false;
-    if (m.value("real_name").toString().length() > 128)
-        return false;
-    if (m.value("avatar").toByteArray().size() > MaxAvatarSize)
-        return false;
-    return true;
-}
 
 TOperationResult Connection::notAuthorizedResult()
 {
@@ -263,7 +139,6 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     mclientInfo = in.value("client_info").value<TClientInfo>();
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
-    mauthorized = true; //TODO: Use muserId instead
     setCriticalBufferSize(200 * BeQt::Megabyte);
     log(tr("Authorized", "log text"));
     TerminalIOHandler::writeLine(infoString("%u\n%a; %o\n%e; %t; %b; %q"));
@@ -517,77 +392,12 @@ void Connection::handleCompileProjectRequest(BNetworkOperation *op)
     return Global::sendReply(op, out, "compilation_result", r);
 }
 
-bool Connection::checkRights(TAccessLevel minLevel) const
-{
-    return mauthorized && maccessLevel >= minLevel;
-}
-
-quint64 Connection::userId(const QString &login)
-{
-    SqlQueryResult r;
-    if (login.isEmpty() || !mdb->execQuery("SELECT id FROM users WHERE login = :login", r, ":login", login)
-        || r.value().isEmpty())
-        return 0;
-    bool ok = false;
-    quint64 id = r.value().value("id").toULongLong(&ok);
-    return ok ? id : 0;
-}
-
-QString Connection::userLogin(quint64 id)
-{
-    SqlQueryResult r;
-    if (!id || !mdb->execQuery("SELECT login FROM users WHERE id = :id", r, ":id", id) || r.value().isEmpty())
-        return "";
-    return r.value().value("login").toString();
-}
-
-void Connection::retOk(BNetworkOperation *op, const QVariantMap &out, const QString &msg)
-{
-    if (!op)
-        return;
-    mdb->endDBOperation();
-    if ( !msg.isEmpty() )
-        log(msg);
-    sendReply(op, out);
-}
-
-void Connection::retOk(BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
-                       const QString &msg)
-{
-    if ( !key.isEmpty() )
-        out.insert(key, value);
-    retOk(op, out, msg);
-}
-
-void Connection::retErr(BNetworkOperation *op, const QVariantMap &out, const QString &msg)
-{
-    if (!op)
-        return;
-    mdb->endDBOperation(false);
-    if ( !msg.isEmpty() )
-        log(msg);
-    sendReply(op, out);
-}
-
-void Connection::retErr(BNetworkOperation *op, QVariantMap &out, const QString &key, const QVariant &value,
-                        const QString &msg)
-{
-    QVariantMap m;
-    if ( !key.isEmpty() )
-        m.insert(key, value);
-    retErr(op, out, msg);
-}
-
 /*============================== Private slots =============================*/
 
 void Connection::testAuthorization()
 {
-    if (mauthorized)
+    if (muserId)
         return;
     log("Authorization failed, closing connection");
     close();
 }
-
-/*============================== Static private constants ==================*/
-
-const int Connection::MaxAvatarSize = BeQt::Megabyte;

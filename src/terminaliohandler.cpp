@@ -1,6 +1,7 @@
 #include "terminaliohandler.h"
 #include "server.h"
 #include "connection.h"
+#include "remotecontrolserver.h"
 
 #include <BNetworkConnection>
 #include <BeQt>
@@ -20,15 +21,33 @@
 
 /*============================== Public constructors =======================*/
 
-TerminalIOHandler::TerminalIOHandler(Server *server, QObject *parent) :
+TerminalIOHandler::TerminalIOHandler(Server *server, RemoteControlServer *rcserver, QObject *parent) :
     BTerminalIOHandler(parent)
 {
     mserver = server;
+    mrcserver = rcserver;
     melapsedTimer.start();
     installHandler("quit", &BeQt::handleQuit);
     installHandler("exit", &BeQt::handleQuit);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
+}
+
+/*============================== Public methods ============================*/
+
+void TerminalIOHandler::executeCommand(const QString &command, const QStringList &args)
+{
+    if (command == "quit" || command == "exit")
+    {
+        //
+    }
+    else if (command == "user")
+    {
+        if (args.isEmpty())
+        {
+            //
+        }
+    }
 }
 
 /*============================== Private methods ===========================*/

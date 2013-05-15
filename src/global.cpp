@@ -13,9 +13,15 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QFile>
+#include <QCoreApplication>
 
 namespace Global
 {
+
+TOperationResult notAuthorizedResult()
+{
+    return TOperationResult(QCoreApplication::translate("Global", "Not authorized", "errorString"));
+}
 
 bool copyTexsample(const QString &path, const QString &codecName = "UTF-8")
 {
