@@ -45,6 +45,13 @@ RegistrationConnection::~RegistrationConnection()
     delete mstorage;
 }
 
+/*============================== Protected methods =========================*/
+
+void RegistrationConnection::log(const QString &text, BLogger::Level lvl)
+{
+    BNetworkConnection::log(text, lvl);
+}
+
 /*============================== Private methods ===========================*/
 
 void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)

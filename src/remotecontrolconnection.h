@@ -23,8 +23,11 @@ class RemoteControlConnection : public BNetworkConnection
 public:
     explicit RemoteControlConnection(BNetworkServer *server, BGenericSocket *socket);
     ~RemoteControlConnection();
+public:
+    bool isAuthorized() const;
 public slots:
-    void sendOutputRequest(const QString &text);
+    void sendLogRequest(const QString &text, bool stderrLevel);
+    void sendWriteRequest(const QString &text);
 private:
     void handleAuthorizeRequest(BNetworkOperation *op);
     void handleExecuteCommandRequest(BNetworkOperation *op);

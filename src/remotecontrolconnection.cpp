@@ -50,16 +50,36 @@ RemoteControlConnection::~RemoteControlConnection()
     delete mstorage;
 }
 
+/*============================== Public methods ============================*/
+
+bool RemoteControlConnection::isAuthorized() const
+{
+    return muserId;
+}
+
 /*============================== Public slots ==============================*/
 
-void RemoteControlConnection::sendOutputRequest(const QString &text)
+void RemoteControlConnection::sendLogRequest(const QString &text, bool stderrLevel)
 {
     if (!muserId || text.isEmpty())
         return;
     QVariantMap out;
-    out.insert("output_text", text);
-    BNetworkOperation *op = sendRequest(Texsample::OutputRequest, out);
-    op->waitForFinished();
+    out.insert("log_text", text);
+    out.insert("stderr_level", stderrLevel);
+    BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
+    qDebug() << (op->waitForFinished() && !op->isError());
+    op->deleteLater();
+}
+
+void RemoteControlConnection::sendWriteRequest(const QString &text)
+{
+    if (!muserId || text.isEmpty())
+        return;
+    QVariantMap out;
+    out.insert("text", text);
+    BNetworkOperation *op = sendRequest(Texsample::WriteRequest, out);
+    qDebug() << (op->waitForFinished() && !op->isError());
+    op->deleteLater();
 }
 
 /*============================== Private methods ===========================*/
@@ -68,6 +88,15 @@ void RemoteControlConnection::handleAuthorizeRequest(BNetworkOperation *op)
 {
     if (muserId)
         return Global::sendReply(op, TOperationResult(true));
+    QList<BNetworkConnection *> list = server()->connections();
+    if (!list.isEmpty())
+    {
+        foreach (BNetworkConnection *c, list)
+        {
+            if (static_cast<RemoteControlConnection *>(c)->isAuthorized())
+                return Global::sendReply(op, TOperationResult(tr("Only one connection allowed", "errorString")));
+        }
+    }
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
     QByteArray password = in.value("password").toByteArray();

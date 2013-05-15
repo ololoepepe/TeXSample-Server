@@ -38,7 +38,8 @@ SOURCES += \
     global.cpp \
     storage.cpp \
     remotecontrolserver.cpp \
-    remotecontrolconnection.cpp
+    remotecontrolconnection.cpp \
+    logger.cpp
 
 HEADERS += \
     terminaliohandler.h \
@@ -51,7 +52,8 @@ HEADERS += \
     global.h \
     storage.h \
     remotecontrolserver.h \
-    remotecontrolconnection.h
+    remotecontrolconnection.h \
+    logger.h
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts

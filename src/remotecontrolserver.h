@@ -1,6 +1,8 @@
 #ifndef REMOTECONTROLSERVER_H
 #define REMOTECONTROLSERVER_H
 
+class RemoteControlConnection;
+
 class BNetworkConnection;
 class BGenericSocket;
 
@@ -10,8 +12,6 @@ class QString;
 
 #include <QObject>
 
-#define sRCServer RemoteControlServer::instance()
-
 /*============================================================================
 ================================ RemoteControlServer =========================
 ============================================================================*/
@@ -20,11 +20,9 @@ class RemoteControlServer : public BNetworkServer
 {
     Q_OBJECT
 public:
-    static RemoteControlServer *instance();
-public:
     explicit RemoteControlServer(QObject *parent = 0);
 public:
-    void sendOutput(const QString &text);
+    RemoteControlConnection *connection() const;
 protected:
     BNetworkConnection *createConnection(BGenericSocket *socket);
 private:

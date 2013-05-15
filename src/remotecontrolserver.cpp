@@ -11,17 +11,11 @@
 #include <QObject>
 #include <QString>
 #include <QMetaObject>
+#include <QList>
 
 /*============================================================================
 ================================ RemoteControlServer =========================
 ============================================================================*/
-
-/*============================== Static public methods =====================*/
-
-RemoteControlServer *RemoteControlServer::instance()
-{
-    return minstance;
-}
 
 /*============================== Public constructors =======================*/
 
@@ -36,12 +30,15 @@ RemoteControlServer::RemoteControlServer(QObject *parent) :
 
 /*============================== Public methods ============================*/
 
-void RemoteControlServer::sendOutput(const QString &text)
+RemoteControlConnection *RemoteControlServer::connection() const
 {
-    if (text.isEmpty())
-        return;
     foreach (BNetworkConnection *c, connections())
-        QMetaObject::invokeMethod(c, "sendOutputRequest", Qt::QueuedConnection, Q_ARG(QString, text));
+    {
+        RemoteControlConnection *cc = static_cast<RemoteControlConnection *>(c);
+        if (cc->isAuthorized())
+            return cc;
+    }
+    return 0;
 }
 
 /*============================== Protected methods =========================*/

@@ -1,13 +1,14 @@
 #include "terminaliohandler.h"
 #include "server.h"
 #include "registrationserver.h"
+#include "remotecontrolserver.h"
+#include "logger.h"
 
 #include <TeXSampleGlobal>
 
 #include <BCoreApplication>
 #include <BDirTools>
 #include <BTranslator>
-#include <BLogger>
 
 #include <QObject>
 #include <QString>
@@ -16,6 +17,7 @@
 #include <QDir>
 #include <QFileInfo>
 #include <QDateTime>
+#include <QRegExp>
 
 #include <QDebug>
 
@@ -47,13 +49,15 @@ int main(int argc, char *argv[])
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
     BCoreApplication::loadSettings();
-    if ( !testDatabase() )
-        return 0;
-    Server server;
-    TerminalIOHandler handler(&server);
-    server.listen("0.0.0.0", 9041);
-    RegistrationServer rserver;
-    rserver.listen("0.0.0.0", 9042);
+    QStringList args = QCoreApplication::arguments().mid(1);
+    bool local = !args.contains("--remote-server") && !args.contains("-R");
+    if (local)
+    {
+        if (!testDatabase())
+            return 0;
+        BCoreApplication::setLogger(new Logger);
+    }
+    TerminalIOHandler handler(local);
     ret = app.exec();
     BCoreApplication::saveSettings();
     return ret;
