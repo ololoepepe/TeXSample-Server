@@ -19,6 +19,8 @@ class TCompiledProject;
 namespace Global
 {
 
+TOperationResult notAuthorizedResult();
+
 TCompilationResult compileProject(const QString &path, TProject project,
                                   const TCompilerParameters &param = TCompilerParameters(),
                                   TCompiledProject *compiledProject = 0, TCompilationResult *makeindexResult = 0,

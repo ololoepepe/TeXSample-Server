@@ -1,13 +1,15 @@
 #include "terminaliohandler.h"
 #include "server.h"
 #include "registrationserver.h"
+#include "remotecontrolserver.h"
+#include "logger.h"
+#include "storage.h"
 
 #include <TeXSampleGlobal>
 
 #include <BCoreApplication>
 #include <BDirTools>
 #include <BTranslator>
-#include <BLogger>
 
 #include <QObject>
 #include <QString>
@@ -15,17 +17,17 @@
 #include <QCoreApplication>
 #include <QDir>
 #include <QFileInfo>
+#include <QDateTime>
+#include <QRegExp>
 
 #include <QDebug>
-
-bool testDatabase();
 
 int main(int argc, char *argv[])
 {
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0-beta1");
+    QCoreApplication::setApplicationVersion("1.0.0-beta2");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if defined(BUILTIN_RESOURCES)
@@ -37,36 +39,49 @@ int main(int argc, char *argv[])
                                             "../lib/texsample-server" ).absolutePath() );
 #endif
     int ret = 0;
+    QStringList args = QCoreApplication::arguments().mid(1);
+    bool local = !args.contains("--remote") && !args.contains("-R");
     BCoreApplication bapp;
+    TerminalIOHandler::writeLine(QCoreApplication::translate("main", "This is", "") + " "
+                                 + QCoreApplication::applicationName() +
+                                 " v" + QCoreApplication::applicationVersion());
+    TerminalIOHandler::writeLine(local ? QCoreApplication::translate("main", "Mode: normal", "") :
+                                         QCoreApplication::translate("main", "Mode: remote", ""));
+    if (local)
+        BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
     BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
-    BCoreApplication::logger()->setFileName(BCoreApplication::location(BCoreApplication::DataPath,
-                                                                       BCoreApplication::UserResources) + "/log.txt");
+    QString logfn = BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources) + "/logs/";
+    logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
+    BCoreApplication::logger()->setFileName(logfn);
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
-    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users");
     BCoreApplication::loadSettings();
-    if ( !testDatabase() )
-        return 0;
-    Server server;
-    TerminalIOHandler handler(&server);
-    server.listen("0.0.0.0", 9041);
-    RegistrationServer rserver;
-    rserver.listen("0.0.0.0", 9042);
+    if (local)
+    {
+        TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
+        QString errs;
+        if (!Storage::initStorage(BCoreApplication::location(BCoreApplication::DataPath,
+                                                             BCoreApplication::UserResources), &errs))
+        {
+            TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Error:", "") + " " + errs);
+            return 0;
+        }
+        else
+        {
+            TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Success!", ""));
+        }
+        BCoreApplication::setLogger(new Logger);
+    }
+    TerminalIOHandler handler(local);
+    if (!local)
+    {
+        int ind = args.indexOf("--remote");
+        if (ind < 0)
+            ind = args.indexOf("-R");
+        if (ind >= 0 && ind < args.size() - 1)
+            handler.connectToHost(args.at(ind + 1));
+    }
     ret = app.exec();
     BCoreApplication::saveSettings();
     return ret;
-}
-
-bool testDatabase()
-{
-    bLog("Testing database existence");
-    QString fn = BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly);
-    QFileInfo fi(fn);
-    if ( fn.isEmpty() || !fi.exists() || !fi.isFile() || !fi.size() )
-    {
-        bLog("Database does not exist", BLogger::FatalLevel);
-        return false;
-    }
-    bLog("Database exists, OK");
-    return true;
 }

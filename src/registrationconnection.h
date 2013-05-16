@@ -10,6 +10,7 @@ class BNetworkOperation;
 class QString;
 
 #include <BNetworkConnection>
+#include <BLogger>
 
 #include <QObject>
 
@@ -23,6 +24,8 @@ class RegistrationConnection : public BNetworkConnection
 public:
     explicit RegistrationConnection(BNetworkServer *server, BGenericSocket *socket);
     ~RegistrationConnection();
+protected:
+    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
     void handleRegisterRequest(BNetworkOperation *op);
 private:

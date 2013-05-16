@@ -13,22 +13,14 @@
 #include <QFileInfo>
 #include <QStringList>
 #include <QFile>
+#include <QCoreApplication>
 
 namespace Global
 {
 
-bool copyTexsample(const QString &path, const QString &codecName = "UTF-8")
+TOperationResult notAuthorizedResult()
 {
-    QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8")).toLower();
-    QString sty = BDirTools::findResource("texsample/" + cn + "/texsample.sty");
-    QString tex = BDirTools::findResource("texsample/" + cn + "/texsample.tex");
-    return !sty.isEmpty() && !tex.isEmpty() && QFile::copy(sty, path + "/texsample.sty")
-            && QFile::copy(tex, path + "/texsample.tex");
-}
-
-bool removeTexsample(const QString &path)
-{
-    return BDirTools::removeFilesInDir(path, QStringList() << "texsample.sty" << "texsample.tex");
+    return TOperationResult(QCoreApplication::translate("Global", "Not authorized", "errorString"));
 }
 
 TCompilationResult compileProject(const QString &path, TProject project, const TCompilerParameters &param,
@@ -42,7 +34,7 @@ TCompilationResult compileProject(const QString &path, TProject project, const T
     if (!BDirTools::mkpath(path))
         return Storage::fileSystemErrorResult();
     QString codecName = compiledProject ? param.codecName() : QString("UTF-8");
-    if (!project.save(path, codecName) || !copyTexsample(path, codecName))
+    if (!project.save(path, codecName) || !Storage::copyTexsample(path, codecName))
     {
         BDirTools::rmdir(path);
         return Storage::fileSystemErrorResult();
@@ -68,7 +60,7 @@ TCompilationResult compileProject(const QString &path, TProject project, const T
     int code = BeQt::execProcess(path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
     if (!compiledProject && !QFile::rename(path + "/" + tmpfn, path + "/" + fn))
         return Storage::fileSystemErrorResult();
-    if (!removeTexsample(path))
+    if (!Storage::removeTexsample(path))
         return Storage::fileSystemErrorResult();
     r.setSuccess(!code);
     r.setExitCode(code);

@@ -25,6 +25,8 @@
 #include <QByteArray>
 #include <QUuid>
 #include <QDir>
+#include <QStringList>
+#include <QRegExp>
 
 #include <QDebug>
 
@@ -72,6 +74,64 @@ bool Storage::tryLockGlobal()
 void Storage::unlockGlobal()
 {
     mglobalMutex.unlock();
+}
+
+bool Storage::initStorage(const QString &rootDir, QString *errs)
+{
+    if (!QDir(rootDir).exists())
+        return bRet(errs, tr("Directory does not exist", "errorString"), false);
+    QString sty = BDirTools::readTextFile(rootDir + "/texsample/texsample.sty", "UTF-8");
+    if (sty.isEmpty())
+        return bRet(errs, tr("Failed to load texsample.sty", "errorString"), false);
+    QString tex = BDirTools::readTextFile(rootDir + "/texsample/texsample.tex", "UTF-8");
+    if (tex.isEmpty())
+        return bRet(errs, tr("Failed to load texsample.tex", "errorString"), false);
+    Database db(QUuid::createUuid().toString(), rootDir + "/texsample.sqlite");
+    if (!db.beginDBOperation())
+        return bRet(errs, tr("Database error", "errorString"), false);
+    QStringList list = BDirTools::readTextFile(rootDir + "/texsample.schema", "UTF-8").split(";\n");
+    foreach (int i, bRangeD(0, list.size() - 1))
+    {
+        list[i].replace('\n', ' ');
+        list[i].replace(QRegExp("\\s+"), " ");
+    }
+    list.removeAll("");
+    list.removeDuplicates();
+    if (list.isEmpty())
+        return bRet(errs, tr("Failed to parce database schema", "errorString"), false);
+    foreach (const QString &qs, list)
+    {
+        if (!db.execQuery(qs))
+        {
+            db.endDBOperation(false);
+            return bRet(errs, tr("Query error", "errorString"), false);
+        }
+    }
+    bool b = db.endDBOperation();
+    if (b)
+    {
+        mtexsampleSty = sty;
+        mtexsampleTex = tex;
+    }
+    else if (errs)
+    {
+        *errs = tr("Database error", "errorString");
+    }
+    return b;
+}
+
+bool Storage::copyTexsample(const QString &path, const QString &codecName)
+{
+    if (!QDir(path).exists() || mtexsampleSty.isEmpty() || mtexsampleTex.isEmpty())
+        return false;
+    QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8")).toLower();
+    return BDirTools::writeTextFile(path + "/texsample.sty", mtexsampleSty, cn)
+            && BDirTools::writeTextFile(path + "/texsample.tex", mtexsampleTex, cn);
+}
+
+bool Storage::removeTexsample(const QString &path)
+{
+    return BDirTools::removeFilesInDir(path, QStringList() << "texsample.sty" << "texsample.tex");
 }
 
 /*============================== Public constructors =======================*/
@@ -155,14 +215,18 @@ TOperationResult Storage::editUser(const TUserInfo &info)
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "UPDATE users SET password = :pwd, real_name = :rname, access_level = :alvl, modified_dt = :mod_dt "
-                 "WHERE id = :id";
+    QString qs = "UPDATE users SET real_name = :rname, access_level = :alvl, modified_dt = :mod_dt";
     QVariantMap bv;
     bv.insert(":id", info.id());
-    bv.insert(":pwd", info.password());
     bv.insert(":rname", info.realName());
     bv.insert(":alvl", (int) info.accessLevel());
     bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    if (!info.password().isEmpty())
+    {
+        qs += ", password = :pwd";
+        bv.insert(":pwd", info.password());
+    }
+    qs += " WHERE id = :id";
     if (!mdb->execQuery(qs, bv))
     {
         mdb->endDBOperation(false);
@@ -495,7 +559,7 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
 TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                           TInviteInfo::InvitesList &invites)
 {
-    if (!userId || !expiresDT.isValid() || !count)
+    if (!userId || !expiresDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
@@ -682,3 +746,5 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
 /*============================== Static private members ====================*/
 
 QMutex Storage::mglobalMutex;
+QString Storage::mtexsampleSty;
+QString Storage::mtexsampleTex;

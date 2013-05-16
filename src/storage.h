@@ -37,6 +37,9 @@ public:
     static void lockGlobal();
     static bool tryLockGlobal();
     static void unlockGlobal();
+    static bool initStorage(const QString &rootDir, QString *errorString = 0);
+    static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
+    static bool removeTexsample(const QString &path);
 public:
     explicit Storage(const QString &rootDir);
     ~Storage();
@@ -75,6 +78,8 @@ private:
     const QString RootDir;
 private:
     static QMutex mglobalMutex;
+    static QString mtexsampleSty;
+    static QString mtexsampleTex;
 private:
     Database *mdb;
     QMutex mmutex;
