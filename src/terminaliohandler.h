@@ -14,6 +14,7 @@ class QStringList;
 #include <QObject>
 #include <QElapsedTimer>
 #include <QString>
+#include <QAbstractSocket>
 
 /*============================================================================
 ================================ TerminalIOHandler ===========================
@@ -35,15 +36,20 @@ private:
     void handleUser(const QString &cmd, const QStringList &args);
     void handleUptime(const QString &cmd, const QStringList &args);
     void handleConnect(const QString &cmd, const QStringList &args);
-    void handleTest(const QString &cmd, const QStringList &args);
+    void handleDisconnect(const QString &cmd, const QStringList &args);
+    void handleRemote(const QString &cmd, const QStringList &args);
 private slots:
-    void connectToHost(const QString &hostName);
+    void connectToHost(const QString &hostName, const QString &login, const QString &password);
+    void disconnectFromHost();
     void sendCommand(const QString &cmd, const QStringList &args);
+    void disconnected();
+    void error(QAbstractSocket::SocketError err);
     void remoteRequest(BNetworkOperation *op);
 private:
     Server *mserver;
     RegistrationServer *mrserver;
     BNetworkConnection *mremote;
+    quint64 muserId;
     QElapsedTimer melapsedTimer;
 };
 

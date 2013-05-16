@@ -28,7 +28,7 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0-beta1");
+    QCoreApplication::setApplicationVersion("1.0.0-beta2");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if defined(BUILTIN_RESOURCES)
@@ -40,8 +40,11 @@ int main(int argc, char *argv[])
                                             "../lib/texsample-server" ).absolutePath() );
 #endif
     int ret = 0;
+    QStringList args = QCoreApplication::arguments().mid(1);
+    bool local = !args.contains("--remote-server") && !args.contains("-R");
     BCoreApplication bapp;
-    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
+    if (local)
+        BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
     BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
     QString logfn = BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources) + "/logs/";
     logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
@@ -49,8 +52,6 @@ int main(int argc, char *argv[])
     BCoreApplication::installTranslator( new BTranslator("beqt") );
     BCoreApplication::installTranslator( new BTranslator("texsample-server") );
     BCoreApplication::loadSettings();
-    QStringList args = QCoreApplication::arguments().mid(1);
-    bool local = !args.contains("--remote-server") && !args.contains("-R");
     if (local)
     {
         if (!testDatabase())

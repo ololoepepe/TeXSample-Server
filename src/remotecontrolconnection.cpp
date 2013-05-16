@@ -12,6 +12,7 @@
 #include <BGenericSocket>
 #include <BNetworkOperation>
 #include <BCoreApplication>
+#include <BLogger>
 
 #include <QObject>
 #include <QByteArray>
@@ -33,6 +34,7 @@
 RemoteControlConnection::RemoteControlConnection(BNetworkServer *server, BGenericSocket *socket) :
     BNetworkConnection(server, socket)
 {
+    setLogger(new BLogger);
     setCriticalBufferSize(BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
@@ -67,7 +69,7 @@ void RemoteControlConnection::sendLogRequest(const QString &text, bool stderrLev
     out.insert("log_text", text);
     out.insert("stderr_level", stderrLevel);
     BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
-    qDebug() << (op->waitForFinished() && !op->isError());
+    op->waitForFinished();
     op->deleteLater();
 }
 
@@ -78,7 +80,7 @@ void RemoteControlConnection::sendWriteRequest(const QString &text)
     QVariantMap out;
     out.insert("text", text);
     BNetworkOperation *op = sendRequest(Texsample::WriteRequest, out);
-    qDebug() << (op->waitForFinished() && !op->isError());
+    op->waitForFinished();
     op->deleteLater();
 }
 

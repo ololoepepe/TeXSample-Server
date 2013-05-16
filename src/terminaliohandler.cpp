@@ -5,13 +5,14 @@
 #include "logger.h"
 
 #include <TeXSample>
+#include <TOperationResult>
 
 #include <BNetworkConnection>
 #include <BGenericSocket>
 #include <BeQt>
 #include <BNetworkOperation>
 #include <BGenericServer>
-#include <BRemoteLogger>
+#include <BLogger>
 #include <BCoreApplication>
 
 #include <QObject>
@@ -26,6 +27,7 @@
 #include <QVariant>
 #include <QByteArray>
 #include <QCryptographicHash>
+#include <QAbstractSocket>
 
 #include <QDebug>
 
@@ -55,32 +57,36 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
     mserver = 0;
     mrserver = 0;
     mremote = 0;
+    muserId = 0;
     installHandler("quit", &BeQt::handleQuit);
     installHandler("exit", &BeQt::handleQuit);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
     installHandler("connect", (InternalHandler) &TerminalIOHandler::handleConnect);
-    installHandler("test", (InternalHandler) &TerminalIOHandler::handleTest);
+    installHandler("disconnect", (InternalHandler) &TerminalIOHandler::handleDisconnect);
+    installHandler("remote", (InternalHandler) &TerminalIOHandler::handleRemote);
     melapsedTimer.start();
     if (local)
     {
-        mserver = new Server;
-        mrserver = new RegistrationServer;
+        mserver = new Server(this);
+        mrserver = new RegistrationServer(this);
         mserver->listen("0.0.0.0", 9041);
         mrserver->listen("0.0.0.0", 9042);
     }
     else
     {
-        mremote = new BNetworkConnection(BGenericSocket::TcpSocket);
+        mremote = new BNetworkConnection(BGenericSocket::TcpSocket, this);
+        mremote->setLogger(new BLogger);
+        mremote->logger()->setLogToConsoleEnabled(false);
+        connect(mremote, SIGNAL(disconnected()), this, SLOT(disconnected()));
+        connect(mremote, SIGNAL(error(QAbstractSocket::SocketError)), this, SLOT(error(QAbstractSocket::SocketError)));
         connect(mremote, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(remoteRequest(BNetworkOperation *)));
     }
 }
 
 TerminalIOHandler::~TerminalIOHandler()
 {
-    delete mserver;
-    delete mrserver;
-    delete mremote;
+    //
 }
 
 /*============================== Public methods ============================*/
@@ -188,43 +194,126 @@ void TerminalIOHandler::handleUptime(const QString &, const QStringList &)
 
 void TerminalIOHandler::handleConnect(const QString &, const QStringList &args)
 {
+    if (!mremote)
+        return;
     if (args.size() != 1)
+        return writeLine(tr("Invalid usage", "") + "\nconnect <host>");
+    QString login = readLine(tr("Enter login:", "") + " ");
+    if (login.isEmpty())
         return;
-    if (args.first().isEmpty())
+    write(tr("Enter password:", "") + " ");
+    setStdinEchoEnabled(false);
+    QString password = readLine();
+    setStdinEchoEnabled(true);
+    writeLine("");
+    if (password.isEmpty())
         return;
-    QMetaObject::invokeMethod(this, "connectToHost", Qt::QueuedConnection, Q_ARG(QString, args.first()));
+    QMetaObject::invokeMethod(this, "connectToHost", Qt::QueuedConnection, Q_ARG(QString, args.first()),
+                              Q_ARG(QString, login), Q_ARG(QString, password));
 }
 
-void TerminalIOHandler::handleTest(const QString &, const QStringList &args)
+void TerminalIOHandler::handleDisconnect(const QString &, const QStringList &)
 {
+    if (!mremote)
+        return;
+    QMetaObject::invokeMethod(this, "disconnectFromHost", Qt::QueuedConnection);
+}
+
+void TerminalIOHandler::handleRemote(const QString &, const QStringList &args)
+{
+    if (!mremote)
+        return;
     QMetaObject::invokeMethod(this, "sendCommand", Qt::QueuedConnection, Q_ARG(QString, args.first()),
                               Q_ARG(QStringList, QStringList(args.mid(1))));
 }
 
 /*============================== Private slots =============================*/
 
-void TerminalIOHandler::connectToHost(const QString &hostName)
+void TerminalIOHandler::connectToHost(const QString &hostName, const QString &login, const QString &password)
 {
-    mremote->connectToHost(hostName, 9043);
-    qDebug() << (mremote->isConnected() || mremote->waitForConnected());
     if (mremote->isConnected())
+        return write(tr("Already connected to", "") + " " + mremote->peerAddress());
+    mremote->connectToHost(hostName, 9043);
+    if (!mremote->isConnected() && !mremote->waitForConnected())
     {
-        QVariantMap out;
-        out.insert("login", "darkangel");
-        out.insert("password", QCryptographicHash::hash("LinveInMyHeart", QCryptographicHash::Sha1));
-        BNetworkOperation *op = mremote->sendRequest(Texsample::AuthorizeRequest, out);
-        qDebug() << (op->isFinished() || op->waitForFinished());
+        mremote->close();
+        writeLine(tr("Failed to connect to", "") + " " + hostName);
+        return;
     }
+    writeLine(tr("Connected to", "") + " " + hostName + ". " + tr("Authorizing...", ""));
+    QVariantMap out;
+    out.insert("login", login);
+    out.insert("password", QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha1));
+    BNetworkOperation *op = mremote->sendRequest(Texsample::AuthorizeRequest, out);
+    if (!op->isFinished() && !op->isError() && !op->waitForFinished())
+    {
+        op->cancel();
+        op->deleteLater();
+        writeLine(tr("Authorization timed out", ""));
+        return;
+    }
+    op->deleteLater();
+    if (op->isError())
+    {
+        mremote->close();
+        writeLine(tr("Operation error", ""));
+        return;
+    }
+    QVariantMap in = op->variantData().toMap();
+    TOperationResult r = in.value("operation_result").value<TOperationResult>();
+    quint64 id = in.value("user_id").toULongLong();
+    if (!r)
+    {
+        mremote->close();
+        writeLine(tr("Authorization failed. The following error occured:", "") + " " + r.errorString());
+        return;
+    }
+    muserId = id;
+    writeLine(tr("Authorized successfully with user id", "") + " " + QString::number(id));
+}
+
+void TerminalIOHandler::disconnectFromHost()
+{
+    if (!mremote->isConnected())
+        return;
+    mremote->disconnectFromHost();
+    if (mremote->isConnected() && !mremote->waitForDisconnected())
+    {
+        writeLine(tr("Disconnect timeout, closing socket", ""));
+        mremote->close();
+        return;
+    }
+    writeLine(tr("Disconnected", ""));
 }
 
 void TerminalIOHandler::sendCommand(const QString &cmd, const QStringList &args)
 {
+    if (!muserId)
+        return writeLine(tr("Not authoized", ""));
     QVariantMap out;
     out.insert("command", cmd);
     out.insert("arguments", args);
     BNetworkOperation *op = mremote->sendRequest(Texsample::ExecuteCommandRequest, out);
-    qDebug() << (op->isFinished() || op->waitForFinished());
+    if (!op->isFinished() && !op->isError() && !op->waitForFinished())
+    {
+        op->deleteLater();
+        writeLine(tr("Operation error", ""));
+        return;
+    }
     op->deleteLater();
+    TOperationResult r = op->variantData().toMap().value("operation_result").value<TOperationResult>();
+    if (!r)
+        writeLine(tr("Failed to execute command. The following error occured:", "") + " " + r.errorString());
+}
+
+void TerminalIOHandler::disconnected()
+{
+    muserId = 0;
+}
+
+void TerminalIOHandler::error(QAbstractSocket::SocketError)
+{
+    muserId = 0;
 }
 
 void TerminalIOHandler::remoteRequest(BNetworkOperation *op)
