@@ -31,6 +31,7 @@ public:
     ~TerminalIOHandler();
 public:
     void executeCommand(const QString &cmd, const QStringList &args);
+    void connectToHost(const QString &hostName);
 private:
     void handleQuit(const QString &cmd, const QStringList &args);
     void handleUser(const QString &cmd, const QStringList &args);

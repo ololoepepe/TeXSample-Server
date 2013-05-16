@@ -72,6 +72,14 @@ bool Database::execQuery(const QSqlDatabase &db, const QString &query, SqlQueryR
     return result = execQuery(db, query, boundKey1, boundValue1, boundKey2, boundValue2, boundKey3, boundValue3);
 }
 
+bool Database::tableExists(const QSqlDatabase &db, const QString &tableName)
+{
+    if (tableName.isEmpty() || !db.isOpen())
+        return false;
+    return execQuery(db, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='"
+                     + tableName + "'").value().value("count(*)").toLongLong();
+}
+
 /*============================== Public constructors =======================*/
 
 Database::Database(const QString &connectionName, const QString &dbName)
@@ -136,6 +144,11 @@ bool Database::execQuery(const QString &query, SqlQueryResult &result,
                          const QString &boundKey3, const QVariant &boundValue3)
 {
     return execQuery(*mdb, query, result, boundKey1, boundValue1, boundKey2, boundValue2, boundKey3, boundValue3);
+}
+
+bool Database::tableExists(const QString &tableName)
+{
+    return tableExists(*mdb, tableName);
 }
 
 QSqlDatabase *Database::innerDatabase() const

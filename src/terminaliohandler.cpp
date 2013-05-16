@@ -65,6 +65,7 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
     installHandler("connect", (InternalHandler) &TerminalIOHandler::handleConnect);
     installHandler("disconnect", (InternalHandler) &TerminalIOHandler::handleDisconnect);
     installHandler("remote", (InternalHandler) &TerminalIOHandler::handleRemote);
+    installHandler("r", (InternalHandler) &TerminalIOHandler::handleRemote);
     melapsedTimer.start();
     if (local)
     {
@@ -99,6 +100,14 @@ void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &ar
         handleUser(cmd, args);
     else if (cmd == "uptime")
         handleUptime(cmd, args);
+}
+
+void TerminalIOHandler::connectToHost(const QString &hostName)
+{
+    if (hostName.isEmpty())
+        return;
+    writeLine(tr("Connecting to", "") + " " + hostName + "...");
+    handleConnect("", QStringList() << hostName);
 }
 
 /*============================== Private methods ===========================*/

@@ -3,6 +3,7 @@
 #include "registrationserver.h"
 #include "remotecontrolserver.h"
 #include "logger.h"
+#include "storage.h"
 
 #include <TeXSampleGlobal>
 
@@ -20,8 +21,6 @@
 #include <QRegExp>
 
 #include <QDebug>
-
-bool testDatabase();
 
 int main(int argc, char *argv[])
 {
@@ -41,8 +40,13 @@ int main(int argc, char *argv[])
 #endif
     int ret = 0;
     QStringList args = QCoreApplication::arguments().mid(1);
-    bool local = !args.contains("--remote-server") && !args.contains("-R");
+    bool local = !args.contains("--remote") && !args.contains("-R");
     BCoreApplication bapp;
+    TerminalIOHandler::writeLine(QCoreApplication::translate("main", "This is", "") + " "
+                                 + QCoreApplication::applicationName() +
+                                 " v" + QCoreApplication::applicationVersion());
+    TerminalIOHandler::writeLine(local ? QCoreApplication::translate("main", "Mode: normal", "") :
+                                         QCoreApplication::translate("main", "Mode: remote", ""));
     if (local)
         BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
     BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
@@ -54,26 +58,30 @@ int main(int argc, char *argv[])
     BCoreApplication::loadSettings();
     if (local)
     {
-        if (!testDatabase())
+        TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
+        QString errs;
+        if (!Storage::initStorage(BCoreApplication::location(BCoreApplication::DataPath,
+                                                             BCoreApplication::UserResources), &errs))
+        {
+            TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Error:", "") + " " + errs);
             return 0;
+        }
+        else
+        {
+            TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Success!", ""));
+        }
         BCoreApplication::setLogger(new Logger);
     }
     TerminalIOHandler handler(local);
+    if (!local)
+    {
+        int ind = args.indexOf("--remote");
+        if (ind < 0)
+            ind = args.indexOf("-R");
+        if (ind >= 0 && ind < args.size() - 1)
+            handler.connectToHost(args.at(ind + 1));
+    }
     ret = app.exec();
     BCoreApplication::saveSettings();
     return ret;
-}
-
-bool testDatabase()
-{
-    bLog("Testing database existence");
-    QString fn = BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly);
-    QFileInfo fi(fn);
-    if ( fn.isEmpty() || !fi.exists() || !fi.isFile() || !fi.size() )
-    {
-        bLog("Database does not exist", BLogger::FatalLevel);
-        return false;
-    }
-    bLog("Database exists, OK");
-    return true;
 }
