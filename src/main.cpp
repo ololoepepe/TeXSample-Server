@@ -1,8 +1,4 @@
 #include "terminaliohandler.h"
-#include "server.h"
-#include "registrationserver.h"
-#include "remotecontrolserver.h"
-#include "logger.h"
 #include "storage.h"
 
 #include <TeXSampleGlobal>
@@ -70,7 +66,6 @@ int main(int argc, char *argv[])
         {
             TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Success!", ""));
         }
-        BCoreApplication::setLogger(new Logger);
     }
     TerminalIOHandler handler(local);
     if (!local)

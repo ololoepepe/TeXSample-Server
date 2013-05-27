@@ -2,10 +2,10 @@
 #include "server.h"
 #include "connection.h"
 #include "registrationserver.h"
-#include "logger.h"
 
 #include <TeXSample>
 #include <TOperationResult>
+#include <TClientInfo>
 
 #include <BNetworkConnection>
 #include <BGenericSocket>
@@ -40,13 +40,13 @@
 void TerminalIOHandler::write(const QString &text)
 {
     BTerminalIOHandler::write(text);
-    Logger::sendWriteRequest(text);
+    Server::sendWriteRequest(text);
 }
 
 void TerminalIOHandler::writeLine(const QString &text)
 {
     BTerminalIOHandler::writeLine(text);
-    Logger::sendWriteLineRequest(text);
+    Server::sendWriteLineRequest(text);
 }
 
 /*============================== Public constructors =======================*/
@@ -71,8 +71,8 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
     {
         mserver = new Server(this);
         mrserver = new RegistrationServer(this);
-        mserver->listen("0.0.0.0", 9041);
-        mrserver->listen("0.0.0.0", 9042);
+        mserver->listen("0.0.0.0", Texsample::MainPort);
+        mrserver->listen("0.0.0.0", Texsample::RegistrationPort);
     }
     else
     {
@@ -108,6 +108,11 @@ void TerminalIOHandler::connectToHost(const QString &hostName)
         return;
     writeLine(tr("Connecting to", "") + " " + hostName + "...");
     handleConnect("", QStringList() << hostName);
+}
+
+Server *TerminalIOHandler::server() const
+{
+    return mserver;
 }
 
 /*============================== Private methods ===========================*/
@@ -242,7 +247,7 @@ void TerminalIOHandler::connectToHost(const QString &hostName, const QString &lo
 {
     if (mremote->isConnected())
         return write(tr("Already connected to", "") + " " + mremote->peerAddress());
-    mremote->connectToHost(hostName, 9043);
+    mremote->connectToHost(hostName, 9041);
     if (!mremote->isConnected() && !mremote->waitForConnected())
     {
         mremote->close();
@@ -253,6 +258,8 @@ void TerminalIOHandler::connectToHost(const QString &hostName, const QString &lo
     QVariantMap out;
     out.insert("login", login);
     out.insert("password", QCryptographicHash::hash(password.toUtf8(), QCryptographicHash::Sha1));
+    out.insert("client_info", TClientInfo::createDefaultInfo());
+    out.insert("subscription", true);
     BNetworkOperation *op = mremote->sendRequest(Texsample::AuthorizeRequest, out);
     if (!op->isFinished() && !op->isError() && !op->waitForFinished())
     {
@@ -331,11 +338,10 @@ void TerminalIOHandler::remoteRequest(BNetworkOperation *op)
     if (op->metaData().operation() == Texsample::LogRequest)
     {
         QString msg = in.value("log_text").toString();
-        bool stderrLevel = in.value("stderr_level").toBool();
-        if (stderrLevel)
-            writeErr(msg);
-        else
-            write(msg);
+        int ilvl = in.value("level").toInt();
+        BLogger::Level lvl = bRangeD(BLogger::NoLevel, BLogger::CriticalLevel).contains(ilvl) ?
+                    static_cast<BLogger::Level>(ilvl) : BLogger::NoLevel;
+        BCoreApplication::log(msg, lvl);
     }
     else if (op->metaData().operation() == Texsample::WriteRequest)
     {

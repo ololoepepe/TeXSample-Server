@@ -2,6 +2,7 @@
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
+#include "server.h"
 
 #include <TAccessLevel>
 #include <TUserInfo>
@@ -35,6 +36,7 @@
 #include <QFileInfo>
 #include <QProcess>
 #include <QTcpSocket>
+#include <QMetaObject>
 
 #include <QDebug>
 
@@ -52,6 +54,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
     mstorage = new Storage(BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources));
     muserId = 0;
+    msubscribed = false;
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
@@ -73,6 +76,9 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleGetInvitesListRequest);
     installRequestHandler(Texsample::CompileProjectRequest,
                           (InternalHandler) &Connection::handleCompileProjectRequest);
+    installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
+    installRequestHandler(Texsample::ExecuteCommandRequest,
+                          (InternalHandler) &Connection::handleExecuteCommandRequest);
     QTimer::singleShot(15 * BeQt::Second, this, SLOT(testAuthorization()));
 }
 
@@ -82,6 +88,17 @@ Connection::~Connection()
 }
 
 /*============================== Public methods ============================*/
+
+void Connection::sendLogRequest(const QString &text, BLogger::Level lvl)
+{
+    QMetaObject::invokeMethod(this, "sendLogRequestInternal", Qt::QueuedConnection, Q_ARG(QString, text),
+                              Q_ARG(int, lvl));
+}
+
+void Connection::sendWriteRequest(const QString &text)
+{
+    QMetaObject::invokeMethod(this, "sendWriteRequestInternal", Qt::QueuedConnection, Q_ARG(QString, text));
+}
 
 QString Connection::login() const
 {
@@ -106,11 +123,25 @@ QString Connection::infoString(const QString &format) const
     return s;
 }
 
+bool Connection::isSubscribed() const
+{
+    return msubscribed;
+}
+
 /*============================== Purotected methods ========================*/
 
 void Connection::log(const QString &text, BLogger::Level lvl)
 {
-    BNetworkConnection::log((muserId ? ("[" + mlogin + "] ") : QString()) + text, lvl);
+    QString msg = (muserId ? ("[" + mlogin + "] ") : QString()) + text;
+    if (isConnected())
+    {
+        foreach (BNetworkConnection *c, server()->connections())
+        {
+            Connection *cc = static_cast<Connection *>(c);
+            cc->sendLogRequest(msg, lvl);
+        }
+    }
+    BNetworkConnection::log(msg, lvl);
 }
 
 /*============================== Static private methods ====================*/
@@ -139,6 +170,8 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     mclientInfo = in.value("client_info").value<TClientInfo>();
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
+    if (maccessLevel >= TAccessLevel::AdminLevel)
+        msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     log(tr("Authorized", "log text"));
     TerminalIOHandler::writeLine(infoString("%u\n%a; %o\n%e; %t; %b; %q"));
@@ -389,7 +422,33 @@ void Connection::handleCompileProjectRequest(BNetworkOperation *op)
         out.insert("dvips_result", *dr);
     if (r)
         out.insert("compiled_project", compiledProject);
-    return Global::sendReply(op, out, "compilation_result", r);
+    Global::sendReply(op, out, "compilation_result", r);
+}
+
+void Connection::handleSubscribeRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    msubscribed = op->variantData().toMap().value("subscription").toBool();
+    Global::sendReply(op, TOperationResult(true));
+}
+
+void Connection::handleExecuteCommandRequest(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, Global::notAuthorizedResult());
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return Global::sendReply(op, TOperationResult("Only admin can do this")); //TODO
+    QVariantMap in = op->variantData().toMap();
+    QString command = in.value("command").toString();
+    QStringList args = in.value("arguments").toStringList();
+    log(tr("Execute command request:", "log text") + " " + command);
+    if (command.isEmpty())
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    static_cast<TerminalIOHandler *>(TerminalIOHandler::instance())->executeCommand(command, args);
+    Global::sendReply(op, TOperationResult(true));
 }
 
 /*============================== Private slots =============================*/
@@ -400,4 +459,27 @@ void Connection::testAuthorization()
         return;
     log("Authorization failed, closing connection");
     close();
+}
+
+void Connection::sendLogRequestInternal(const QString &text, int lvl)
+{
+    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+        return;
+    QVariantMap out;
+    out.insert("log_text", text);
+    out.insert("level", lvl);
+    BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
+}
+
+void Connection::sendWriteRequestInternal(const QString &text)
+{
+    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+        return;
+    QVariantMap out;
+    out.insert("text", text);
+    BNetworkOperation *op = sendRequest(Texsample::WriteRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
 }

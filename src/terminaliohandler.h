@@ -25,13 +25,14 @@ class TerminalIOHandler : public BTerminalIOHandler
     Q_OBJECT
 public:
     static void write(const QString &text);
-    static void writeLine(const QString &text);
+    static void writeLine(const QString &text = QString());
 public:
     explicit TerminalIOHandler(bool local, QObject *parent = 0);
     ~TerminalIOHandler();
 public:
     void executeCommand(const QString &cmd, const QStringList &args);
     void connectToHost(const QString &hostName);
+    Server *server() const;
 private:
     void handleQuit(const QString &cmd, const QStringList &args);
     void handleUser(const QString &cmd, const QStringList &args);

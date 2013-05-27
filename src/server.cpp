@@ -1,5 +1,6 @@
 #include "server.h"
 #include "connection.h"
+#include "terminaliohandler.h"
 
 #include <BNetworkServer>
 #include <BGenericServer>
@@ -13,6 +14,27 @@
 /*============================================================================
 ================================ Server ======================================
 ============================================================================*/
+
+/*============================== Static public methods =====================*/
+
+void Server::sendWriteRequest(const QString &text)
+{
+    if (!TerminalIOHandler::instance())
+        return;
+    Server *s = static_cast<TerminalIOHandler *>(TerminalIOHandler::instance())->server();
+    if (!s)
+        return;
+    foreach (BNetworkConnection *c, s->connections())
+    {
+        Connection *cc = static_cast<Connection *>(c);
+        cc->sendWriteRequest(text);
+    }
+}
+
+void Server::sendWriteLineRequest(const QString &text)
+{
+    sendWriteRequest(text + "\n");
+}
 
 /*============================== Public constructors =======================*/
 

@@ -36,10 +36,7 @@ SOURCES += \
     registrationserver.cpp \
     registrationconnection.cpp \
     global.cpp \
-    storage.cpp \
-    remotecontrolserver.cpp \
-    remotecontrolconnection.cpp \
-    logger.cpp
+    storage.cpp
 
 HEADERS += \
     terminaliohandler.h \
@@ -50,10 +47,7 @@ HEADERS += \
     registrationserver.h \
     registrationconnection.h \
     global.h \
-    storage.h \
-    remotecontrolserver.h \
-    remotecontrolconnection.h \
-    logger.h
+    storage.h
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts
