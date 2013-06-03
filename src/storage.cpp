@@ -115,9 +115,9 @@ bool Storage::initStorage(const QString &rootDir, QString *errs)
         {
             Storage s(rootDir);
             TUserInfo info(TUserInfo::AddContext);
-            info.setLogin("admin");
-            info.setPassword(QString("admin"));
-            info.setAccessLevel(TAccessLevel::AdminLevel);
+            info.setLogin("root");
+            info.setPassword(QString("root"));
+            info.setAccessLevel(TAccessLevel::RootLevel);
             TOperationResult r = s.addUser(info);
             if (!r)
                 return bRet(errs, r.errorString(), false);
@@ -185,10 +185,11 @@ TOperationResult Storage::addUser(const TUserInfo &info)
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "INSERT INTO users (login, password, access_level, real_name, created_dt, modified_dt) "
-                 "VALUES (:login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
+    QString qs = "INSERT INTO users (email, login, password, access_level, real_name, created_dt, modified_dt) "
+                 "VALUES (:email, :login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
     QVariantMap bv;
     QDateTime dt = QDateTime::currentDateTimeUtc();
+    bv.insert(":email", info.email());
     bv.insert(":login", info.login());
     bv.insert(":pwd", info.password());
     bv.insert(":alvl", (int) info.accessLevel());

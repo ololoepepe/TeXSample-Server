@@ -138,7 +138,7 @@ void Connection::log(const QString &text, BLogger::Level lvl)
         foreach (BNetworkConnection *c, server()->connections())
         {
             Connection *cc = static_cast<Connection *>(c);
-            cc->sendLogRequest(msg, lvl);
+            cc->sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
         }
     }
     BNetworkConnection::log(msg, lvl);
@@ -333,7 +333,6 @@ void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
     TProject project;
     bool cacheOk = false;
     TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
-    qDebug() << project.size();
     if (!r)
         Global::sendReply(op, r);
     QVariantMap out;

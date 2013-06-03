@@ -26,6 +26,7 @@ class TerminalIOHandler : public BTerminalIOHandler
 public:
     static void write(const QString &text);
     static void writeLine(const QString &text = QString());
+    static QString mailPassword();
 public:
     explicit TerminalIOHandler(bool local, QObject *parent = 0);
     ~TerminalIOHandler();
@@ -47,6 +48,8 @@ private slots:
     void disconnected();
     void error(QAbstractSocket::SocketError err);
     void remoteRequest(BNetworkOperation *op);
+private:
+    static QString mmailPassword;
 private:
     Server *mserver;
     RegistrationServer *mrserver;

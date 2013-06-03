@@ -49,6 +49,11 @@ void TerminalIOHandler::writeLine(const QString &text)
     Server::sendWriteLineRequest(text);
 }
 
+QString TerminalIOHandler::mailPassword()
+{
+    return mmailPassword;
+}
+
 /*============================== Public constructors =======================*/
 
 TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
@@ -73,6 +78,10 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
         mrserver = new RegistrationServer(this);
         mserver->listen("0.0.0.0", Texsample::MainPort);
         mrserver->listen("0.0.0.0", Texsample::RegistrationPort);
+        setStdinEchoEnabled(false);
+        mmailPassword = readLine(tr("Enter e-mail password:", "") + " ");
+        setStdinEchoEnabled(true);
+        writeLine("");
     }
     else
     {
@@ -352,3 +361,7 @@ void TerminalIOHandler::remoteRequest(BNetworkOperation *op)
     op->waitForFinished();
     op->deleteLater();
 }
+
+/*============================== Private variables =========================*/
+
+QString TerminalIOHandler::mmailPassword;
