@@ -37,9 +37,12 @@ public:
     explicit Connection(BNetworkServer *server, BGenericSocket *socket);
     ~Connection();
 public:
+    void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
+    void sendWriteRequest(const QString &text);
     QString login() const;
     TClientInfo clientInfo() const;
     QString infoString(const QString &format = "") const; //"%l - login, %p - address, %u - id, %a - access level
+    bool isSubscribed() const;
 protected:
     void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
@@ -60,14 +63,19 @@ private:
     void handleGenerateInvitesRequest(BNetworkOperation *op);
     void handleGetInvitesListRequest(BNetworkOperation *op);
     void handleCompileProjectRequest(BNetworkOperation *op);
+    void handleSubscribeRequest(BNetworkOperation *op);
+    void handleExecuteCommandRequest(BNetworkOperation *op);
 private slots:
     void testAuthorization();
+    void sendLogRequestInternal(const QString &text, int lvl);
+    void sendWriteRequestInternal(const QString &text);
 private:
     Storage *mstorage;
     QString mlogin;
     quint64 muserId;
     TAccessLevel maccessLevel;
     TClientInfo mclientInfo;
+    bool msubscribed;
 };
 
 #endif // CONNECTION_H

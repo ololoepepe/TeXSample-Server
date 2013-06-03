@@ -1,6 +1,7 @@
 #include "registrationconnection.h"
 #include "global.h"
 #include "storage.h"
+#include "terminaliohandler.h"
 
 #include <TAccessLevel>
 #include <TUserInfo>
@@ -19,6 +20,7 @@
 #include <QVariant>
 #include <QVariantMap>
 #include <QTcpSocket>
+#include <QSettings>
 
 #include <QDebug>
 
@@ -68,7 +70,20 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
         return Global::sendReply(op, TOperationResult(tr("Invalid invite", "errorString")));
     if (!mstorage->deleteInvite(id))
         return Global::sendReply(op, Storage::databaseErrorResult());
-    Global::sendReply(op, mstorage->addUser(info));
+    TOperationResult r = mstorage->addUser(info);
+    Global::sendReply(op, r);
     op->waitForFinished();
     close();
+    Global::Host h;
+    h.address = bSettings->value("Mail/server_address").toString();
+    h.port = bSettings->value("Mail/server_port", h.port).toUInt();
+    Global::User u;
+    u.login = bSettings->value("Mail/login").toString();
+    u.password = TerminalIOHandler::mailPassword();
+    Global::Mail m;
+    m.from = "TeXSample Team";
+    m.to << info.email();
+    m.subject = "TeXSample registration";
+    m.body = "Hello, " + info.login() + "! You are now registered in TeXSample. Congratulations!";
+    Global::sendMail(h, u, m, bSettings->value("Mail/ssl_required").toBool());
 }

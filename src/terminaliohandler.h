@@ -25,13 +25,15 @@ class TerminalIOHandler : public BTerminalIOHandler
     Q_OBJECT
 public:
     static void write(const QString &text);
-    static void writeLine(const QString &text);
+    static void writeLine(const QString &text = QString());
+    static QString mailPassword();
 public:
     explicit TerminalIOHandler(bool local, QObject *parent = 0);
     ~TerminalIOHandler();
 public:
     void executeCommand(const QString &cmd, const QStringList &args);
     void connectToHost(const QString &hostName);
+    Server *server() const;
 private:
     void handleQuit(const QString &cmd, const QStringList &args);
     void handleUser(const QString &cmd, const QStringList &args);
@@ -46,6 +48,8 @@ private slots:
     void disconnected();
     void error(QAbstractSocket::SocketError err);
     void remoteRequest(BNetworkOperation *op);
+private:
+    static QString mmailPassword;
 private:
     Server *mserver;
     RegistrationServer *mrserver;

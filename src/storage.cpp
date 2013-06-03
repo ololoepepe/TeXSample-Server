@@ -99,6 +99,7 @@ bool Storage::initStorage(const QString &rootDir, QString *errs)
     list.removeDuplicates();
     if (list.isEmpty())
         return bRet(errs, tr("Failed to parce database schema", "errorString"), false);
+    bool users = db.tableExists("users");
     foreach (const QString &qs, list)
     {
         if (!db.execQuery(qs))
@@ -110,6 +111,17 @@ bool Storage::initStorage(const QString &rootDir, QString *errs)
     bool b = db.endDBOperation();
     if (b)
     {
+        if (!users)
+        {
+            Storage s(rootDir);
+            TUserInfo info(TUserInfo::AddContext);
+            info.setLogin("root");
+            info.setPassword(QString("root"));
+            info.setAccessLevel(TAccessLevel::RootLevel);
+            TOperationResult r = s.addUser(info);
+            if (!r)
+                return bRet(errs, r.errorString(), false);
+        }
         mtexsampleSty = sty;
         mtexsampleTex = tex;
     }
@@ -173,13 +185,14 @@ TOperationResult Storage::addUser(const TUserInfo &info)
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "INSERT INTO users (login, password, access_level, real_name, created_dt, modified_dt) "
-                 "VALUES (:login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
+    QString qs = "INSERT INTO users (email, login, password, access_level, real_name, created_dt, modified_dt) "
+                 "VALUES (:email, :login, :pwd, :alvl, :rname, :cr_dt, :mod_dt)";
     QVariantMap bv;
     QDateTime dt = QDateTime::currentDateTimeUtc();
+    bv.insert(":email", info.email());
     bv.insert(":login", info.login());
     bv.insert(":pwd", info.password());
-    bv.insert(":alvl", info.accessLevel());
+    bv.insert(":alvl", (int) info.accessLevel());
     bv.insert(":rname", info.realName());
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     bv.insert(":mod_dt", dt.toMSecsSinceEpoch());
