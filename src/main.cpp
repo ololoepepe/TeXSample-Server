@@ -38,6 +38,7 @@ int main(int argc, char *argv[])
     QStringList args = QCoreApplication::arguments().mid(1);
     bool local = !args.contains("--remote") && !args.contains("-R");
     BCoreApplication bapp;
+    Q_UNUSED(bapp);
     TerminalIOHandler::writeLine(QCoreApplication::translate("main", "This is", "") + " "
                                  + QCoreApplication::applicationName() +
                                  " v" + QCoreApplication::applicationVersion());
@@ -56,8 +57,7 @@ int main(int argc, char *argv[])
     {
         TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
         QString errs;
-        if (!Storage::initStorage(BCoreApplication::location(BCoreApplication::DataPath,
-                                                             BCoreApplication::UserResources), &errs))
+        if (!Storage::initStorage(&errs))
         {
             TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Error:", "") + " " + errs);
             return 0;

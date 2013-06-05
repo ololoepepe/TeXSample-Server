@@ -41,6 +41,7 @@ private:
     void handleConnect(const QString &cmd, const QStringList &args);
     void handleDisconnect(const QString &cmd, const QStringList &args);
     void handleRemote(const QString &cmd, const QStringList &args);
+    void handleSet(const QString &cmd, const QStringList &args);
 private slots:
     void connectToHost(const QString &hostName, const QString &login, const QString &password);
     void disconnectFromHost();

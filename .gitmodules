@@ -1,0 +1,3 @@
+[submodule "src/texsample-framework"]
+	path = src/texsample-framework
+	url = https://github.com/TeXSample-Team/TeXSample-Framework.git

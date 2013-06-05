@@ -37,11 +37,11 @@ public:
     static void lockGlobal();
     static bool tryLockGlobal();
     static void unlockGlobal();
-    static bool initStorage(const QString &rootDir, QString *errorString = 0);
+    static bool initStorage(QString *errorString = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
 public:
-    explicit Storage(const QString &rootDir);
+    explicit Storage();
     ~Storage();
 public:
     void lock();
@@ -62,6 +62,7 @@ public:
                                      TInviteInfo::InvitesList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
     bool deleteInvite(quint64 id);
+    bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 authorId(quint64 sampleId);
     TSampleInfo::Type sampleType(quint64 id);
@@ -72,10 +73,10 @@ public:
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
 private:
+    static QString rootDir();
+private:
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;
-private:
-    const QString RootDir;
 private:
     static QMutex mglobalMutex;
     static QString mtexsampleSty;

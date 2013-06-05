@@ -36,7 +36,7 @@ RegistrationConnection::RegistrationConnection(BNetworkServer *server, BGenericS
     setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    mstorage = new Storage(BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources));
+    mstorage = new Storage;
     installRequestHandler(Texsample::RegisterRequest,
                           (InternalHandler) &RegistrationConnection::handleRegisterRequest);
     QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
@@ -64,6 +64,7 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
     log(tr("Register request:", "log text") + " " + info.login());
     if (QUuid(invite).isNull() || !info.isValid(TUserInfo::RegisterContext))
         return Global::sendReply(op, Storage::invalidParametersResult());
+    info.setContext(TUserInfo::AddContext);
     info.setAccessLevel(TAccessLevel::UserLevel);
     quint64 id = mstorage->inviteId(invite);
     if (!id)
@@ -74,6 +75,8 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
     Global::sendReply(op, r);
     op->waitForFinished();
     close();
+    if (!r)
+        return;
     Global::Host h;
     h.address = bSettings->value("Mail/server_address").toString();
     h.port = bSettings->value("Mail/server_port", h.port).toUInt();

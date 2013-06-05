@@ -28,8 +28,171 @@
 #include <QByteArray>
 #include <QCryptographicHash>
 #include <QAbstractSocket>
+#include <QSettings>
 
 #include <QDebug>
+
+/*============================================================================
+================================ SettingsItem ================================
+============================================================================*/
+
+class SettingsItem
+{
+public:
+    explicit SettingsItem();
+    explicit SettingsItem(const QString &key, QVariant::Type t = QVariant::String);
+    SettingsItem(const SettingsItem &other);
+public:
+    void setKey(const QString &key);
+    void setType(const QVariant::Type t);
+    void setProperty(const QString &name, const QVariant &value = QVariant());
+    void addChildItem(const SettingsItem &item);
+    void addChildItem(const QString &key, QVariant::Type t = QVariant::String);
+    void removeChildItem(const QString &key);
+    QString key() const;
+    QVariant::Type type() const;
+    QVariant property(const QString &name) const;
+    QList<SettingsItem> childItems() const;
+    SettingsItem testPath(const QString &path, const QChar &separator = '.') const;
+public:
+    SettingsItem &operator =(const SettingsItem &other);
+    bool operator ==(const SettingsItem &other) const;
+private:
+    QString mkey;
+    QVariant::Type mtype;
+    QVariantMap mproperties;
+    QList<SettingsItem> mchildren;
+};
+
+/*============================================================================
+================================ SettingsItem ================================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+SettingsItem::SettingsItem()
+{
+    mtype = QVariant::Invalid;
+}
+
+SettingsItem::SettingsItem(const QString &key, QVariant::Type t)
+{
+    mkey = key;
+    mtype = t;
+}
+
+SettingsItem::SettingsItem(const SettingsItem &other)
+{
+    *this = other;
+}
+
+/*============================== Public methods ============================*/
+
+void SettingsItem::setKey(const QString &key)
+{
+    mkey = key;
+}
+
+void SettingsItem::setType(const QVariant::Type t)
+{
+    mtype = t;
+}
+
+void SettingsItem::setProperty(const QString &name, const QVariant &value)
+{
+    if (name.isEmpty())
+        return;
+    if (value.isValid())
+        mproperties[name] = value;
+    else
+        mproperties.remove(name);
+}
+
+void SettingsItem::addChildItem(const SettingsItem &item)
+{
+    if (item.key().isEmpty() || QVariant::Invalid == item.type() || mchildren.contains(item))
+        return;
+    mchildren << item;
+}
+
+void SettingsItem::addChildItem(const QString &key, QVariant::Type t)
+{
+    addChildItem(SettingsItem(key, t));
+}
+
+void SettingsItem::removeChildItem(const QString &key)
+{
+    if (key.isEmpty())
+        return;
+    mchildren.removeAll(SettingsItem(key));
+}
+
+QString SettingsItem::key() const
+{
+    return mkey;
+}
+
+QVariant::Type SettingsItem::type() const
+{
+    return mtype;
+}
+
+QVariant SettingsItem::property(const QString &name) const
+{
+    return mproperties.value(name);
+}
+
+QList<SettingsItem> SettingsItem::childItems() const
+{
+    return mchildren;
+}
+
+SettingsItem SettingsItem::testPath(const QString &path, const QChar &separator) const
+{
+    if (path.isEmpty())
+        return SettingsItem();
+    if (mkey.isEmpty())
+    {
+        foreach (const SettingsItem &i, mchildren)
+        {
+            SettingsItem si = i.testPath(path, separator);
+            if (QVariant::Invalid != si.type())
+                return si;
+        }
+    }
+    else
+    {
+        QStringList sl = path.split(!separator.isNull() ? separator : QChar('.'));
+        if (sl.takeFirst() != mkey)
+            return SettingsItem();
+        QString spath = sl.join(QString(separator));
+        if (spath.isEmpty())
+            return *this;
+        foreach (const SettingsItem &i, mchildren)
+        {
+            SettingsItem si = i.testPath(spath, separator);
+            if (QVariant::Invalid != si.type())
+                return si;
+        }
+    }
+    return SettingsItem();
+}
+
+/*============================== Public operators ==========================*/
+
+SettingsItem &SettingsItem::operator =(const SettingsItem &other)
+{
+    mkey = other.mkey;
+    mtype = other.mtype;
+    mproperties = other.mproperties;
+    mchildren = other.mchildren;
+    return *this;
+}
+
+bool SettingsItem::operator ==(const SettingsItem &other) const
+{
+    return mkey == other.mkey; //TODO
+}
 
 /*============================================================================
 ================================ TerminalIOHandler ===========================
@@ -71,6 +234,7 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
     installHandler("disconnect", (InternalHandler) &TerminalIOHandler::handleDisconnect);
     installHandler("remote", (InternalHandler) &TerminalIOHandler::handleRemote);
     installHandler("r", (InternalHandler) &TerminalIOHandler::handleRemote);
+    installHandler("set", (InternalHandler) &TerminalIOHandler::handleSet);
     melapsedTimer.start();
     if (local)
     {
@@ -78,10 +242,7 @@ TerminalIOHandler::TerminalIOHandler(bool local, QObject *parent) :
         mrserver = new RegistrationServer(this);
         mserver->listen("0.0.0.0", Texsample::MainPort);
         mrserver->listen("0.0.0.0", Texsample::RegistrationPort);
-        setStdinEchoEnabled(false);
-        mmailPassword = readLine(tr("Enter e-mail password:", "") + " ");
-        setStdinEchoEnabled(true);
-        writeLine("");
+        writeLine(tr("Please, don't forget to enter e-mail password", ""));
     }
     else
     {
@@ -248,6 +409,62 @@ void TerminalIOHandler::handleRemote(const QString &, const QStringList &args)
         return;
     QMetaObject::invokeMethod(this, "sendCommand", Qt::QueuedConnection, Q_ARG(QString, args.first()),
                               Q_ARG(QStringList, QStringList(args.mid(1))));
+}
+
+void TerminalIOHandler::handleSet(const QString &, const QStringList &args)
+{
+    init_once(SettingsItem, Settings, SettingsItem())
+    {
+        SettingsItem mail("Mail");
+          mail.addChildItem("server_address");
+          mail.addChildItem("server_port", QVariant::UInt);
+          mail.addChildItem("login");
+          SettingsItem i("password");
+            i.setProperty("mail_password", true);
+          mail.addChildItem(i);
+          mail.addChildItem("ssl_required", QVariant::Bool);
+        Settings.addChildItem(mail);
+        SettingsItem beqt("BeQt");
+          i.setKey("Core");
+          i.setProperty("mail_password");
+          i.addChildItem("locale", QVariant::Locale);
+          beqt.addChildItem(i);
+        Settings.addChildItem(beqt);
+    }
+    if (args.size() < 1 || args.size() > 2)
+        return writeLine(tr("Invalid parameters", ""));
+    QString path = args.first();
+    SettingsItem si = Settings.testPath(path);
+    if (QVariant::Invalid == si.type())
+        return writeLine(tr("No such option", ""));
+    path.replace('.', '/');
+    if (si.property("mail_password").toBool())
+    {
+        setStdinEchoEnabled(false);
+        mmailPassword = readLine(tr("Enter e-mail password:", "") + " ");
+        setStdinEchoEnabled(true);
+        writeLine("");
+    }
+    else
+    {
+        QVariant v;
+        if (args.size() == 2)
+            v = args.last();
+        else
+            v = readLine(tr("Enter value for", "") + " \"" + path.split("/").last() + "\": ");
+        switch (si.type())
+        {
+        case QVariant::Locale:
+            v = QLocale(v.toString());
+            break;
+        default:
+            if (!v.convert(si.type()))
+                return writeLine(tr("Invalid value", ""));
+            break;
+        }
+        bSettings->setValue(path, v);
+    }
+    writeLine(tr("OK", ""));
 }
 
 /*============================== Private slots =============================*/

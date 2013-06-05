@@ -1,3 +1,7 @@
 <RCC>
-    <qresource prefix="/"/>
+    <qresource prefix="/">
+        <file>db/texsample.schema</file>
+        <file>texsample-framework/texsample.sty</file>
+        <file>texsample-framework/texsample.tex</file>
+    </qresource>
 </RCC>
