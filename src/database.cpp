@@ -121,6 +121,11 @@ bool Database::endDBOperation(bool success)
     return b;
 }
 
+bool Database::isOpen() const
+{
+    return mdb->isOpen();
+}
+
 SqlQueryResult Database::execQuery(const QString &query, const QVariantMap &boundValues)
 {
     return execQuery(*mdb, query, boundValues);

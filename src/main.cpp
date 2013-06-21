@@ -23,10 +23,12 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0-rc1");
+    QCoreApplication::setApplicationVersion("1.0.0");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if defined(BUILTIN_RESOURCES)
+    Q_INIT_RESOURCE(texsample);
+    Q_INIT_RESOURCE(texsample_translations);
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
@@ -43,8 +45,11 @@ int main(int argc, char *argv[])
     BCoreApplication::logger()->setFileName(logfn);
     BCoreApplication::installTranslator(new BTranslator("qt"));
     BCoreApplication::installTranslator(new BTranslator("beqt"));
+    BCoreApplication::installTranslator(new BTranslator("texsample"));
     BCoreApplication::installTranslator(new BTranslator("texsample-server"));
     TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
+    TerminalIOHandler handler;
+    Q_UNUSED(handler)
     QString errs;
     if (!Storage::initStorage(&errs))
     {
@@ -54,8 +59,6 @@ int main(int argc, char *argv[])
     TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Success!", ""));
     TerminalIOHandler::writeLine(QCoreApplication::translate("main", "Please, don't forget to set e-mail password "
                                                              "and start the server"));
-    TerminalIOHandler handler;
-    Q_UNUSED(handler)
     ret = app.exec();
     return ret;
 }

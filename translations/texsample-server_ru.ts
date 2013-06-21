@@ -181,71 +181,81 @@
 <context>
     <name>Storage</name>
     <message>
-        <location filename="../src/storage.cpp" line="41"/>
+        <location filename="../src/storage.cpp" line="42"/>
         <source>Invalid Storage instance</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="46"/>
+        <location filename="../src/storage.cpp" line="47"/>
         <source>Invalid parameters</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="51"/>
-        <location filename="../src/storage.cpp" line="91"/>
-        <location filename="../src/storage.cpp" line="131"/>
+        <location filename="../src/storage.cpp" line="52"/>
+        <location filename="../src/storage.cpp" line="92"/>
+        <location filename="../src/storage.cpp" line="117"/>
         <source>Database error</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="56"/>
-        <location filename="../src/storage.cpp" line="109"/>
+        <location filename="../src/storage.cpp" line="57"/>
+        <location filename="../src/storage.cpp" line="113"/>
         <source>Query error</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="61"/>
+        <location filename="../src/storage.cpp" line="62"/>
         <source>File system error</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="84"/>
+        <location filename="../src/storage.cpp" line="85"/>
         <source>Failed to load texsample.sty</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="88"/>
+        <location filename="../src/storage.cpp" line="89"/>
         <source>Failed to load texsample.tex</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="102"/>
+        <location filename="../src/storage.cpp" line="103"/>
         <source>Failed to parce database schema</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="187"/>
+        <location filename="../src/storage.cpp" line="120"/>
+        <source>Enter root e-mail: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="121"/>
+        <source>Operation cancelled</source>
+        <comment>errorString</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="125"/>
+        <source>Enter root password: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="196"/>
         <source>These login or password are already in use</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="210"/>
-        <source>The user already exists</source>
-        <comment>errorString</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/storage.cpp" line="494"/>
-        <location filename="../src/storage.cpp" line="512"/>
+        <location filename="../src/storage.cpp" line="493"/>
+        <location filename="../src/storage.cpp" line="511"/>
         <source>No such sample</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
@@ -319,27 +329,27 @@
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="36"/>
+        <location filename="../src/main.cpp" line="38"/>
         <source>This is</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="47"/>
+        <location filename="../src/main.cpp" line="50"/>
         <source>Initializing storage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="51"/>
+        <location filename="../src/main.cpp" line="56"/>
         <source>Error:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="54"/>
+        <location filename="../src/main.cpp" line="59"/>
         <source>Success!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="55"/>
+        <location filename="../src/main.cpp" line="60"/>
         <source>Please, don&apos;t forget to set e-mail password and start the server</source>
         <translation type="unfinished"></translation>
     </message>

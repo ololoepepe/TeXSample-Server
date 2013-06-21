@@ -64,7 +64,7 @@ public:
     bool deleteInvite(quint64 id);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
-    quint64 authorId(quint64 sampleId);
+    quint64 senderId(quint64 sampleId);
     TSampleInfo::Type sampleType(quint64 id);
     QString sampleFileName(quint64 id);
     QDateTime sampleCreationDateTime(quint64 id, Qt::TimeSpec spec = Qt::UTC);
