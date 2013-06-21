@@ -35,6 +35,7 @@ public:
     void setDatabaseName(const QString &name);
     bool beginDBOperation();
     bool endDBOperation(bool success = true);
+    bool isOpen() const;
     SqlQueryResult execQuery(const QString &query, const QVariantMap &boundValues);
     bool execQuery(const QString &query, SqlQueryResult &result, const QVariantMap &boundValues);
     SqlQueryResult execQuery(const QString &query,

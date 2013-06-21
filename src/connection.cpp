@@ -52,7 +52,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     setCriticalBufferSize(BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    mstorage = new Storage(BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources));
+    mstorage = new Storage;
     muserId = 0;
     msubscribed = false;
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
@@ -279,8 +279,8 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
     log(tr("Update sample request", "log text"));
-    quint64 authId = mstorage->authorId(info.id());
-    if (authId != muserId)
+    quint64 sId = mstorage->senderId(info.id());
+    if (sId != muserId)
         return Global::sendReply(op, TOperationResult("This is not your sample")); //TODO
     if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
         return Global::sendReply(op, TOperationResult("You can not modify approved sample")); //TODO
@@ -295,8 +295,8 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     quint64 id = in.value("sample_id").toULongLong();
     QString reason = in.value("reason").toString();
     log(tr("Delete sample request", "log text"));
-    quint64 authId = mstorage->authorId(id);
-    if (authId != muserId && maccessLevel < TAccessLevel::AdminLevel)
+    quint64 sId = mstorage->senderId(id);
+    if (sId != muserId && maccessLevel < TAccessLevel::AdminLevel)
         return Global::sendReply(op, TOperationResult("This is not your sample")); //TODO
     Global::sendReply(op, mstorage->deleteSample(id, reason));
 }

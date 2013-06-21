@@ -172,7 +172,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/registrationconnection.cpp" line="70"/>
+        <location filename="../src/registrationconnection.cpp" line="71"/>
         <source>Invalid invite</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
@@ -181,41 +181,35 @@
 <context>
     <name>Storage</name>
     <message>
-        <location filename="../src/storage.cpp" line="41"/>
+        <location filename="../src/storage.cpp" line="42"/>
         <source>Invalid Storage instance</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="46"/>
+        <location filename="../src/storage.cpp" line="47"/>
         <source>Invalid parameters</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="51"/>
-        <location filename="../src/storage.cpp" line="91"/>
-        <location filename="../src/storage.cpp" line="130"/>
+        <location filename="../src/storage.cpp" line="52"/>
+        <location filename="../src/storage.cpp" line="92"/>
+        <location filename="../src/storage.cpp" line="117"/>
         <source>Database error</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="56"/>
-        <location filename="../src/storage.cpp" line="108"/>
+        <location filename="../src/storage.cpp" line="57"/>
+        <location filename="../src/storage.cpp" line="113"/>
         <source>Query error</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="61"/>
+        <location filename="../src/storage.cpp" line="62"/>
         <source>File system error</source>
-        <comment>errorString</comment>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/storage.cpp" line="82"/>
-        <source>Directory does not exist</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
@@ -226,26 +220,42 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="88"/>
+        <location filename="../src/storage.cpp" line="89"/>
         <source>Failed to load texsample.tex</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="101"/>
+        <location filename="../src/storage.cpp" line="103"/>
         <source>Failed to parce database schema</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="208"/>
-        <source>The user already exists</source>
+        <location filename="../src/storage.cpp" line="120"/>
+        <source>Enter root e-mail: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="121"/>
+        <source>Operation cancelled</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="492"/>
-        <location filename="../src/storage.cpp" line="510"/>
+        <location filename="../src/storage.cpp" line="125"/>
+        <source>Enter root password: </source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="196"/>
+        <source>These login or password are already in use</source>
+        <comment>errorString</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="493"/>
+        <location filename="../src/storage.cpp" line="511"/>
         <source>No such sample</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
@@ -254,137 +264,93 @@
 <context>
     <name>TerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="82"/>
+        <location filename="../src/terminaliohandler.cpp" line="379"/>
         <source>Enter e-mail password:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="117"/>
-        <source>Connecting to</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="139"/>
+        <location filename="../src/terminaliohandler.cpp" line="271"/>
         <source>Users:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="214"/>
+        <location filename="../src/terminaliohandler.cpp" line="346"/>
         <source>Uptime:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="214"/>
+        <location filename="../src/terminaliohandler.cpp" line="346"/>
         <source>days</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="222"/>
-        <source>Invalid usage</source>
+        <location filename="../src/terminaliohandler.cpp" line="370"/>
+        <source>Invalid parameters</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="223"/>
-        <source>Enter login:</source>
+        <location filename="../src/terminaliohandler.cpp" line="374"/>
+        <source>No such option</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="226"/>
-        <source>Enter password:</source>
+        <location filename="../src/terminaliohandler.cpp" line="389"/>
+        <source>Enter value for</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="257"/>
-        <source>Already connected to</source>
+        <location filename="../src/terminaliohandler.cpp" line="397"/>
+        <source>Invalid value</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="262"/>
-        <source>Failed to connect to</source>
+        <location filename="../src/terminaliohandler.cpp" line="402"/>
+        <location filename="../src/terminaliohandler.cpp" line="416"/>
+        <location filename="../src/terminaliohandler.cpp" line="425"/>
+        <source>OK</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="265"/>
-        <source>Connected to</source>
+        <location filename="../src/terminaliohandler.cpp" line="408"/>
+        <source>The server is already running</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="265"/>
-        <source>Authorizing...</source>
+        <location filename="../src/terminaliohandler.cpp" line="414"/>
+        <source>Failed to start server</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="276"/>
-        <source>Authorization timed out</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="283"/>
-        <location filename="../src/terminaliohandler.cpp" line="324"/>
-        <source>Operation error</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="292"/>
-        <source>Authorization failed. The following error occured:</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="296"/>
-        <source>Authorized successfully with user id</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="306"/>
-        <source>Disconnect timeout, closing socket</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="310"/>
-        <source>Disconnected</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="316"/>
-        <source>Not authoized</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="330"/>
-        <source>Failed to execute command. The following error occured:</source>
+        <location filename="../src/terminaliohandler.cpp" line="422"/>
+        <source>The server is not running</source>
         <translation type="unfinished"></translation>
     </message>
 </context>
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="41"/>
+        <location filename="../src/main.cpp" line="38"/>
         <source>This is</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="44"/>
-        <source>Mode: normal</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/main.cpp" line="45"/>
-        <source>Mode: remote</source>
-        <translation type="unfinished"></translation>
-    </message>
-    <message>
-        <location filename="../src/main.cpp" line="57"/>
+        <location filename="../src/main.cpp" line="50"/>
         <source>Initializing storage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="62"/>
+        <location filename="../src/main.cpp" line="56"/>
         <source>Error:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="67"/>
+        <location filename="../src/main.cpp" line="59"/>
         <source>Success!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="60"/>
+        <source>Please, don&apos;t forget to set e-mail password and start the server</source>
         <translation type="unfinished"></translation>
     </message>
 </context>

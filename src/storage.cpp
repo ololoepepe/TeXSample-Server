@@ -14,6 +14,7 @@
 
 #include <BDirTools>
 #include <BeQt>
+#include <BTerminalIOHandler>
 
 #include <QString>
 #include <QFileInfo>
@@ -76,20 +77,21 @@ void Storage::unlockGlobal()
     mglobalMutex.unlock();
 }
 
-bool Storage::initStorage(const QString &rootDir, QString *errs)
+bool Storage::initStorage(QString *errs)
 {
-    if (!QDir(rootDir).exists())
-        return bRet(errs, tr("Directory does not exist", "errorString"), false);
-    QString sty = BDirTools::readTextFile(rootDir + "/texsample/texsample.sty", "UTF-8");
+    QString sty = BDirTools::readTextFile(BDirTools::findResource("texsample-framework/texsample.sty",
+                                                                  BDirTools::GlobalOnly), "UTF-8");
     if (sty.isEmpty())
         return bRet(errs, tr("Failed to load texsample.sty", "errorString"), false);
-    QString tex = BDirTools::readTextFile(rootDir + "/texsample/texsample.tex", "UTF-8");
+    QString tex = BDirTools::readTextFile(BDirTools::findResource("texsample-framework/texsample.tex",
+                                                                  BDirTools::GlobalOnly), "UTF-8");
     if (tex.isEmpty())
         return bRet(errs, tr("Failed to load texsample.tex", "errorString"), false);
-    Database db(QUuid::createUuid().toString(), rootDir + "/texsample.sqlite");
+    Database db(QUuid::createUuid().toString(), rootDir() + "/texsample.sqlite");
     if (!db.beginDBOperation())
         return bRet(errs, tr("Database error", "errorString"), false);
-    QStringList list = BDirTools::readTextFile(rootDir + "/texsample.schema", "UTF-8").split(";\n");
+    QStringList list = BDirTools::readTextFile(BDirTools::findResource("db/texsample.schema",
+                                                                       BDirTools::GlobalOnly), "UTF-8").split(";\n");
     foreach (int i, bRangeD(0, list.size() - 1))
     {
         list[i].replace('\n', ' ');
@@ -100,6 +102,9 @@ bool Storage::initStorage(const QString &rootDir, QString *errs)
     if (list.isEmpty())
         return bRet(errs, tr("Failed to parce database schema", "errorString"), false);
     bool users = db.tableExists("users");
+    SqlQueryResult qr;
+    users = users && db.execQuery("SELECT id FROM users WHERE login=:login", qr, ":login", QString("root"));
+    users = users && qr.value().value("id").toULongLong();
     foreach (const QString &qs, list)
     {
         if (!db.execQuery(qs))
@@ -108,28 +113,33 @@ bool Storage::initStorage(const QString &rootDir, QString *errs)
             return bRet(errs, tr("Query error", "errorString"), false);
         }
     }
-    bool b = db.endDBOperation();
-    if (b)
+    if (!db.endDBOperation())
+        return bRet(errs, tr("Database error", "errorString"), false);
+    if (!users)
     {
-        if (!users)
-        {
-            Storage s(rootDir);
-            TUserInfo info(TUserInfo::AddContext);
-            info.setLogin("root");
-            info.setPassword(QString("root"));
-            info.setAccessLevel(TAccessLevel::RootLevel);
-            TOperationResult r = s.addUser(info);
-            if (!r)
-                return bRet(errs, r.errorString(), false);
-        }
-        mtexsampleSty = sty;
-        mtexsampleTex = tex;
+        QString mail = BTerminalIOHandler::readLine("\n" + tr("Enter root e-mail: ", ""));
+        QString e = tr("Operation cancelled", "errorString");
+        if (mail.isEmpty())
+            return bRet(errs, e, false);
+        BTerminalIOHandler::setStdinEchoEnabled(false);
+        QString pwd = BTerminalIOHandler::readLine(tr("Enter root password: ", ""));
+        BTerminalIOHandler::setStdinEchoEnabled(true);
+        BTerminalIOHandler::writeLine();
+        if (pwd.isEmpty())
+            return bRet(errs, e, false);
+        Storage s;
+        TUserInfo info(TUserInfo::AddContext);
+        info.setLogin("root");
+        info.setEmail(mail);
+        info.setPassword(pwd);
+        info.setAccessLevel(TAccessLevel::RootLevel);
+        TOperationResult r = s.addUser(info);
+        if (!r)
+            return bRet(errs, r.errorString(), false);
     }
-    else if (errs)
-    {
-        *errs = tr("Database error", "errorString");
-    }
-    return b;
+    mtexsampleSty = sty;
+    mtexsampleTex = tex;
+    return true;
 }
 
 bool Storage::copyTexsample(const QString &path, const QString &codecName)
@@ -148,11 +158,10 @@ bool Storage::removeTexsample(const QString &path)
 
 /*============================== Public constructors =======================*/
 
-Storage::Storage(const QString &rootDir) :
-    RootDir(rootDir)
+Storage::Storage()
 {
-    mdb = (QFileInfo(rootDir).isDir()) ? new Database(QUuid::createUuid().toString(),
-                                                      rootDir + "/texsample.sqlite") : 0;
+    mdb = new Database(QUuid::createUuid().toString(),
+                       BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
 }
 
 Storage::~Storage()
@@ -183,6 +192,8 @@ TOperationResult Storage::addUser(const TUserInfo &info)
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
+    if (!isUserUnique(info.login(), info.email()))
+        return TOperationResult(tr("These login or password are already in use", "errorString"));
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
     QString qs = "INSERT INTO users (email, login, password, access_level, real_name, created_dt, modified_dt) "
@@ -196,18 +207,7 @@ TOperationResult Storage::addUser(const TUserInfo &info)
     bv.insert(":rname", info.realName());
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     bv.insert(":mod_dt", dt.toMSecsSinceEpoch());
-    SqlQueryResult r = mdb->execQuery("SELECT id FROM users WHERE login = :login", ":login", info.login());
-    if (!r)
-    {
-        mdb->endDBOperation(false);
-        return queryErrorResult();
-    }
-    if (r.value().value("login").toULongLong() > 0)
-    {
-        mdb->endDBOperation(false);
-        return TOperationResult(tr("The user already exists", "errorString"));
-    }
-    r = mdb->execQuery(qs, bv);
+    SqlQueryResult r = mdb->execQuery(qs, bv);
     if (!r)
     {
         mdb->endDBOperation(false);
@@ -320,14 +320,14 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "INSERT INTO samples (extra_authors, title, file_name, author_id, tags, comment, created_dt,"
-            "modified_dt) VALUES (:ext_auth, :title, :fname, :author_id, :tags, :comment, :created_dt, :modified_dt)";
+    QString qs = "INSERT INTO samples (sender_id, title, file_name, authors, tags, comment, created_dt, modified_dt) "
+                 "VALUES (:sender_id, :title, :file_name, :authors, :tags, :comment, :created_dt, :modified_dt)";
     QVariantMap bv;
     qint64 dt = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    bv.insert(":ext_auth", info.extraAuthorsString());
+    bv.insert(":sender_id", userId);
     bv.insert(":title", info.title());
-    bv.insert(":fname", info.fileName());
-    bv.insert(":author_id", userId);
+    bv.insert(":file_name", info.fileName());
+    bv.insert(":authors", info.authorsString());
     bv.insert(":tags", info.tagsString());
     bv.insert(":comment", info.comment());
     bv.insert(":created_dt", dt);
@@ -348,7 +348,8 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         BDirTools::rmdir(tpath);
         return cr;
     }
-    if (!BDirTools::renameDir(tpath, RootDir + "/samples/" + QString::number(qr.insertId().toULongLong())))
+    QString npath = rootDir() + "/samples/" + QString::number(qr.insertId().toULongLong());
+    if (!BDirTools::renameDir(tpath, npath) && !BDirTools::copyDir(tpath, npath, true))
     {
         mdb->endDBOperation(false);
         BDirTools::rmdir(tpath);
@@ -370,14 +371,14 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return databaseErrorResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qs = "UPDATE samples SET extra_authors = :ext_auth, title = :title, tags = :tags,"
-            "comment = :comment, modified_dt = :mod_dt";
+    QString qs = "UPDATE samples SET title = :title, authors = :authors, tags = :tags, comment = :comment, "
+                 "modified_dt = :modified_dt";
     QVariantMap bv;
-    bv.insert(":ext_auth", info.extraAuthorsString());
     bv.insert(":title", info.title());
+    bv.insert(":authors", info.authorsString());
     bv.insert(":tags", info.tagsString());
     bv.insert(":comment", info.comment());
-    bv.insert(":mod_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    bv.insert(":modified_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     bv.insert(":id", info.id());
     if (info.context() == TSampleInfo::EditContext)
     {
@@ -388,7 +389,7 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
     }
     if (pfn != info.fileName())
     {
-        qs += " file_name = :fname";
+        qs += ", file_name = :fname";
         bv.insert(":fname", info.fileName());
     }
     qs += " WHERE id = :id";
@@ -398,7 +399,7 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
-    QString spath = RootDir + "/samples/" + QString::number(info.id());
+    QString spath = rootDir() + "/samples/" + QString::number(info.id());
     if (pfn != info.fileName() && !project.isValid()
             && !QFile::rename(spath + "/" + pfn, spath + "/" + info.fileName()))
     {
@@ -442,9 +443,9 @@ TOperationResult Storage::deleteSample(quint64 id, const QString &reason)
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
-    quint64 authId = authorId(id);
+    quint64 sId = senderId(id);
     QDateTime createdDT = sampleCreationDateTime(id);
-    if (!authId)
+    if (!sId)
         return databaseErrorResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
@@ -453,11 +454,11 @@ TOperationResult Storage::deleteSample(quint64 id, const QString &reason)
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
-    QString qs = "INSERT INTO deleted_samples (id, author_id, reason, created_dt, deleted_dt) "
-                 "VALUES (:id, :cr_id, :reason, :created_dt, :deleted_dt)";
+    QString qs = "INSERT INTO deleted_samples (id, sender_id, reason, created_dt, deleted_dt) "
+                 "VALUES (:id, :sender_id, :reason, :created_dt, :deleted_dt)";
     QVariantMap bv;
     bv.insert(":id", id);
-    bv.insert(":cr_id", authId);
+    bv.insert(":sender_id", sId);
     bv.insert(":reason", reason);
     bv.insert(":created_dt", createdDT.toMSecsSinceEpoch());
     bv.insert(":deleted_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
@@ -466,7 +467,7 @@ TOperationResult Storage::deleteSample(quint64 id, const QString &reason)
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
-    if (!BDirTools::rmdir(RootDir + "/samples/" + QString::number(id)))
+    if (!BDirTools::rmdir(rootDir() + "/samples/" + QString::number(id)))
     {
         mdb->endDBOperation(false);
         return fileSystemErrorResult();
@@ -491,7 +492,7 @@ TOperationResult Storage::getSampleSource(quint64 id, TProject &project, QDateTi
     if (fn.isEmpty())
         return TOperationResult(tr("No such sample", "errorString")); //TODO
     updateDT = QDateTime::currentDateTimeUtc();
-    return TOperationResult(project.load(RootDir + "/samples/" + QString::number(id) + "/" + fn, "UTF-8"));
+    return TOperationResult(project.load(rootDir() + "/samples/" + QString::number(id) + "/" + fn, "UTF-8"));
 }
 
 TOperationResult Storage::getSamplePreview(quint64 id, TProjectFile &file, QDateTime &updateDT, bool &cacheOk)
@@ -509,7 +510,7 @@ TOperationResult Storage::getSamplePreview(quint64 id, TProjectFile &file, QDate
     if (fn.isEmpty())
         return TOperationResult(tr("No such sample", "errorString")); //TODO
     updateDT = QDateTime::currentDateTimeUtc();
-    fn = RootDir + "/samples/" + QString::number(id) + "/" + QFileInfo(fn).baseName() + ".pdf";
+    fn = rootDir() + "/samples/" + QString::number(id) + "/" + QFileInfo(fn).baseName() + ".pdf";
     return TOperationResult(file.loadAsBinary(fn, ""));
 }
 
@@ -520,10 +521,10 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         return invalidInstanceResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
-    QString qsNew = "SELECT id, author_id, extra_authors, title, file_name, type, tags, rating, comment, "
-            "admin_remark, created_dt, modified_dt FROM samples WHERE modified_dt >= :update_dt";
+    QString qsNew = "SELECT id, sender_id, authors, title, file_name, type, tags, rating, comment, "
+                    "admin_remark, created_dt, modified_dt FROM samples WHERE modified_dt >= :update_dt";
     QString qsDeleted = "SELECT id, created_dt FROM deleted_samples "
-            "WHERE deleted_dt >= :update_dt AND created_dt < :update_dt_hack";
+                        "WHERE deleted_dt >= :update_dt AND created_dt < :update_dt_hack";
     SqlQueryResult rNew = mdb->execQuery(qsNew, ":update_dt", updateDT.toMSecsSinceEpoch());
     if (!rNew)
     {
@@ -548,11 +549,11 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         TSampleInfo info;
         info.setId(m.value("id").toULongLong());
         TUserInfo uinfo;
-        TOperationResult ur = getShortUserInfo(m.value("author_id").toULongLong(), uinfo);
+        TOperationResult ur = getShortUserInfo(m.value("sender_id").toULongLong(), uinfo);
         if (!ur)
             return ur;
-        info.setAuthor(uinfo);
-        info.setExtraAuthors(m.value("extra_authors").toString());
+        info.setSender(uinfo);
+        info.setAuthors(m.value("authors").toString());
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
@@ -580,7 +581,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
         return databaseErrorResult();
     invites.clear();
     QString qs = "INSERT INTO invites (uuid, creator_id, expires_dt, created_dt) "
-            "VALUES (:uuid, :user, :exp_dt, :cr_dt)";
+                 "VALUES (:uuid, :user, :exp_dt, :cr_dt)";
     QVariantMap bv;
     bv.insert(":user", userId);
     bv.insert(":exp_dt", expiresDT.toUTC().toMSecsSinceEpoch());
@@ -652,27 +653,40 @@ bool Storage::deleteInvite(quint64 id)
     return mdb->endDBOperation(b) && b;
 }
 
+bool Storage::isUserUnique(const QString &login, const QString &email)
+{
+    if (login.isEmpty() || email.isEmpty())
+        return false;
+    if (!isValid() || !mdb->beginDBOperation())
+        return false;
+    SqlQueryResult r1 = mdb->execQuery("SELECT id FROM users WHERE login = :login", ":login", login);
+    SqlQueryResult r2 = mdb->execQuery("SELECT id FROM users WHERE email = :email", ":email", login);
+    mdb->endDBOperation(r1 && r2);
+    return r1 && r2 && !r1.value().value("id").toULongLong() && !r2.value().value("id").toULongLong();
+}
+
 quint64 Storage::userId(const QString &login, const QByteArray &password)
 {
-    static const QString QSPassword = "SELECT id FROM users WHERE login = :login AND password = :pwd";
-    static const QString QSNoPassword = "SELECT id FROM users WHERE login = :login";
     if (login.isEmpty())
         return 0;
     if (!isValid() || !mdb->beginDBOperation())
         return 0;
-    SqlQueryResult r = !password.isEmpty() ? mdb->execQuery(QSPassword, ":login", login, ":pwd", password) :
-                                             mdb->execQuery(QSNoPassword, ":login", login);
+    QString qs = "SELECT id FROM users WHERE login = :login";
+    bool b = !password.isEmpty();
+    if (b)
+        qs += " AND password = :pwd";
+    SqlQueryResult r = mdb->execQuery(qs, ":login", login, b ? ":pwd" : "", b ? QVariant(password) : QVariant());
     mdb->endDBOperation(r);
     return r ? r.value().value("id").toULongLong() : 0;
 }
 
-quint64 Storage::authorId(quint64 sampleId)
+quint64 Storage::senderId(quint64 sampleId)
 {
     if (!sampleId || !isValid() || !mdb->beginDBOperation())
         return 0;
-    SqlQueryResult r = mdb->execQuery("SELECT author_id FROM samples WHERE id = :id", ":id", sampleId);
+    SqlQueryResult r = mdb->execQuery("SELECT sender_id FROM samples WHERE id = :id", ":id", sampleId);
     mdb->endDBOperation(r);
-    return r.value().value("author_id").toULongLong();
+    return r.value().value("sender_id").toULongLong();
 }
 
 TSampleInfo::Type Storage::sampleType(quint64 id)
@@ -737,7 +751,14 @@ quint64 Storage::inviteId(const QString &inviteCode)
 
 bool Storage::isValid() const
 {
-    return !RootDir.isEmpty() && mdb;
+    return QFileInfo(rootDir()).isDir() && mdb;
+}
+
+/*============================== Static private methods ====================*/
+
+QString Storage::rootDir()
+{
+    return BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources);
 }
 
 /*============================== Private methods ===========================*/
@@ -746,14 +767,14 @@ bool Storage::saveUserAvatar(quint64 userId, const QByteArray &data) const
 {
     if (!isValid() || !userId)
         return false;
-    return BDirTools::writeFile(RootDir + "/users/" + QString::number(userId) + "/avatar.dat", data);
+    return BDirTools::writeFile(rootDir() + "/users/" + QString::number(userId) + "/avatar.dat", data);
 }
 
 QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
 {
     if (!isValid() || !userId)
         return bRet(ok, false, QByteArray());
-    return BDirTools::readFile(RootDir + "/users/" + QString::number(userId) + "/avatar.dat", -1, ok);
+    return BDirTools::readFile(rootDir() + "/users/" + QString::number(userId) + "/avatar.dat", -1, ok);
 }
 
 /*============================== Static private members ====================*/

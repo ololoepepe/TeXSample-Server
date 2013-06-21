@@ -119,4 +119,18 @@ INSTALLS = target
     INSTALLS += installsTranslations
 }
 
+##############################################################################
+################################ Other resources #############################
+##############################################################################
+
+!contains(TSRV_CONFIG, builtin_resources) {
+    installsDb.files=$$files($${PWD}/db/*)
+    installsDb.path=$${RESOURCES_INSTALLS_PATH}/db
+    INSTALLS += installsDb
+    installsTsfv.files=$$files($${PWD}/texsample-framework/*.sty)
+    installsTsfv.files+=$$files($${PWD}/texsample-framework/*.tex)
+    installsTsfv.path=$${RESOURCES_INSTALLS_PATH}/texsample-framework
+    INSTALLS += installsTsfv
+}
+
 } #end !contains(TSRV_CONFIG, no_install)
