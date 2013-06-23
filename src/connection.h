@@ -25,6 +25,7 @@ class QByteArray;
 #include <QVariantMap>
 #include <QVariantList>
 #include <QVariant>
+#include <QTimer>
 
 /*============================================================================
 ================================ Connection ==================================
@@ -67,6 +68,8 @@ private:
     void handleExecuteCommandRequest(BNetworkOperation *op);
 private slots:
     void testAuthorization();
+    void restartTimer(BNetworkOperation *op = 0);
+    void keepAlive();
     void sendLogRequestInternal(const QString &text, int lvl);
     void sendWriteRequestInternal(const QString &text);
 private:
@@ -76,6 +79,7 @@ private:
     TAccessLevel maccessLevel;
     TClientInfo mclientInfo;
     bool msubscribed;
+    QTimer mtimer;
 };
 
 #endif // CONNECTION_H

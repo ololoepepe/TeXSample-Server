@@ -22,6 +22,7 @@ public:
     explicit Server(QObject *parent = 0);
 protected:
     BNetworkConnection *createConnection(BGenericSocket *socket);
+    BGenericSocket *createSocket();
 };
 
 #endif // SERVER_H

@@ -1,4 +1,8 @@
-=== TeX Creator 1.0.0 (22 June 2013) ===
+== TeXSample Server 1.0.1 (23 June 2013) ===
+    * Add "noop" requests for testing connections
+    * Fix sample adding and editing
+
+=== TeXSample Server 1.0.0 (22 June 2013) ===
     * Use new BeQt version (2.0.0)
     * Fully revise application structure
     * Revise user interface
