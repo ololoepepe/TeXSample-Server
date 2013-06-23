@@ -23,12 +23,10 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.0");
+    QCoreApplication::setApplicationVersion("1.0.1");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if defined(BUILTIN_RESOURCES)
-    Q_INIT_RESOURCE(texsample);
-    Q_INIT_RESOURCE(texsample_translations);
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
@@ -38,7 +36,7 @@ int main(int argc, char *argv[])
     TerminalIOHandler::writeLine(QCoreApplication::translate("main", "This is", "") + " "
                                  + QCoreApplication::applicationName() +
                                  " v" + QCoreApplication::applicationVersion());
-    BDirTools::createUserLocations(QStringList() << "samples" << "tmp" << "users" << "logs");
+    BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
     BCoreApplication::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
     QString logfn = BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources) + "/logs/";
     logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";

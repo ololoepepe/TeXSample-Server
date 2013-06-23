@@ -10,6 +10,7 @@
 #include <BeQt>
 
 #include <QObject>
+#include <QTcpSocket>
 
 /*============================================================================
 ================================ Server ======================================
@@ -51,4 +52,11 @@ Server::Server(QObject *parent) :
 BNetworkConnection *Server::createConnection(BGenericSocket *socket)
 {
     return new Connection(this, socket);
+}
+
+BGenericSocket *Server::createSocket()
+{
+    BGenericSocket *s = new BGenericSocket(BGenericSocket::TcpSocket);
+    s->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
+    return s;
 }

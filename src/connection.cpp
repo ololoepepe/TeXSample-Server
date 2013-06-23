@@ -51,10 +51,16 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
 {
     setCriticalBufferSize(BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
-    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
     mstorage = new Storage;
     muserId = 0;
     msubscribed = false;
+    mtimer.setInterval(5 * BeQt::Minute);
+    connect(&mtimer, SIGNAL(timeout()), this, SLOT(keepAlive()));
+    connect(this, SIGNAL(requestSent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    connect(this, SIGNAL(replyReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    connect(this, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    connect(this, SIGNAL(replySent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
@@ -179,6 +185,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
     out.insert("user_id", id);
     out.insert("access_level", maccessLevel);
     Global::sendReply(op, out, TOperationResult(true));
+    restartTimer();
 }
 
 void Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -458,6 +465,32 @@ void Connection::testAuthorization()
         return;
     log("Authorization failed, closing connection");
     close();
+}
+
+void Connection::restartTimer(BNetworkOperation *op)
+{
+    if (op && op->metaData().operation() == "noop")
+        return;
+    mtimer.stop();
+    mtimer.start();
+}
+
+void Connection::keepAlive()
+{
+    if (!muserId || !isConnected())
+        return;
+    mtimer.stop();
+    log(tr("Testing connection...", "log"), BLogger::CriticalLevel);
+    BNetworkOperation *op = sendRequest("noop");
+    bool b = op->waitForFinished(5 * BeQt::Minute);
+    if (!b)
+    {
+        log(tr("Connection response timeout", "log"), BLogger::CriticalLevel);
+        op->cancel();
+    }
+    op->deleteLater();
+    if (b)
+        mtimer.start();
 }
 
 void Connection::sendLogRequestInternal(const QString &text, int lvl)

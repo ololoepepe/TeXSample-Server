@@ -348,8 +348,8 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
         BDirTools::rmdir(tpath);
         return cr;
     }
-    QString npath = rootDir() + "/samples/" + QString::number(qr.insertId().toULongLong());
-    if (!BDirTools::renameDir(tpath, npath) && !BDirTools::copyDir(tpath, npath, true))
+    QString spath = rootDir() + "/samples/" + QString::number(qr.insertId().toULongLong());
+    if (!BDirTools::renameDir(tpath, spath) && (!BDirTools::copyDir(tpath, spath, true) || !BDirTools::rmdir(tpath)))
     {
         mdb->endDBOperation(false);
         BDirTools::rmdir(tpath);
@@ -400,11 +400,19 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return queryErrorResult();
     }
     QString spath = rootDir() + "/samples/" + QString::number(info.id());
-    if (pfn != info.fileName() && !project.isValid()
-            && !QFile::rename(spath + "/" + pfn, spath + "/" + info.fileName()))
+    if (pfn != info.fileName() && !project.isValid())
     {
-        mdb->endDBOperation(false);
-        return fileSystemErrorResult();
+        QDir sdir(spath);
+        QString pbn = QFileInfo(pfn).baseName();
+        QString bn = QFileInfo(info.fileName()).baseName();
+        foreach (const QString &fn, sdir.entryList(QStringList() << (pbn + ".*"), QDir::Files))
+        {
+            if (!QFile::rename(sdir.absoluteFilePath(fn), spath + "/" + bn + "." + QFileInfo(fn).suffix()))
+            {
+                mdb->endDBOperation(false);
+                return fileSystemErrorResult();
+            }
+        }
     }
     TCompilationResult cr(true);
     if (project.isValid())
@@ -425,7 +433,8 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
             BDirTools::rmdir(tpath);
             return cr;
         }
-        if (!BDirTools::renameDir(tpath, spath))
+        if (!BDirTools::renameDir(tpath, spath) && (!BDirTools::copyDir(tpath, spath, true)
+                                                    || !BDirTools::rmdir(tpath)))
         {
             mdb->endDBOperation(false);
             BDirTools::rmdir(tpath);

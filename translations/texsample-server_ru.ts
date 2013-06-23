@@ -4,121 +4,133 @@
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="151"/>
+        <location filename="../src/connection.cpp" line="157"/>
         <source>Not authorized</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="163"/>
+        <location filename="../src/connection.cpp" line="169"/>
         <source>Authorize request:</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="168"/>
+        <location filename="../src/connection.cpp" line="174"/>
         <source>No such user</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="176"/>
+        <location filename="../src/connection.cpp" line="182"/>
         <source>Authorized</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="190"/>
+        <location filename="../src/connection.cpp" line="197"/>
         <source>Add user request:</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="204"/>
+        <location filename="../src/connection.cpp" line="211"/>
         <source>Edit user request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="268"/>
+        <location filename="../src/connection.cpp" line="275"/>
         <source>Edit sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="378"/>
+        <location filename="../src/connection.cpp" line="385"/>
         <source>Generate invites request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="446"/>
+        <location filename="../src/connection.cpp" line="453"/>
         <source>Execute command request:</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="310"/>
+        <location filename="../src/connection.cpp" line="483"/>
+        <source>Testing connection...</source>
+        <comment>log</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="488"/>
+        <source>Connection response timeout</source>
+        <comment>log</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="317"/>
         <source>Get samples list request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="332"/>
+        <location filename="../src/connection.cpp" line="339"/>
         <source>Get sample source request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="122"/>
+        <location filename="../src/connection.cpp" line="128"/>
         <source>Access level:</source>
         <comment>info</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="354"/>
+        <location filename="../src/connection.cpp" line="361"/>
         <source>Get sample preview request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="257"/>
+        <location filename="../src/connection.cpp" line="264"/>
         <source>Add sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="281"/>
+        <location filename="../src/connection.cpp" line="288"/>
         <source>Update sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="297"/>
+        <location filename="../src/connection.cpp" line="304"/>
         <source>Delete sample request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="218"/>
+        <location filename="../src/connection.cpp" line="225"/>
         <source>Update account request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="394"/>
+        <location filename="../src/connection.cpp" line="401"/>
         <source>Get invites list request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="235"/>
+        <location filename="../src/connection.cpp" line="242"/>
         <source>Get user info request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="411"/>
+        <location filename="../src/connection.cpp" line="418"/>
         <source>Compile request</source>
         <comment>log text</comment>
         <translation type="unfinished"></translation>
@@ -254,8 +266,8 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="493"/>
-        <location filename="../src/storage.cpp" line="511"/>
+        <location filename="../src/storage.cpp" line="502"/>
+        <location filename="../src/storage.cpp" line="520"/>
         <source>No such sample</source>
         <comment>errorString</comment>
         <translation type="unfinished"></translation>
@@ -329,27 +341,27 @@
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="38"/>
+        <location filename="../src/main.cpp" line="36"/>
         <source>This is</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="50"/>
+        <location filename="../src/main.cpp" line="48"/>
         <source>Initializing storage...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="56"/>
+        <location filename="../src/main.cpp" line="54"/>
         <source>Error:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="59"/>
+        <location filename="../src/main.cpp" line="57"/>
         <source>Success!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="60"/>
+        <location filename="../src/main.cpp" line="58"/>
         <source>Please, don&apos;t forget to set e-mail password and start the server</source>
         <translation type="unfinished"></translation>
     </message>
