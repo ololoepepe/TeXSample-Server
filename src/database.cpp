@@ -77,7 +77,7 @@ bool Database::tableExists(const QSqlDatabase &db, const QString &tableName)
     if (tableName.isEmpty() || !db.isOpen())
         return false;
     return execQuery(db, "SELECT count(*) FROM sqlite_master WHERE type='table' AND name='"
-                     + tableName + "'").value().value("count(*)").toLongLong();
+                     + tableName + "'").value("count(*)").toLongLong();
 }
 
 /*============================== Public constructors =======================*/
@@ -92,6 +92,7 @@ Database::Database(const QString &connectionName, const QString &dbName)
 Database::~Database()
 {
     endDBOperation(false);
+    mdb->close();
     QString cn = mdb->connectionName();
     delete mdb;
     QSqlDatabase::removeDatabase(cn);
@@ -104,9 +105,21 @@ void Database::setDatabaseName(const QString &name)
     mdb->setDatabaseName(name);
 }
 
+bool Database::open()
+{
+    return mdb->open();
+}
+
+void Database::close()
+{
+    mdb->close();
+}
+
 bool Database::beginDBOperation()
 {
-    bool b = !mdb->isOpen() && mdb->open() && mdb->transaction() && execQuery("PRAGMA foreign_keys = ON").success();
+    if (!mdb->isOpen() && !mdb->open())
+        return false;
+    bool b = mdb->transaction() && execQuery("PRAGMA foreign_keys = ON").success();
     if (!b)
         endDBOperation(false);
     return b;
@@ -117,7 +130,6 @@ bool Database::endDBOperation(bool success)
     if (!mdb->isOpen())
         return true;
     bool b = success ? mdb->commit() : mdb->rollback();
-    mdb->close();
     return b;
 }
 

@@ -1,3 +1,7 @@
 === PATCH ===
 
+* Implement help command
+
+=== MINOR ===
+
 

@@ -19,6 +19,7 @@ public:
     bool success() const;
     QVariantList values() const;
     QVariantMap value() const;
+    QVariant value(const QString &id) const;
     QVariant insertId() const;
 public:
     SqlQueryResult &operator =(const SqlQueryResult &other);

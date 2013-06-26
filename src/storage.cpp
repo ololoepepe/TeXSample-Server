@@ -2,6 +2,8 @@
 #include "database.h"
 #include "sqlqueryresult.h"
 #include "global.h"
+#include "application.h"
+#include "storagelocker.h"
 
 #include <TOperationResult>
 #include <TUserInfo>
@@ -62,19 +64,19 @@ TOperationResult Storage::fileSystemErrorResult()
     return TOperationResult(tr("File system error", "errorString"));
 }
 
-void Storage::lockGlobal()
+void Storage::lock()
 {
-    mglobalMutex.lock();
+    mmutex.lock();
 }
 
-bool Storage::tryLockGlobal()
+bool Storage::tryLock()
 {
-    return mglobalMutex.tryLock();
+    return mmutex.tryLock();
 }
 
-void Storage::unlockGlobal()
+void Storage::unlock()
 {
-    mglobalMutex.unlock();
+    mmutex.unlock();
 }
 
 bool Storage::initStorage(QString *errs)
@@ -100,11 +102,11 @@ bool Storage::initStorage(QString *errs)
     list.removeAll("");
     list.removeDuplicates();
     if (list.isEmpty())
-        return bRet(errs, tr("Failed to parce database schema", "errorString"), false);
+        return bRet(errs, tr("Failed to parse database schema", "errorString"), false);
     bool users = db.tableExists("users");
     SqlQueryResult qr;
     users = users && db.execQuery("SELECT id FROM users WHERE login=:login", qr, ":login", QString("root"));
-    users = users && qr.value().value("id").toULongLong();
+    users = users && qr.value("id").toULongLong();
     foreach (const QString &qs, list)
     {
         if (!db.execQuery(qs))
@@ -115,6 +117,13 @@ bool Storage::initStorage(QString *errs)
     }
     if (!db.endDBOperation())
         return bRet(errs, tr("Database error", "errorString"), false);
+    Storage s;
+    StorageLocker locker;
+    Q_UNUSED(locker);
+    if (!s.isValid())
+        return bRet(errs, tr("Invalid storage instance", "errorString"), false);
+    if (!s.testInvites())
+        return bRet(errs, tr("Failed to test invites", "errorString"), false);
     if (!users)
     {
         QString mail = BTerminalIOHandler::readLine("\n" + tr("Enter root e-mail: ", ""));
@@ -127,7 +136,7 @@ bool Storage::initStorage(QString *errs)
         BTerminalIOHandler::writeLine();
         if (pwd.isEmpty())
             return bRet(errs, e, false);
-        Storage s;
+
         TUserInfo info(TUserInfo::AddContext);
         info.setLogin("root");
         info.setEmail(mail);
@@ -162,6 +171,7 @@ Storage::Storage()
 {
     mdb = new Database(QUuid::createUuid().toString(),
                        BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
+    mdb->open();
 }
 
 Storage::~Storage()
@@ -170,21 +180,6 @@ Storage::~Storage()
 }
 
 /*============================== Public methods ============================*/
-
-void Storage::lock()
-{
-    mmutex.lock();
-}
-
-bool Storage::tryLock()
-{
-    return mmutex.tryLock();
-}
-
-void Storage::unlock()
-{
-    mmutex.unlock();
-}
 
 TOperationResult Storage::addUser(const TUserInfo &info)
 {
@@ -615,6 +610,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
         info.setCreationDateTime(createdDT);
         invites << info;
         ++i;
+        bApp->scheduleInvitesAutoTest(info);
     }
     if (!mdb->endDBOperation(true))
         return databaseErrorResult();
@@ -664,103 +660,95 @@ bool Storage::deleteInvite(quint64 id)
 
 bool Storage::isUserUnique(const QString &login, const QString &email)
 {
-    if (login.isEmpty() || email.isEmpty())
-        return false;
-    if (!isValid() || !mdb->beginDBOperation())
+    if (login.isEmpty() || email.isEmpty() || !isValid())
         return false;
     SqlQueryResult r1 = mdb->execQuery("SELECT id FROM users WHERE login = :login", ":login", login);
     SqlQueryResult r2 = mdb->execQuery("SELECT id FROM users WHERE email = :email", ":email", login);
-    mdb->endDBOperation(r1 && r2);
-    return r1 && r2 && !r1.value().value("id").toULongLong() && !r2.value().value("id").toULongLong();
+    return r1 && r2 && !r1.value("id").toULongLong() && !r2.value("id").toULongLong();
 }
 
 quint64 Storage::userId(const QString &login, const QByteArray &password)
 {
-    if (login.isEmpty())
-        return 0;
-    if (!isValid() || !mdb->beginDBOperation())
+    if (login.isEmpty() || !isValid())
         return 0;
     QString qs = "SELECT id FROM users WHERE login = :login";
     bool b = !password.isEmpty();
     if (b)
         qs += " AND password = :pwd";
     SqlQueryResult r = mdb->execQuery(qs, ":login", login, b ? ":pwd" : "", b ? QVariant(password) : QVariant());
-    mdb->endDBOperation(r);
-    return r ? r.value().value("id").toULongLong() : 0;
+    return r ? r.value("id").toULongLong() : 0;
 }
 
 quint64 Storage::senderId(quint64 sampleId)
 {
-    if (!sampleId || !isValid() || !mdb->beginDBOperation())
+    if (!sampleId || !isValid())
         return 0;
     SqlQueryResult r = mdb->execQuery("SELECT sender_id FROM samples WHERE id = :id", ":id", sampleId);
-    mdb->endDBOperation(r);
-    return r.value().value("sender_id").toULongLong();
+    return r.value("sender_id").toULongLong();
 }
 
 TSampleInfo::Type Storage::sampleType(quint64 id)
 {
-    if (!id || !isValid() || !mdb->beginDBOperation())
+    if (!id || !isValid())
         return TSampleInfo::Unverified;
     SqlQueryResult r = mdb->execQuery("SELECT type FROM samples WHERE id = :id", ":id", id);
-    mdb->endDBOperation(r);
-    return TSampleInfo::typeFromInt(r.value().value("type").toInt());
+    return TSampleInfo::typeFromInt(r.value("type").toInt());
 }
 
 QString Storage::sampleFileName(quint64 id)
 {
-    if (!id || !isValid() || !mdb->beginDBOperation())
+    if (!id || !isValid())
         return "";
     SqlQueryResult r = mdb->execQuery("SELECT file_name FROM samples WHERE id = :id", ":id", id);
-    mdb->endDBOperation(r);
-    return r.value().value("file_name").toString();
+    return r.value("file_name").toString();
 }
 
 QDateTime Storage::sampleCreationDateTime(quint64 id, Qt::TimeSpec spec)
 {
-    if (!id || !isValid() || !mdb->beginDBOperation())
+    if (!id || !isValid())
         return QDateTime().toUTC();
     SqlQueryResult r = mdb->execQuery("SELECT created_dt FROM samples WHERE id = :id", ":id", id);
-    mdb->endDBOperation(r);
-    return QDateTime::fromMSecsSinceEpoch(r.value().value("created_dt").toLongLong()).toTimeSpec(spec);
+    return QDateTime::fromMSecsSinceEpoch(r.value("created_dt").toLongLong()).toTimeSpec(spec);
 }
 
 QDateTime Storage::sampleModificationDateTime(quint64 id, Qt::TimeSpec spec)
 {
-    if (!id || !isValid() || !mdb->beginDBOperation())
+    if (!id || !isValid())
         return QDateTime().toUTC();
     SqlQueryResult r = mdb->execQuery("SELECT modified_dt FROM samples WHERE id = :id", ":id", id);
-    mdb->endDBOperation(r);
-    return QDateTime::fromMSecsSinceEpoch(r.value().value("modified_dt").toLongLong()).toTimeSpec(spec);
+    return QDateTime::fromMSecsSinceEpoch(r.value("modified_dt").toLongLong()).toTimeSpec(spec);
 }
 
 TAccessLevel Storage::userAccessLevel(quint64 userId)
 {
-    if (!userId)
-        return TAccessLevel();
-    if (!isValid() || !mdb->beginDBOperation())
+    if (!userId || !isValid())
         return TAccessLevel();
     SqlQueryResult r = mdb->execQuery("SELECT access_level FROM users WHERE id = :id", ":id", userId);
-    mdb->endDBOperation(r);
-    return r ? r.value().value("access_level").toInt() : 0;
+    return r ? r.value("access_level").toInt() : 0;
 }
 
 quint64 Storage::inviteId(const QString &inviteCode)
 {
-    if (BeQt::uuidFromText(inviteCode).isNull())
-        return 0;
-    if (!isValid() || !mdb->beginDBOperation())
+    if (BeQt::uuidFromText(inviteCode).isNull() || isValid())
         return 0;
     QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
     QDateTime dt = QDateTime::currentDateTimeUtc();
     SqlQueryResult r = mdb->execQuery(qs, ":uuid", BeQt::pureUuidText(inviteCode), ":exp_dt", dt.toMSecsSinceEpoch());
-    mdb->endDBOperation(r);
-    return r ? r.value().value("id").toULongLong() : 0;
+    return r ? r.value("id").toULongLong() : 0;
 }
 
 bool Storage::isValid() const
 {
-    return QFileInfo(rootDir()).isDir() && mdb;
+    return QFileInfo(rootDir()).isDir() && mdb && mdb->isOpen();
+}
+
+bool Storage::testInvites()
+{
+    if (!isValid() || !mdb->beginDBOperation())
+        return false;
+    bool b = mdb->execQuery("DELETE FROM invites WHERE expires_dt >= :current_dt", ":current_dt",
+                            QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    return mdb->endDBOperation(b) && b;
 }
 
 /*============================== Static private methods ====================*/
@@ -788,6 +776,6 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
 
 /*============================== Static private members ====================*/
 
-QMutex Storage::mglobalMutex;
+QMutex Storage::mmutex;
 QString Storage::mtexsampleSty;
 QString Storage::mtexsampleTex;

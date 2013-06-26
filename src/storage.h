@@ -34,9 +34,9 @@ public:
     static TOperationResult databaseErrorResult();
     static TOperationResult queryErrorResult();
     static TOperationResult fileSystemErrorResult();
-    static void lockGlobal();
-    static bool tryLockGlobal();
-    static void unlockGlobal();
+    static void lock();
+    static bool tryLock();
+    static void unlock();
     static bool initStorage(QString *errorString = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
@@ -44,9 +44,6 @@ public:
     explicit Storage();
     ~Storage();
 public:
-    void lock();
-    bool tryLock();
-    void unlock();
     TOperationResult addUser(const TUserInfo &info);
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
@@ -72,18 +69,18 @@ public:
     TAccessLevel userAccessLevel(quint64 userId);
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
+    bool testInvites();
 private:
     static QString rootDir();
 private:
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;
 private:
-    static QMutex mglobalMutex;
+    static QMutex mmutex;
     static QString mtexsampleSty;
     static QString mtexsampleTex;
 private:
     Database *mdb;
-    QMutex mmutex;
 };
 
 #endif // STORAGE_H

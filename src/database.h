@@ -33,6 +33,8 @@ public:
     virtual ~Database();
 public:
     void setDatabaseName(const QString &name);
+    bool open();
+    void close();
     bool beginDBOperation();
     bool endDBOperation(bool success = true);
     bool isOpen() const;
