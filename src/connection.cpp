@@ -3,6 +3,7 @@
 #include "storage.h"
 #include "terminaliohandler.h"
 #include "server.h"
+#include "storagelocker.h"
 
 #include <TAccessLevel>
 #include <TUserInfo>
@@ -163,6 +164,8 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
     if (muserId)
         return Global::sendReply(op, TOperationResult(true));
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
     QByteArray password = in.value("password").toByteArray();
@@ -180,7 +183,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     log(tr("Authorized", "log text"));
-    TerminalIOHandler::writeLine(infoString("%u\n%a; %o\n%e; %t; %b; %q"));
+    log(infoString("%u\n%a; %o\n%e; %t; %b; %q"));
     QVariantMap out;
     out.insert("user_id", id);
     out.insert("access_level", maccessLevel);
@@ -192,6 +195,8 @@ void Connection::handleAddUserRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log(tr("Add user request:", "log text") + " " + info.login());
@@ -206,6 +211,8 @@ void Connection::handleEditUserRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log(tr("Edit user request", "log text"));
@@ -220,6 +227,8 @@ void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log(tr("Update account request", "log text"));
@@ -236,6 +245,8 @@ void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("user_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
@@ -258,6 +269,8 @@ void Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TProject project = in.value("project").value<TProject>();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
@@ -269,6 +282,8 @@ void Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
@@ -282,6 +297,8 @@ void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
@@ -298,6 +315,8 @@ void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QString reason = in.value("reason").toString();
@@ -312,6 +331,8 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log(tr("Get samples list request", "log text"));
@@ -333,6 +354,8 @@ void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
@@ -355,6 +378,8 @@ void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
@@ -379,6 +404,8 @@ void Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
         return Global::sendReply(op, notAuthorizedResult());
     if (maccessLevel < TAccessLevel::ModeratorLevel)
         return Global::sendReply(op, TOperationResult("Only moderator can do this")); //TODO
+    StorageLocker locker;
+    Q_UNUSED(locker);
     QVariantMap in = op->variantData().toMap();
     QDateTime expiresDT = in.value("expiration_dt").toDateTime().toUTC();
     quint8 count = in.value("count").toUInt();
@@ -396,6 +423,8 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
 {
     if (!muserId)
         return Global::sendReply(op, notAuthorizedResult());
+    StorageLocker locker;
+    Q_UNUSED(locker);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
         return Global::sendReply(op, TOperationResult("Only moderator can do this")); //TODO
     log(tr("Get invites list request", "log text"));
@@ -450,7 +479,7 @@ void Connection::handleExecuteCommandRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QString command = in.value("command").toString();
     QStringList args = in.value("arguments").toStringList();
-    log(tr("Execute command request:", "log text") + " " + command);
+    BNetworkConnection::log("[" + mlogin + "] " + tr("Execute command request:", "log text") + " " + command);
     if (command.isEmpty())
         return Global::sendReply(op, Storage::invalidParametersResult());
     static_cast<TerminalIOHandler *>(TerminalIOHandler::instance())->executeCommand(command, args);
@@ -480,12 +509,12 @@ void Connection::keepAlive()
     if (!muserId || !isConnected())
         return;
     mtimer.stop();
-    log(tr("Testing connection...", "log"), BLogger::CriticalLevel);
+    BNetworkConnection::log("[" + mlogin + "] " + tr("Testing connection...", "log"));
     BNetworkOperation *op = sendRequest("noop");
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b)
     {
-        log(tr("Connection response timeout", "log"), BLogger::CriticalLevel);
+        log(tr("Connection response timeout", "log"));
         op->cancel();
     }
     op->deleteLater();

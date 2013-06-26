@@ -36,6 +36,7 @@ private:
     void handleSet(const QString &cmd, const QStringList &args);
     void handleStart(const QString &cmd, const QStringList &args);
     void handleStop(const QString &cmd, const QStringList &args);
+    void handleHelp(const QString &cmd, const QStringList &args);
 private:
     static QString mmailPassword;
 private:

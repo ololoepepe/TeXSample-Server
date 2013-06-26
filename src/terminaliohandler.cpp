@@ -231,6 +231,7 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     installHandler("set", (InternalHandler) &TerminalIOHandler::handleSet);
     installHandler("start", (InternalHandler) &TerminalIOHandler::handleStart);
     installHandler("stop", (InternalHandler) &TerminalIOHandler::handleStop);
+    installHandler("help", (InternalHandler) &TerminalIOHandler::handleHelp);
     melapsedTimer.start();
 }
 
@@ -361,7 +362,6 @@ void TerminalIOHandler::handleSet(const QString &, const QStringList &args)
         Settings.addChildItem(mail);
         SettingsItem beqt("BeQt");
           i.setKey("Core");
-          i.setProperty("mail_password");
           i.addChildItem("locale", QVariant::Locale);
           beqt.addChildItem(i);
         Settings.addChildItem(beqt);
@@ -423,6 +423,11 @@ void TerminalIOHandler::handleStop(const QString &, const QStringList &)
     mserver->close();
     mrserver->close();
     writeLine(tr("OK", ""));
+}
+
+void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
+{
+    //
 }
 
 /*============================== Private variables =========================*/

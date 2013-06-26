@@ -44,6 +44,11 @@ QVariantMap SqlQueryResult::value() const
     return !mvalues.isEmpty() ? mvalues.first().toMap() : QVariantMap();
 }
 
+QVariant SqlQueryResult::value(const QString &id) const
+{
+    return !mvalues.isEmpty() ? mvalues.first().toMap().value(id) : QVariant();
+}
+
 QVariant SqlQueryResult::insertId() const
 {
     return minsertId;
