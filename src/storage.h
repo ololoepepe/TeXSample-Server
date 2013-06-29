@@ -17,9 +17,9 @@ class QDateTime;
 #include <TInviteInfo>
 
 #include <QString>
-#include <QMutex>
 #include <QCoreApplication>
 #include <QByteArray>
+#include <QUuid>
 
 /*============================================================================
 ================================ Storage =====================================
@@ -34,9 +34,6 @@ public:
     static TOperationResult databaseErrorResult();
     static TOperationResult queryErrorResult();
     static TOperationResult fileSystemErrorResult();
-    static void lock();
-    static bool tryLock();
-    static void unlock();
     static bool initStorage(QString *errorString = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
@@ -44,7 +41,7 @@ public:
     explicit Storage();
     ~Storage();
 public:
-    TOperationResult addUser(const TUserInfo &info);
+    TOperationResult addUser(const TUserInfo &info, const QUuid &invite = QUuid());
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
@@ -58,7 +55,6 @@ public:
     TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                      TInviteInfo::InvitesList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
-    bool deleteInvite(quint64 id);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 senderId(quint64 sampleId);
@@ -67,6 +63,7 @@ public:
     QDateTime sampleCreationDateTime(quint64 id, Qt::TimeSpec spec = Qt::UTC);
     QDateTime sampleModificationDateTime(quint64 id, Qt::TimeSpec spec = Qt::UTC);
     TAccessLevel userAccessLevel(quint64 userId);
+    quint64 inviteId(const QUuid &invite);
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
     bool testInvites();
@@ -76,7 +73,6 @@ private:
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;
 private:
-    static QMutex mmutex;
     static QString mtexsampleSty;
     static QString mtexsampleTex;
 private:

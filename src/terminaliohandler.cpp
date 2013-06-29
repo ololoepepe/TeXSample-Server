@@ -29,6 +29,7 @@
 #include <QCryptographicHash>
 #include <QAbstractSocket>
 #include <QSettings>
+#include <QDateTime>
 
 #include <QDebug>
 
@@ -200,16 +201,63 @@ bool SettingsItem::operator ==(const SettingsItem &other) const
 
 /*============================== Static public methods =====================*/
 
-void TerminalIOHandler::write(const QString &text)
+void TerminalIOHandler::write(const QString &text, Connection *c)
 {
     BTerminalIOHandler::write(text);
-    Server::sendWriteRequest(text);
+    if (c)
+        c->sendWriteRequest(text);
 }
 
-void TerminalIOHandler::writeLine(const QString &text)
+void TerminalIOHandler::writeLine(const QString &text, Connection *c)
 {
-    BTerminalIOHandler::writeLine(text);
-    Server::sendWriteLineRequest(text);
+    write(text + "\n", c);
+}
+
+void TerminalIOHandler::writeLine(Connection *c)
+{
+    writeLine(QString(), c);
+}
+
+void TerminalIOHandler::sendLogRequest(const QString &text, BLogger::Level lvl)
+{
+    Server *s = TerminalIOHandler::server();
+    if (!s)
+        return;
+    foreach (BNetworkConnection *c, s->connections())
+    {
+        Connection *cc = static_cast<Connection *>(c);
+        cc->sendLogRequest(text, lvl);
+    }
+}
+
+void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &args, Connection *c)
+{
+    TerminalIOHandler *inst = instance();
+    if (!inst)
+        return;
+    if (cmd == "quit" || cmd == "exit")
+        BeQt::handleQuit(cmd, args);
+    else if (cmd == "user")
+        inst->handleUserImplementation(cmd, args, c);
+    else if (cmd == "uptime")
+        inst->handleUptimeImplementation(cmd, args, c);
+    else if (cmd == "set")
+        inst->handleSetImplementation(cmd, args, c);
+    else if (cmd == "start")
+        inst->handleStartImplementation(cmd, args, c);
+    else if (cmd == "stop")
+        inst->handleStopImplementation(cmd, args, c);
+}
+
+TerminalIOHandler *TerminalIOHandler::instance()
+{
+    return static_cast<TerminalIOHandler *>(BTerminalIOHandler::instance());
+}
+
+Server *TerminalIOHandler::server()
+{
+    TerminalIOHandler *inst = instance();
+    return inst ? inst->mserver : 0;
 }
 
 QString TerminalIOHandler::mailPassword()
@@ -240,75 +288,105 @@ TerminalIOHandler::~TerminalIOHandler()
     //
 }
 
-/*============================== Public methods ============================*/
+/*============================== Static private methods ====================*/
 
-void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &args)
+QString TerminalIOHandler::msecsToString(qint64 msecs)
 {
-    if (cmd == "quit" || cmd == "exit")
-        BeQt::handleQuit(cmd, args);
-    else if (cmd == "user")
-        handleUser(cmd, args);
-    else if (cmd == "uptime")
-        handleUptime(cmd, args);
-    else if (cmd == "set")
-        handleSet(cmd, args);
-    else if (cmd == "start")
-        handleStart(cmd, args);
-    else if (cmd == "stop")
-        handleStop(cmd, args);
+    QString days = QString::number(msecs / (24 * BeQt::Hour));
+    msecs %= (24 * BeQt::Hour);
+    QString hours = QString::number(msecs / BeQt::Hour);
+    hours.prepend(QString().fill('0', 2 - hours.length()));
+    msecs %= BeQt::Hour;
+    QString minutes = QString::number(msecs / BeQt::Minute);
+    minutes.prepend(QString().fill('0', 2 - minutes.length()));
+    msecs %= BeQt::Minute;
+    QString seconds = QString::number(msecs / BeQt::Second);
+    seconds.prepend(QString().fill('0', 2 - seconds.length()));
+    return days + " " + tr("days", "") + " " + hours + ":" + minutes + ":" + seconds;
 }
 
-Server *TerminalIOHandler::server() const
+QString TerminalIOHandler::userPrefix(Connection *user)
 {
-    return mserver;
+    if (!user)
+        return "";
+    return "[" + user->login() + "] [" + user->peerAddress() + "] " + user->uniqueId().toString();
+}
+
+void TerminalIOHandler::writeHelpLine(const QString &command, const QString &description)
+{
+    QString s = "  " + command;
+    if (s.length() > 28)
+        s += "\n" + QString().fill(' ', 30);
+    else
+        s += QString().fill(' ', 30 - s.length());
+    s += description;
+    writeLine(s);
 }
 
 /*============================== Private methods ===========================*/
 
-void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
+void TerminalIOHandler::handleUser(const QString &cmd, const QStringList &args)
+{
+    handleUserImplementation(cmd, args);
+}
+
+void TerminalIOHandler::handleUptime(const QString &cmd, const QStringList &args)
+{
+    handleUptimeImplementation(cmd, args);
+}
+
+void TerminalIOHandler::handleSet(const QString &cmd, const QStringList &args)
+{
+    handleSetImplementation(cmd, args);
+}
+
+void TerminalIOHandler::handleStart(const QString &cmd, const QStringList &args)
+{
+    handleStartImplementation(cmd, args);
+}
+
+void TerminalIOHandler::handleStop(const QString &cmd, const QStringList &args)
+{
+    handleStopImplementation(cmd, args);
+}
+
+void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
+{
+    writeLine(tr("The following commands are available:", "help"));
+    writeHelpLine("help", tr("Show this Help", "help"));
+    writeHelpLine("quit, exit", tr("Quit the application", "help"));
+    writeHelpLine("uptime", tr("Show for how long the application has been running", "help"));
+    writeHelpLine("user [--list], user [--connected-at|--info|--kick|--uptime] <id|login>",
+                  tr("Show information about the user(s) connected", "help"));
+    writeHelpLine("set <key> [value]", tr("Set configuration variable", "help"));
+    writeHelpLine("start", tr("Start the main server and the registration server", "help"));
+    writeHelpLine("stop", tr("Stop the main server and the registration server", "help"));
+}
+
+void TerminalIOHandler::handleUserImplementation(const QString &, const QStringList &args, Connection *c)
 {
     if (args.isEmpty())
     {
-        writeLine(tr("Users:", "") + " " + QString::number(mserver->connections().size()));
+        writeLine(tr("Users:", "") + " " + QString::number(mserver->connections().size()), c);
     }
     else if (args.first() == "--list")
     {
-        foreach (BNetworkConnection *c, mserver->connections())
-        {
-            Connection *cc = static_cast<Connection *>(c);
-            writeLine("[" + cc->login() + "] [" + cc->peerAddress() + "] " + cc->uniqueId().toString());
-        }
-    }
-    else if (args.first() == "--kick")
-    {
-        if (args.size() < 2)
-            return;
-        QUuid uuid = BeQt::uuidFromText(args.at(1));
-        if (uuid.isNull())
-        {
-            foreach (BNetworkConnection *c, mserver->connections())
-            {
-                Connection *cc = static_cast<Connection *>(c);
-                if (cc->login() == args.at(1))
-                    QMetaObject::invokeMethod(cc, "abort", Qt::QueuedConnection);
-            }
-        }
+        int sz = mserver->connections().size();
+        if (sz)
+            writeLine(tr("Listing users", "") + " (" + QString::number(sz) + "):", c);
         else
+            writeLine(tr("There are no connected users", ""), c);
+        foreach (BNetworkConnection *cc, mserver->connections())
         {
-            foreach (BNetworkConnection *c, mserver->connections())
-            {
-                if (c->uniqueId() == uuid)
-                {
-                    QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
-                    break;
-                }
-            }
+            Connection *ccc = static_cast<Connection *>(cc);
+            writeLine("[" + ccc->login() + "] [" + ccc->peerAddress() + "] " + ccc->uniqueId().toString(), c);
         }
     }
-    else if (args.first() == "--info")
+    else
     {
         if (args.size() < 2)
             return;
+        QList<Connection *> users;
         QUuid uuid = BeQt::uuidFromText(args.at(1));
         if (uuid.isNull())
         {
@@ -316,7 +394,7 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->login() == args.at(1))
-                    writeLine(cc->infoString());
+                    users << cc;
             }
         }
         else
@@ -325,29 +403,42 @@ void TerminalIOHandler::handleUser(const QString &, const QStringList &args)
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->uniqueId() == uuid)
-                    writeLine(cc->infoString());
+                {
+                    users << cc;
+                    break;
+                }
             }
+        }
+        if (args.first() == "--kick")
+        {
+            foreach (Connection *cc, users)
+                QMetaObject::invokeMethod(cc, "abort", Qt::QueuedConnection);
+        }
+        else if (args.first() == "--info")
+        {
+            foreach (Connection *cc, users)
+                writeLine(cc->infoString(), c);
+        }
+        else if (args.first() == "--uptime")
+        {
+            foreach (Connection *cc, users)
+                writeLine(tr("Uptime for", "") + " " + userPrefix(cc) + " " + msecsToString(cc->uptime()), c);
+        }
+        else if (args.first() == "--connected-at")
+        {
+            foreach (Connection *cc, users)
+                writeLine(tr("Connection time for", "") + " " + userPrefix(cc) + " "
+                          + cc->connectedAt().toString(bLogger->dateTimeFormat()), c);
         }
     }
 }
 
-void TerminalIOHandler::handleUptime(const QString &, const QStringList &)
+void TerminalIOHandler::handleUptimeImplementation(const QString &, const QStringList &, Connection *c)
 {
-    qint64 elapsed = melapsedTimer.elapsed();
-    QString days = QString::number(elapsed / (24 * BeQt::Hour));
-    elapsed %= (24 * BeQt::Hour);
-    QString hours = QString::number(elapsed / BeQt::Hour);
-    hours.prepend(QString().fill('0', 2 - hours.length()));
-    elapsed %= BeQt::Hour;
-    QString minutes = QString::number(elapsed / BeQt::Minute);
-    minutes.prepend(QString().fill('0', 2 - minutes.length()));
-    elapsed %= BeQt::Minute;
-    QString seconds = QString::number(elapsed / BeQt::Second);
-    seconds.prepend(QString().fill('0', 2 - seconds.length()));
-    writeLine(tr("Uptime:", "") + " " + days + " " + tr("days", "") + " " + hours + ":" + minutes + ":" + seconds);
+    writeLine(tr("Uptime:", "") + " " + msecsToString(melapsedTimer.elapsed()), c);
 }
 
-void TerminalIOHandler::handleSet(const QString &, const QStringList &args)
+void TerminalIOHandler::handleSetImplementation(const QString &, const QStringList &args, Connection *c)
 {
     init_once(SettingsItem, Settings, SettingsItem())
     {
@@ -367,18 +458,20 @@ void TerminalIOHandler::handleSet(const QString &, const QStringList &args)
         Settings.addChildItem(beqt);
     }
     if (args.size() < 1 || args.size() > 2)
-        return writeLine(tr("Invalid parameters", ""));
+        return writeLine(tr("Invalid parameters", ""), c);
+    if (args.size() == 1 && c)
+        return writeLine(tr("Invalid parameters", ""), c);
     QString path = args.first();
     SettingsItem si = Settings.testPath(path);
     if (QVariant::Invalid == si.type())
-        return writeLine(tr("No such option", ""));
+        return writeLine(tr("No such option", ""), c);
     path.replace('.', '/');
-    if (si.property("mail_password").toBool())
+    if (si.property("mail_password").toBool() && args.size() == 1)
     {
         setStdinEchoEnabled(false);
         mmailPassword = readLine(tr("Enter e-mail password:", "") + " ");
         setStdinEchoEnabled(true);
-        writeLine("");
+        writeLine(c);
     }
     else
     {
@@ -394,40 +487,35 @@ void TerminalIOHandler::handleSet(const QString &, const QStringList &args)
             break;
         default:
             if (!v.convert(si.type()))
-                return writeLine(tr("Invalid value", ""));
+                return writeLine(tr("Invalid value", ""), c);
             break;
         }
         bSettings->setValue(path, v);
     }
-    writeLine(tr("OK", ""));
+    writeLine(tr("OK", ""), c);
 }
 
-void TerminalIOHandler::handleStart(const QString &, const QStringList &args)
+void TerminalIOHandler::handleStartImplementation(const QString &, const QStringList &args, Connection *c)
 {
     if (mserver->isListening())
-        return writeLine(tr("The server is already running", ""));
+        return writeLine(tr("The server is already running", ""), c);
     QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
     if (!mserver->listen(addr, Texsample::MainPort) || !mrserver->listen(addr, Texsample::RegistrationPort))
     {
         mserver->close();
         mrserver->close();
-        return writeLine(tr("Failed to start server", ""));
+        return writeLine(tr("Failed to start server", ""), c);
     }
-    writeLine(tr("OK", ""));
+    writeLine(tr("OK", ""), c);
 }
 
-void TerminalIOHandler::handleStop(const QString &, const QStringList &)
+void TerminalIOHandler::handleStopImplementation(const QString &, const QStringList &, Connection *c)
 {
     if (!mserver->isListening())
-        return writeLine(tr("The server is not running", ""));
+        return writeLine(tr("The server is not running", ""), c);
     mserver->close();
     mrserver->close();
-    writeLine(tr("OK", ""));
-}
-
-void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
-{
-    //
+    writeLine(tr("OK", ""), c);
 }
 
 /*============================== Private variables =========================*/

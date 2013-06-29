@@ -31,7 +31,7 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.2");
+    QCoreApplication::setApplicationVersion("1.0.3");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
@@ -71,6 +71,7 @@ int main(int argc, char *argv[])
     }
     TerminalIOHandler::writeLine(translate("main", "Success!"));
     TerminalIOHandler::writeLine(translate("main", "Please, don't forget to configure e-mail and start the server"));
+    TerminalIOHandler::writeLine(translate("main", "Enter \"help\" to see commands list"));
     ret = app.exec();
     }
     else

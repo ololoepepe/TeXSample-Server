@@ -3,5 +3,7 @@
         <file>db/texsample.schema</file>
         <file>texsample-framework/texsample.sty</file>
         <file>texsample-framework/texsample.tex</file>
+        <file>templates/registration/registration.txt</file>
+        <file>templates/registration/registration_ru.txt</file>
     </qresource>
 </RCC>

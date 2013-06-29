@@ -136,8 +136,9 @@ TOperationResult sendMail(Host host, User user, Mail mail, bool ssl)
             return err;
         ++stage;
     }
-    while (s.bytesAvailable() > 0 || s.waitForReadyRead(5 * BeQt::Second));
-    return TOperationResult(err);
+    while (s.bytesAvailable() > 0 || s.waitForReadyRead(5 * BeQt::Second))
+        ;
+    return TOperationResult(true);
 }
 
 TCompilationResult compileProject(const QString &path, TProject project, const TCompilerParameters &param,
