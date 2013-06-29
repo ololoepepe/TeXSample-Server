@@ -3,7 +3,7 @@
 #include "sqlqueryresult.h"
 #include "global.h"
 #include "application.h"
-#include "storagelocker.h"
+#include "terminaliohandler.h"
 
 #include <TOperationResult>
 #include <TUserInfo>
@@ -30,6 +30,7 @@
 #include <QDir>
 #include <QStringList>
 #include <QRegExp>
+#include <QSettings>
 
 #include <QDebug>
 
@@ -64,23 +65,13 @@ TOperationResult Storage::fileSystemErrorResult()
     return TOperationResult(tr("File system error", "errorString"));
 }
 
-void Storage::lock()
-{
-    mmutex.lock();
-}
-
-bool Storage::tryLock()
-{
-    return mmutex.tryLock();
-}
-
-void Storage::unlock()
-{
-    mmutex.unlock();
-}
-
 bool Storage::initStorage(QString *errs)
 {
+    static QMutex mutex;
+    static bool isInit = false;
+    QMutexLocker locker(&mutex);
+    if (isInit)
+        return true;
     QString sty = BDirTools::readTextFile(BDirTools::findResource("texsample-framework/texsample.sty",
                                                                   BDirTools::GlobalOnly), "UTF-8");
     if (sty.isEmpty())
@@ -118,8 +109,6 @@ bool Storage::initStorage(QString *errs)
     if (!db.endDBOperation())
         return bRet(errs, tr("Database error", "errorString"), false);
     Storage s;
-    StorageLocker locker;
-    Q_UNUSED(locker);
     if (!s.isValid())
         return bRet(errs, tr("Invalid storage instance", "errorString"), false);
     if (!s.testInvites())
@@ -148,6 +137,7 @@ bool Storage::initStorage(QString *errs)
     }
     mtexsampleSty = sty;
     mtexsampleTex = tex;
+    isInit = true;
     return true;
 }
 
@@ -181,7 +171,7 @@ Storage::~Storage()
 
 /*============================== Public methods ============================*/
 
-TOperationResult Storage::addUser(const TUserInfo &info)
+TOperationResult Storage::addUser(const TUserInfo &info, const QUuid &invite)
 {
     if (!info.isValid(TUserInfo::AddContext))
         return invalidParametersResult();
@@ -202,16 +192,39 @@ TOperationResult Storage::addUser(const TUserInfo &info)
     bv.insert(":rname", info.realName());
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
     bv.insert(":mod_dt", dt.toMSecsSinceEpoch());
-    SqlQueryResult r = mdb->execQuery(qs, bv);
-    if (!r)
+    SqlQueryResult qr = mdb->execQuery(qs, bv);
+    if (!qr || (!invite.isNull() && !mdb->execQuery("DELETE FROM invites WHERE uuid = :uuid",
+                                                    ":uuid", BeQt::pureUuidText(invite))))
     {
         mdb->endDBOperation(false);
         return queryErrorResult();
     }
-    if(!saveUserAvatar(r.insertId().toULongLong(), info.avatar()))
+    quint64 userId = qr.insertId().toULongLong();
+    if(!saveUserAvatar(userId, info.avatar()))
         return fileSystemErrorResult();
+    Global::Host h;
+    h.address = bSettings->value("Mail/server_address").toString();
+    h.port = bSettings->value("Mail/server_port", h.port).toUInt();
+    Global::User u;
+    u.login = bSettings->value("Mail/login").toString();
+    u.password = TerminalIOHandler::mailPassword();
+    Global::Mail m;
+    m.from = "TeXSample Team";
+    m.to << info.email();
+    m.subject = "TeXSample registration";
+    QString fn = BDirTools::findResource("templates/registration", BDirTools::GlobalOnly) + "/registration.txt";
+    m.body = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8").replace("%username%", info.login());
+    TOperationResult r = Global::sendMail(h, u, m, bSettings->value("Mail/ssl_required").toBool());
+    if (!r)
+    {
+        BDirTools::rmdir(rootDir() + "/users/" + QString::number(userId));
+        return r;
+    }
     if (!mdb->endDBOperation(true))
+    {
+        BDirTools::rmdir(rootDir() + "/users/" + QString::number(userId));
         return databaseErrorResult();
+    }
     return TOperationResult(true);
 }
 
@@ -648,16 +661,6 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
     return TOperationResult(true);
 }
 
-bool Storage::deleteInvite(quint64 id)
-{
-    if (!id)
-        return false;
-    if (!isValid() || !mdb->beginDBOperation())
-        return false;
-    bool b = mdb->execQuery("DELETE FROM invites WHERE id = :id", ":id", id);
-    return mdb->endDBOperation(b) && b;
-}
-
 bool Storage::isUserUnique(const QString &login, const QString &email)
 {
     if (login.isEmpty() || email.isEmpty() || !isValid())
@@ -727,14 +730,19 @@ TAccessLevel Storage::userAccessLevel(quint64 userId)
     return r ? r.value("access_level").toInt() : 0;
 }
 
-quint64 Storage::inviteId(const QString &inviteCode)
+quint64 Storage::inviteId(const QUuid &invite)
 {
-    if (BeQt::uuidFromText(inviteCode).isNull() || isValid())
+    if (invite.isNull() || !isValid())
         return 0;
     QString qs = "SELECT id FROM invites WHERE uuid = :uuid AND expires_dt > :exp_dt";
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    SqlQueryResult r = mdb->execQuery(qs, ":uuid", BeQt::pureUuidText(inviteCode), ":exp_dt", dt.toMSecsSinceEpoch());
+    SqlQueryResult r = mdb->execQuery(qs, ":uuid", BeQt::pureUuidText(invite), ":exp_dt", dt.toMSecsSinceEpoch());
     return r ? r.value("id").toULongLong() : 0;
+}
+
+quint64 Storage::inviteId(const QString &inviteCode)
+{
+    return inviteId(BeQt::uuidFromText(inviteCode));
 }
 
 bool Storage::isValid() const
@@ -746,7 +754,7 @@ bool Storage::testInvites()
 {
     if (!isValid() || !mdb->beginDBOperation())
         return false;
-    bool b = mdb->execQuery("DELETE FROM invites WHERE expires_dt >= :current_dt", ":current_dt",
+    bool b = mdb->execQuery("DELETE FROM invites WHERE expires_dt <= :current_dt", ":current_dt",
                             QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     return mdb->endDBOperation(b) && b;
 }
@@ -776,6 +784,5 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
 
 /*============================== Static private members ====================*/
 
-QMutex Storage::mmutex;
 QString Storage::mtexsampleSty;
 QString Storage::mtexsampleTex;

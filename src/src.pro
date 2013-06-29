@@ -37,8 +37,7 @@ SOURCES += \
     registrationconnection.cpp \
     global.cpp \
     storage.cpp \
-    application.cpp \
-    storagelocker.cpp
+    application.cpp
 
 HEADERS += \
     terminaliohandler.h \
@@ -50,8 +49,7 @@ HEADERS += \
     registrationconnection.h \
     global.h \
     storage.h \
-    application.h \
-    storagelocker.h
+    application.h
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts

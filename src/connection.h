@@ -26,6 +26,8 @@ class QByteArray;
 #include <QVariantList>
 #include <QVariant>
 #include <QTimer>
+#include <QElapsedTimer>
+#include <QDateTime>
 
 /*============================================================================
 ================================ Connection ==================================
@@ -43,9 +45,12 @@ public:
     QString login() const;
     TClientInfo clientInfo() const;
     QString infoString(const QString &format = "") const; //"%l - login, %p - address, %u - id, %a - access level
+    QDateTime connectedAt(Qt::TimeSpec spec = Qt::LocalTime) const;
     bool isSubscribed() const;
+    qint64 uptime() const;
 protected:
     void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
+    void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
     static TOperationResult notAuthorizedResult();
 private:
@@ -80,6 +85,8 @@ private:
     TClientInfo mclientInfo;
     bool msubscribed;
     QTimer mtimer;
+    QElapsedTimer muptimeTimer;
+    QDateTime mconnectedAt;
 };
 
 #endif // CONNECTION_H

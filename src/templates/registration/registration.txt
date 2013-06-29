@@ -1,0 +1,1 @@
+Hello, %username%! You are now registered in TeXSample. Congratulations!
