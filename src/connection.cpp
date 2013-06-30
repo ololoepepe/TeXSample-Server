@@ -79,6 +79,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleGenerateInvitesRequest);
     installRequestHandler(Texsample::GetInvitesListRequest,
                           (InternalHandler) &Connection::handleGetInvitesListRequest);
+    installRequestHandler(Texsample::GetRecoveryCodeRequest, (InternalHandler) &Connection::handleGetRecoveryCode);
+    installRequestHandler(Texsample::RecoverPasswordRequest, (InternalHandler) &Connection::handleRecoverPassword);
     installRequestHandler(Texsample::CompileProjectRequest,
                           (InternalHandler) &Connection::handleCompileProjectRequest);
     installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
@@ -119,14 +121,16 @@ TClientInfo Connection::clientInfo() const
 
 QString Connection::infoString(const QString &format) const
 {
+    //"%u - login, %p - address, %i - id, %a - access level
     if (!muserId)
         return "";
-    QString f = !format.isEmpty() ? format : QString("%l %p %u\n%a; %o\n%c; %t; %b; %q");
+    QString f = !format.isEmpty() ? format :
+                                    QString("[%u] [%p] %i\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q");
     QString s = mclientInfo.toString(f);
-    s.replace("%l", "[" + mlogin + "]");
-    s.replace("%p", "[" + peerAddress() + "]");
-    s.replace("%u", uniqueId().toString());
-    s.replace("%a", tr("Access level:", "info") + " " + maccessLevel.string());
+    s.replace("%u", mlogin);
+    s.replace("%p", peerAddress());
+    s.replace("%i", uniqueId().toString());
+    s.replace("%a", maccessLevel.string());
     return s;
 }
 
@@ -173,6 +177,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
     if (muserId)
         return Global::sendReply(op, TOperationResult(true));
+    qDebug() << op->data().size();
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
     QByteArray password = in.value("password").toByteArray();
@@ -190,7 +195,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     log(tr("Authorized:", "log text") + " " + uniqueId().toString());
-    log(infoString("%a\n%o\n%c; %t; %b; %q"));
+    log(infoString("%a\n%o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q"));
     QVariantMap out;
     out.insert("user_id", id);
     out.insert("access_level", maccessLevel);
@@ -416,6 +421,25 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("invite_infos", QVariant::fromValue(invites));
     Global::sendReply(op, out, r);
+}
+
+void Connection::handleGetRecoveryCode(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    Global::sendReply(op, mstorage->getRecoveryCode(muserId));
+}
+
+void Connection::handleRecoverPassword(BNetworkOperation *op)
+{
+    if (!muserId)
+        return Global::sendReply(op, notAuthorizedResult());
+    QVariantMap in = op->variantData().toMap();
+    QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
+    QByteArray password = in.value("password").toByteArray();
+    if (code.isNull() || password.isEmpty())
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    Global::sendReply(op, mstorage->recoverPassword(muserId, code, password));
 }
 
 void Connection::handleCompileProjectRequest(BNetworkOperation *op)

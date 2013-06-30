@@ -4,7 +4,7 @@ TARGET = texsample-server
 CONFIG += console release
 
 QT = core network sql
-BEQT = core network
+BEQT = core network sql
 
 isEmpty(BEQT_PREFIX) {
     #TODO: Add MacOS support

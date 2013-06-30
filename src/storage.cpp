@@ -13,6 +13,9 @@
 #include <TInviteInfo>
 #include <TCompilationResult>
 #include <TProject>
+#include <BSmtpSender>
+#include <BEmail>
+#include <BGenericSocket>
 
 #include <BDirTools>
 #include <BeQt>
@@ -111,8 +114,8 @@ bool Storage::initStorage(QString *errs)
     Storage s;
     if (!s.isValid())
         return bRet(errs, tr("Invalid storage instance", "errorString"), false);
-    if (!s.testInvites())
-        return bRet(errs, tr("Failed to test invites", "errorString"), false);
+    if (!s.testInvites() || !s.testRecoveryCodes())
+        return bRet(errs, tr("Failed to test invites or recovery codes", "errorString"), false);
     if (!users)
     {
         QString mail = BTerminalIOHandler::readLine("\n" + tr("Enter root e-mail: ", ""));
@@ -574,6 +577,8 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
+        info.setProjectSize(TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
+                                           "UTF-8"));
         info.setTags(m.value("tags").toString());
         info.setRating(m.value("rating").toUInt());
         info.setComment(m.value("comment").toString());
@@ -661,6 +666,92 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
     return TOperationResult(true);
 }
 
+TOperationResult Storage::getRecoveryCode(quint64 userId)
+{
+    if (!userId)
+        return invalidParametersResult();
+    if (!isValid())
+        return invalidInstanceResult();
+    if (!mdb->beginDBOperation())
+        return databaseErrorResult();
+    QString qs = "INSERT INTO recovery_codes (uuid, user_id, expires_dt, created_dt) "
+                 "VALUES (:uuid, :user, :exp_dt, :cr_dt)";
+    QVariantMap bv;
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    QString uuid = BeQt::pureUuidText(QUuid::createUuid());
+    bv.insert(":user", userId);
+    bv.insert(":exp_dt", dt.addDays(1).toMSecsSinceEpoch());
+    bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
+    bv.insert(":uuid", uuid);
+    SqlQueryResult r = mdb->execQuery(qs, bv);
+    if (!r)
+    {
+        mdb->endDBOperation(false);
+        return queryErrorResult();
+    }
+    bApp->scheduleRecoveryCodesAutoTest(dt);
+    BSmtpSender smtp;
+    smtp.setServer(bSettings->value("Mail/server_address").toString(),
+                   bSettings->value("Mail/server_port", 25).toUInt());
+    smtp.setLocalHostName("texsample-server.no-ip.org");
+    smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
+                                                                        BGenericSocket::TcpSocket);
+    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
+    BEmail email;
+    email.setSender("TeXSample Team");
+    email.setReceiver(userEmail(userId));
+    email.setSubject("TeXSample password recovery");
+    QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/get.txt";
+    email.setBody(BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8").replace("%code%", uuid));
+    smtp.waitForFinished();
+    return TOperationResult(true);
+}
+
+TOperationResult Storage::recoverPassword(quint64 userId, const QUuid &code, const QByteArray &password)
+{
+    if (!userId || code.isNull() || password.isEmpty())
+        return invalidParametersResult();
+    if (!isValid())
+        return invalidInstanceResult();
+    if (!mdb->beginDBOperation())
+        return databaseErrorResult();
+    SqlQueryResult r = mdb->execQuery("SELECT id FROM recovery_codes WHERE user_id = :user AND uuid = :uuid",
+                                      ":user", userId, ":uuid", BeQt::pureUuidText(code));
+    quint64 rcid = r.value("id").toULongLong();
+    if (!r || !rcid)
+    {
+        mdb->endDBOperation(false);
+        return queryErrorResult();
+    }
+    if (!mdb->execQuery("UPDATE users SET password = :password WHERE id = :id", ":password", password, ":id", userId))
+    {
+        mdb->endDBOperation(false);
+        return queryErrorResult();
+    }
+    if (!mdb->execQuery("DELETE FROM recovery_codes WHERE id = :id", ":id", rcid))
+    {
+        mdb->endDBOperation(false);
+        return queryErrorResult();
+    }
+    if (!mdb->endDBOperation(true))
+        return databaseErrorResult();
+    BSmtpSender smtp;
+    smtp.setServer(bSettings->value("Mail/server_address").toString(),
+                   bSettings->value("Mail/server_port", 25).toUInt());
+    smtp.setLocalHostName("texsample-server.no-ip.org");
+    smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
+                                                                        BGenericSocket::TcpSocket);
+    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
+    BEmail email;
+    email.setSender("TeXSample Team");
+    email.setReceiver(userEmail(userId));
+    email.setSubject("TeXSample password recovered");
+    QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/recovered.txt";
+    email.setBody(BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8"));
+    smtp.waitForFinished();
+    return TOperationResult(true);
+}
+
 bool Storage::isUserUnique(const QString &login, const QString &email)
 {
     if (login.isEmpty() || email.isEmpty() || !isValid())
@@ -688,6 +779,14 @@ quint64 Storage::senderId(quint64 sampleId)
         return 0;
     SqlQueryResult r = mdb->execQuery("SELECT sender_id FROM samples WHERE id = :id", ":id", sampleId);
     return r.value("sender_id").toULongLong();
+}
+
+QString Storage::userEmail(quint64 userId)
+{
+    if (!userId || !isValid())
+        return "";
+    SqlQueryResult r = mdb->execQuery("SELECT email FROM users WHERE id = :id", ":id", userId);
+    return r.value("email").toString();
 }
 
 TSampleInfo::Type Storage::sampleType(quint64 id)
@@ -755,6 +854,15 @@ bool Storage::testInvites()
     if (!isValid() || !mdb->beginDBOperation())
         return false;
     bool b = mdb->execQuery("DELETE FROM invites WHERE expires_dt <= :current_dt", ":current_dt",
+                            QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    return mdb->endDBOperation(b) && b;
+}
+
+bool Storage::testRecoveryCodes()
+{
+    if (!isValid() || !mdb->beginDBOperation())
+        return false;
+    bool b = mdb->execQuery("DELETE FROM recovery_codes WHERE expires_dt <= :current_dt", ":current_dt",
                             QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     return mdb->endDBOperation(b) && b;
 }

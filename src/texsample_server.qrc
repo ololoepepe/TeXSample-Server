@@ -5,5 +5,9 @@
         <file>texsample-framework/texsample.tex</file>
         <file>templates/registration/registration.txt</file>
         <file>templates/registration/registration_ru.txt</file>
+        <file>templates/recovery/get.txt</file>
+        <file>templates/recovery/get_ru.txt</file>
+        <file>templates/recovery/recovered.txt</file>
+        <file>templates/recovery/recovered_ru.txt</file>
     </qresource>
 </RCC>

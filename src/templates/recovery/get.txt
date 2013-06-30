@@ -1,0 +1,5 @@
+You requested restoring your TeXSample account password.
+
+Use this code to recover the password: %code%
+
+The code will be valid for 24 hours only!

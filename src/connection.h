@@ -44,7 +44,7 @@ public:
     void sendWriteRequest(const QString &text);
     QString login() const;
     TClientInfo clientInfo() const;
-    QString infoString(const QString &format = "") const; //"%l - login, %p - address, %u - id, %a - access level
+    QString infoString(const QString &format = "") const; //"%u - login, %p - address, %i - id, %a - access level
     QDateTime connectedAt(Qt::TimeSpec spec = Qt::LocalTime) const;
     bool isSubscribed() const;
     qint64 uptime() const;
@@ -68,6 +68,8 @@ private:
     void handleGetSamplePreviewRequest(BNetworkOperation *op);
     void handleGenerateInvitesRequest(BNetworkOperation *op);
     void handleGetInvitesListRequest(BNetworkOperation *op);
+    void handleGetRecoveryCode(BNetworkOperation *op);
+    void handleRecoverPassword(BNetworkOperation *op);
     void handleCompileProjectRequest(BNetworkOperation *op);
     void handleSubscribeRequest(BNetworkOperation *op);
     void handleExecuteCommandRequest(BNetworkOperation *op);

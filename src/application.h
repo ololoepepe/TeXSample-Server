@@ -5,6 +5,8 @@ class Storage;
 
 class TInviteInfo;
 
+class QDateTime;
+
 #include <BCoreApplication>
 
 #include <QObject>
@@ -26,8 +28,10 @@ public:
     ~Application();
 public:
     void scheduleInvitesAutoTest(const TInviteInfo &info);
+    void scheduleRecoveryCodesAutoTest(const QDateTime &expiresDT);
 private slots:
-    void timeout();
+    void invitesTestTimeout();
+    void recoveryCodesTestTimeout();
 private:
     Storage *mstorage;
 private:
