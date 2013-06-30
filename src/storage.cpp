@@ -205,19 +205,10 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QUuid &invite)
     quint64 userId = qr.insertId().toULongLong();
     if(!saveUserAvatar(userId, info.avatar()))
         return fileSystemErrorResult();
-    Global::Host h;
-    h.address = bSettings->value("Mail/server_address").toString();
-    h.port = bSettings->value("Mail/server_port", h.port).toUInt();
-    Global::User u;
-    u.login = bSettings->value("Mail/login").toString();
-    u.password = TerminalIOHandler::mailPassword();
-    Global::Mail m;
-    m.from = "TeXSample Team";
-    m.to << info.email();
-    m.subject = "TeXSample registration";
     QString fn = BDirTools::findResource("templates/registration", BDirTools::GlobalOnly) + "/registration.txt";
-    m.body = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8").replace("%username%", info.login());
-    TOperationResult r = Global::sendMail(h, u, m, bSettings->value("Mail/ssl_required").toBool());
+    QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
+    text.replace("%username%", info.login());
+    TOperationResult r = Global::sendEmail(info.email(), "TeXSample registration", text);
     if (!r)
     {
         BDirTools::rmdir(rootDir() + "/users/" + QString::number(userId));
@@ -666,23 +657,26 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
     return TOperationResult(true);
 }
 
-TOperationResult Storage::getRecoveryCode(quint64 userId)
+TOperationResult Storage::getRecoveryCode(const QString &email)
 {
-    if (!userId)
+    if (email.isEmpty())
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
+    quint64 userId = userIdByEmail(email);
+    if (!userId)
+        return databaseErrorResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
     QString qs = "INSERT INTO recovery_codes (uuid, user_id, expires_dt, created_dt) "
                  "VALUES (:uuid, :user, :exp_dt, :cr_dt)";
     QVariantMap bv;
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    QString uuid = BeQt::pureUuidText(QUuid::createUuid());
+    QString code = BeQt::pureUuidText(QUuid::createUuid());
     bv.insert(":user", userId);
     bv.insert(":exp_dt", dt.addDays(1).toMSecsSinceEpoch());
     bv.insert(":cr_dt", dt.toMSecsSinceEpoch());
-    bv.insert(":uuid", uuid);
+    bv.insert(":uuid", code);
     SqlQueryResult r = mdb->execQuery(qs, bv);
     if (!r)
     {
@@ -690,29 +684,22 @@ TOperationResult Storage::getRecoveryCode(quint64 userId)
         return queryErrorResult();
     }
     bApp->scheduleRecoveryCodesAutoTest(dt);
-    BSmtpSender smtp;
-    smtp.setServer(bSettings->value("Mail/server_address").toString(),
-                   bSettings->value("Mail/server_port", 25).toUInt());
-    smtp.setLocalHostName("texsample-server.no-ip.org");
-    smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
-                                                                        BGenericSocket::TcpSocket);
-    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
-    BEmail email;
-    email.setSender("TeXSample Team");
-    email.setReceiver(userEmail(userId));
-    email.setSubject("TeXSample password recovery");
     QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/get.txt";
-    email.setBody(BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8").replace("%code%", uuid));
-    smtp.waitForFinished();
+    QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
+    text.replace("%code%", code).replace("%login%", userLogin(userId));
+    Global::sendEmail(email, "TeXSample account recovery", text);
     return TOperationResult(true);
 }
 
-TOperationResult Storage::recoverPassword(quint64 userId, const QUuid &code, const QByteArray &password)
+TOperationResult Storage::recoverAccount(const QString &email, const QUuid &code, const QByteArray &password)
 {
-    if (!userId || code.isNull() || password.isEmpty())
+    if (email.isEmpty() || code.isNull() || password.isEmpty())
         return invalidParametersResult();
     if (!isValid())
         return invalidInstanceResult();
+    quint64 userId = userIdByEmail(email);
+    if (!userId)
+        return databaseErrorResult();
     if (!mdb->beginDBOperation())
         return databaseErrorResult();
     SqlQueryResult r = mdb->execQuery("SELECT id FROM recovery_codes WHERE user_id = :user AND uuid = :uuid",
@@ -735,20 +722,9 @@ TOperationResult Storage::recoverPassword(quint64 userId, const QUuid &code, con
     }
     if (!mdb->endDBOperation(true))
         return databaseErrorResult();
-    BSmtpSender smtp;
-    smtp.setServer(bSettings->value("Mail/server_address").toString(),
-                   bSettings->value("Mail/server_port", 25).toUInt());
-    smtp.setLocalHostName("texsample-server.no-ip.org");
-    smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
-                                                                        BGenericSocket::TcpSocket);
-    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
-    BEmail email;
-    email.setSender("TeXSample Team");
-    email.setReceiver(userEmail(userId));
-    email.setSubject("TeXSample password recovered");
     QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/recovered.txt";
-    email.setBody(BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8"));
-    smtp.waitForFinished();
+    QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
+    Global::sendEmail(email, "TeXSample account recovered", text);
     return TOperationResult(true);
 }
 
@@ -773,6 +749,14 @@ quint64 Storage::userId(const QString &login, const QByteArray &password)
     return r ? r.value("id").toULongLong() : 0;
 }
 
+quint64 Storage::userIdByEmail(const QString &email)
+{
+    if (email.isEmpty() || !isValid())
+        return 0;
+    SqlQueryResult r = mdb->execQuery("SELECT id FROM users WHERE email = :email", ":email", email);
+    return r.value("id").toULongLong();
+}
+
 quint64 Storage::senderId(quint64 sampleId)
 {
     if (!sampleId || !isValid())
@@ -781,12 +765,12 @@ quint64 Storage::senderId(quint64 sampleId)
     return r.value("sender_id").toULongLong();
 }
 
-QString Storage::userEmail(quint64 userId)
+QString Storage::userLogin(quint64 userId)
 {
     if (!userId || !isValid())
         return "";
-    SqlQueryResult r = mdb->execQuery("SELECT email FROM users WHERE id = :id", ":id", userId);
-    return r.value("email").toString();
+    SqlQueryResult r = mdb->execQuery("SELECT login FROM users WHERE id = :id", ":id", userId);
+    return r.value("login").toString();
 }
 
 TSampleInfo::Type Storage::sampleType(quint64 id)

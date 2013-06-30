@@ -68,8 +68,6 @@ private:
     void handleGetSamplePreviewRequest(BNetworkOperation *op);
     void handleGenerateInvitesRequest(BNetworkOperation *op);
     void handleGetInvitesListRequest(BNetworkOperation *op);
-    void handleGetRecoveryCode(BNetworkOperation *op);
-    void handleRecoverPassword(BNetworkOperation *op);
     void handleCompileProjectRequest(BNetworkOperation *op);
     void handleSubscribeRequest(BNetworkOperation *op);
     void handleExecuteCommandRequest(BNetworkOperation *op);

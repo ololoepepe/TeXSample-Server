@@ -1,11 +1,14 @@
 #include "terminaliohandler.h"
 #include "server.h"
 #include "connection.h"
-#include "registrationserver.h"
+#include "storage.h"
+#include "global.h"
 
 #include <TeXSample>
 #include <TOperationResult>
 #include <TClientInfo>
+#include <TAccessLevel>
+#include <TUserInfo>
 
 #include <BNetworkConnection>
 #include <BGenericSocket>
@@ -14,6 +17,7 @@
 #include <BGenericServer>
 #include <BLogger>
 #include <BCoreApplication>
+#include <BSpamNotifier>
 
 #include <QObject>
 #include <QString>
@@ -30,6 +34,8 @@
 #include <QAbstractSocket>
 #include <QSettings>
 #include <QDateTime>
+#include <QTimer>
+#include <QTcpSocket>
 
 #include <QDebug>
 
@@ -63,6 +69,65 @@ private:
     QVariant::Type mtype;
     QVariantMap mproperties;
     QList<SettingsItem> mchildren;
+};
+
+/*============================================================================
+================================ RegistrationConnection ======================
+============================================================================*/
+
+class RegistrationConnection : public BNetworkConnection
+{
+public:
+    explicit RegistrationConnection(BNetworkServer *server, BGenericSocket *socket);
+    ~RegistrationConnection();
+protected:
+    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
+private:
+    void handleRegisterRequest(BNetworkOperation *op);
+private:
+    Storage *mstorage;
+};
+
+/*============================================================================
+================================ RecoveryConnection ==========================
+============================================================================*/
+
+class RecoveryConnection : public BNetworkConnection
+{
+public:
+    explicit RecoveryConnection(BNetworkServer *server, BGenericSocket *socket);
+    ~RecoveryConnection();
+protected:
+    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
+private:
+    void handleGetRecoveryCode(BNetworkOperation *op);
+    void handleRecoverAccount(BNetworkOperation *op);
+private:
+    Storage *mstorage;
+};
+
+/*============================================================================
+================================ RegistrationServer ==========================
+============================================================================*/
+
+class RegistrationServer : public BNetworkServer
+{
+public:
+    explicit RegistrationServer(QObject *parent = 0);
+protected:
+    BNetworkConnection *createConnection(BGenericSocket *socket);
+};
+
+/*============================================================================
+================================ RecoveryServer ==============================
+============================================================================*/
+
+class RecoveryServer : public BNetworkServer
+{
+public:
+    explicit RecoveryServer(QObject *parent = 0);
+protected:
+    BNetworkConnection *createConnection(BGenericSocket *socket);
 };
 
 /*============================================================================
@@ -196,6 +261,153 @@ bool SettingsItem::operator ==(const SettingsItem &other) const
 }
 
 /*============================================================================
+================================ RegistrationConnection ======================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+RegistrationConnection::RegistrationConnection(BNetworkServer *server, BGenericSocket *socket) :
+    BNetworkConnection(server, socket)
+{
+    setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
+    setCloseOnCriticalBufferSize(true);
+    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
+    mstorage = new Storage;
+    installRequestHandler(Texsample::RegisterRequest,
+                          (InternalHandler) &RegistrationConnection::handleRegisterRequest);
+    QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
+}
+
+RegistrationConnection::~RegistrationConnection()
+{
+    delete mstorage;
+}
+
+/*============================== Protected methods =========================*/
+
+void RegistrationConnection::log(const QString &text, BLogger::Level lvl)
+{
+    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
+    BNetworkConnection::log(text, lvl);
+}
+
+/*============================== Private methods ===========================*/
+
+void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QUuid invite = BeQt::uuidFromText(in.value("invite").toString());
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    log(tr("Register request:", "log text") + " " + info.login());
+    if (invite.isNull() || !info.isValid(TUserInfo::RegisterContext))
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    info.setContext(TUserInfo::AddContext);
+    info.setAccessLevel(TAccessLevel::UserLevel);
+    quint64 id = mstorage->inviteId(invite);
+    if (!id)
+        return Global::sendReply(op, TOperationResult(tr("Invalid invite", "errorString")));
+    Global::sendReply(op, mstorage->addUser(info, invite));
+    op->waitForFinished();
+    close();
+}
+
+/*============================================================================
+================================ RecoveryConnection ==========================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+RecoveryConnection::RecoveryConnection(BNetworkServer *server, BGenericSocket *socket) :
+    BNetworkConnection(server, socket)
+{
+    setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
+    setCloseOnCriticalBufferSize(true);
+    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
+    mstorage = new Storage;
+    installRequestHandler(Texsample::GetRecoveryCodeRequest,
+                          (InternalHandler) &RecoveryConnection::handleGetRecoveryCode);
+    installRequestHandler(Texsample::RecoverAccountRequest,
+                          (InternalHandler) &RecoveryConnection::handleRecoverAccount);
+    QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
+}
+
+RecoveryConnection::~RecoveryConnection()
+{
+    delete mstorage;
+}
+
+/*============================== Protected methods =========================*/
+
+void RecoveryConnection::log(const QString &text, BLogger::Level lvl)
+{
+    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
+    BNetworkConnection::log(text, lvl);
+}
+
+/*============================== Private methods ===========================*/
+
+void RecoveryConnection::handleGetRecoveryCode(BNetworkOperation *op)
+{
+    QString email = op->variantData().toMap().value("email").toString();
+    if (email.isEmpty())
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    Global::sendReply(op, mstorage->getRecoveryCode(email));
+}
+
+void RecoveryConnection::handleRecoverAccount(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
+    QByteArray password = in.value("password").toByteArray();
+    if (email.isEmpty() || code.isNull() || password.isEmpty())
+        return Global::sendReply(op, Storage::invalidParametersResult());
+    Global::sendReply(op, mstorage->recoverAccount(email, code, password));
+}
+
+/*============================================================================
+================================ RegistrationServer ==========================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+RegistrationServer::RegistrationServer(QObject *parent) :
+    BNetworkServer(BGenericServer::TcpServer, parent)
+{
+    spamNotifier()->setCheckInterval(BeQt::Second);
+    spamNotifier()->setEventLimit(5);
+    spamNotifier()->setEnabled(true);
+}
+
+/*============================== Protected methods =========================*/
+
+BNetworkConnection *RegistrationServer::createConnection(BGenericSocket *socket)
+{
+    return new RegistrationConnection(this, socket);
+}
+
+/*============================================================================
+================================ RecoveryServer ==============================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+RecoveryServer::RecoveryServer(QObject *parent) :
+    BNetworkServer(BGenericServer::TcpServer, parent)
+{
+    spamNotifier()->setCheckInterval(BeQt::Second);
+    spamNotifier()->setEventLimit(5);
+    spamNotifier()->setEnabled(true);
+}
+
+/*============================== Protected methods =========================*/
+
+BNetworkConnection *RecoveryServer::createConnection(BGenericSocket *socket)
+{
+    return new RecoveryConnection(this, socket);
+}
+
+/*============================================================================
 ================================ TerminalIOHandler ===========================
 ============================================================================*/
 
@@ -271,7 +483,8 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     BTerminalIOHandler(parent)
 {
     mserver = new Server(this);
-    mrserver = new RegistrationServer(this);
+    mregistrationServer = new RegistrationServer(this);
+    mrecoveryServer = new RecoveryServer(this);
     installHandler("quit", &BeQt::handleQuit);
     installHandler("exit", &BeQt::handleQuit);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
@@ -359,7 +572,7 @@ void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
     writeHelpLine("user [--list], user [--connected-at|--info|--kick|--uptime] <id|login>",
                   tr("Show information about the user(s) connected", "help"));
     writeHelpLine("set <key> [value]", tr("Set configuration variable", "help"));
-    writeHelpLine("start", tr("Start the main server and the registration server", "help"));
+    writeHelpLine("start", tr("Start the main server and the auxiliary servers", "help"));
     writeHelpLine("stop", tr("Stop the main server and the registration server", "help"));
 }
 
@@ -500,10 +713,12 @@ void TerminalIOHandler::handleStartImplementation(const QString &, const QString
     if (mserver->isListening())
         return writeLine(tr("The server is already running", ""), c);
     QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
-    if (!mserver->listen(addr, Texsample::MainPort) || !mrserver->listen(addr, Texsample::RegistrationPort))
+    if (!mserver->listen(addr, Texsample::MainPort) || !mregistrationServer->listen(addr, Texsample::RegistrationPort)
+            || !mrecoveryServer->listen(addr, Texsample::RecoveryPort))
     {
         mserver->close();
-        mrserver->close();
+        mregistrationServer->close();
+        mrecoveryServer->close();
         return writeLine(tr("Failed to start server", ""), c);
     }
     writeLine(tr("OK", ""), c);
@@ -514,7 +729,8 @@ void TerminalIOHandler::handleStopImplementation(const QString &, const QStringL
     if (!mserver->isListening())
         return writeLine(tr("The server is not running", ""), c);
     mserver->close();
-    mrserver->close();
+    mregistrationServer->close();
+    mrecoveryServer->close();
     writeLine(tr("OK", ""), c);
 }
 

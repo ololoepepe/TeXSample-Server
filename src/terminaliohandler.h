@@ -3,6 +3,7 @@
 
 class Server;
 class RegistrationServer;
+class RecoveryServer;
 class Connection;
 
 class QStringList;
@@ -54,7 +55,8 @@ private:
     static QString mmailPassword;
 private:
     Server *mserver;
-    RegistrationServer *mrserver;
+    RegistrationServer *mregistrationServer;
+    RecoveryServer *mrecoveryServer;
     QElapsedTimer melapsedTimer;
 };
 

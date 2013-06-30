@@ -55,12 +55,13 @@ public:
     TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                      TInviteInfo::InvitesList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
-    TOperationResult getRecoveryCode(quint64 userId);
-    TOperationResult recoverPassword(quint64 userId, const QUuid &code, const QByteArray &password);
+    TOperationResult getRecoveryCode(const QString &email);
+    TOperationResult recoverAccount(const QString &email, const QUuid &code, const QByteArray &password);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
+    quint64 userIdByEmail(const QString &email);
     quint64 senderId(quint64 sampleId);
-    QString userEmail(quint64 userId);
+    QString userLogin(quint64 userId);
     TSampleInfo::Type sampleType(quint64 id);
     QString sampleFileName(quint64 id);
     QDateTime sampleCreationDateTime(quint64 id, Qt::TimeSpec spec = Qt::UTC);

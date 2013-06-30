@@ -33,8 +33,6 @@ SOURCES += \
     connection.cpp \
     database.cpp \
     sqlqueryresult.cpp \
-    registrationserver.cpp \
-    registrationconnection.cpp \
     global.cpp \
     storage.cpp \
     application.cpp
@@ -45,8 +43,6 @@ HEADERS += \
     connection.h \
     database.h \
     sqlqueryresult.h \
-    registrationserver.h \
-    registrationconnection.h \
     global.h \
     storage.h \
     application.h

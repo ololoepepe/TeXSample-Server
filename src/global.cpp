@@ -1,5 +1,6 @@
 #include "global.h"
 #include "storage.h"
+#include "terminaliohandler.h"
 
 #include <TCompilationResult>
 #include <TCompilerParameters>
@@ -9,6 +10,8 @@
 #include <BeQt>
 #include <BDirTools>
 #include <BGenericSocket>
+#include <BSmtpSender>
+#include <BEmail>
 
 #include <QString>
 #include <QFileInfo>
@@ -17,6 +20,7 @@
 #include <QCoreApplication>
 #include <QSslSocket>
 #include <QTextStream>
+#include <QSettings>
 
 namespace Global
 {
@@ -26,119 +30,24 @@ TOperationResult notAuthorizedResult()
     return TOperationResult(QCoreApplication::translate("Global", "Not authorized", "errorString"));
 }
 
-TOperationResult sendMail(Host host, User user, Mail mail, bool ssl)
+TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, int timeout)
 {
-    mail.to.removeAll("");
-    mail.to.removeDuplicates();
-    if (host.address.isEmpty() || !host.port || (user.login.isEmpty() && mail.from.isEmpty()) || mail.to.isEmpty()
-            || mail.body.isEmpty())
-        return TOperationResult(QCoreApplication::translate("Global", "Invalid parameters", "errorString"));
-    if (!host.port)
-        host.port = 25;
-    if (mail.from.isEmpty())
-        mail.from = user.login;
-    if (mail.subject.isEmpty())
-        mail.subject = "No subject";
-    BGenericSocket s(ssl ? BGenericSocket::SslSocket : BGenericSocket::TcpSocket);
-    if (ssl)
-        s.sslSocket()->connectToHostEncrypted(host.address, host.port);
-    else
-        s.connectToHost(host.address, host.port);
-    if ((ssl && !s.sslSocket()->waitForEncrypted(5 * BeQt::Second)) || (!ssl && !s.waitForConnected(5 * BeQt::Second)))
-        return TOperationResult(QCoreApplication::translate("Global", "Connection timeout", "errorString"));
-    QTextStream t(s.ioDevice());
-    QString text;
-    QString line;
-    int stage = 0;
-    int authStage = 0;
-    int currTo = 0;
-    TOperationResult err = TOperationResult(QCoreApplication::translate("Global", "Communication failed",
-                                                                        "errorString"));
-    if (s.bytesAvailable() <= 0 && !s.waitForReadyRead(5 * BeQt::Second))
-        return TOperationResult(QCoreApplication::translate("Global", "No response", "errorString"));
-    do
-    {
-        if (!t.device()->canReadLine())
-            return TOperationResult(QCoreApplication::translate("Global", "Failed to read line", "errorString"));
-        do
-        {
-            line = t.readLine();
-            text += line;
-        }
-        while (t.device()->canReadLine() && line.length() > 3 && line.at(3) != ' ');
-        line.truncate(3);
-        switch (stage)
-        {
-        case 0:
-            if (line.at(0) != '2')
-                return err;
-            t << ("HELO" + (!host.name.isEmpty() ? host.name : QString()));
-            break;
-        case 1:
-            --stage;
-            switch (authStage)
-            {
-            case 0:
-                t << "AUTH LOGIN";
-                break;
-            case 1:
-                t << QString(user.login.toAscii().toBase64());
-                break;
-            case 2:
-            default:
-                t << QString(user.password.toAscii().toBase64());
-                ++stage;
-                break;
-            }
-            ++authStage;
-            break;
-        case 2:
-            if (line.at(0) != '2')
-                return err;
-            t << ("MAIL FROM: <" + mail.from + ">");
-            break;
-        case 3:
-            if (line.at(0) != '2')
-                return err;
-            t << ("RCPT TO: <" + mail.to.at(currTo) + ">");
-            ++currTo;
-            if (currTo < mail.to.size())
-                --stage;
-            break;
-        case 4:
-            if (line.at(0) != '2')
-                return err;
-            t << "DATA";
-            break;
-        case 5:
-            if (line.at(0) != '3')
-                return err;
-            t << ("from: " + mail.from + "\nto: " + mail.to.first() +
-                  "\nsubject: " + mail.subject + "\n\n" + mail.body + "\r\n.\r");
-            break;
-        case 6:
-            if (line.at(0) != '2')
-                return err;
-            t << "QUIT";
-            break;
-        case 7:
-            if (line.at(0) != '2')
-                return err;
-            s.disconnectFromHost();
-            return TOperationResult(s.waitForDisconnected(5 * BeQt::Second));
-            break;
-        default:
-            return err;
-        }
-        t << "\n";
-        t.flush();
-        if (!s.waitForBytesWritten(5 * BeQt::Second))
-            return err;
-        ++stage;
-    }
-    while (s.bytesAvailable() > 0 || s.waitForReadyRead(5 * BeQt::Second))
-        ;
-    return TOperationResult(true);
+    if (receiver.isEmpty() || subject.isEmpty() || body.isEmpty())
+        return Storage::invalidParametersResult();
+    BSmtpSender smtp;
+    smtp.setServer(bSettings->value("Mail/server_address").toString(),
+                   bSettings->value("Mail/server_port", 25).toUInt());
+    smtp.setLocalHostName("texsample-server.no-ip.org");
+    smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
+                                                                        BGenericSocket::TcpSocket);
+    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
+    BEmail email;
+    email.setSender("TeXSample Team");
+    email.setReceiver(receiver);
+    email.setSubject(subject);
+    email.setBody(body);
+    bool b = smtp.waitForFinished(timeout);
+    return TOperationResult(b, smtp.lastTransferError());
 }
 
 TCompilationResult compileProject(const QString &path, TProject project, const TCompilerParameters &param,

@@ -20,32 +20,6 @@ class TCompiledProject;
 namespace Global
 {
 
-struct Host
-{
-    QString address;
-    quint16 port;
-    QString name;
-    //
-    Host()
-    {
-        port = 25;
-    }
-};
-
-struct User
-{
-    QString login;
-    QString password;
-};
-
-struct Mail
-{
-    QString from;
-    QStringList to;
-    QString subject;
-    QString body;
-};
-
 TOperationResult notAuthorizedResult();
 
 TCompilationResult compileProject(const QString &path, TProject project,
@@ -53,7 +27,8 @@ TCompilationResult compileProject(const QString &path, TProject project,
                                   TCompiledProject *compiledProject = 0, TCompilationResult *makeindexResult = 0,
                                   TCompilationResult *dvipsResult = 0);
 
-TOperationResult sendMail(Host host, User user, Mail mail, bool ssl = false);
+TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body,
+                           int timeout = 30 * BeQt::Second);
 
 template<typename T> void sendReply(BNetworkOperation *op, QVariantMap out, const QString &key, const T &t)
 {

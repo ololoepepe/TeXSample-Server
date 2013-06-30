@@ -79,8 +79,6 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleGenerateInvitesRequest);
     installRequestHandler(Texsample::GetInvitesListRequest,
                           (InternalHandler) &Connection::handleGetInvitesListRequest);
-    installRequestHandler(Texsample::GetRecoveryCodeRequest, (InternalHandler) &Connection::handleGetRecoveryCode);
-    installRequestHandler(Texsample::RecoverPasswordRequest, (InternalHandler) &Connection::handleRecoverPassword);
     installRequestHandler(Texsample::CompileProjectRequest,
                           (InternalHandler) &Connection::handleCompileProjectRequest);
     installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
@@ -421,25 +419,6 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("invite_infos", QVariant::fromValue(invites));
     Global::sendReply(op, out, r);
-}
-
-void Connection::handleGetRecoveryCode(BNetworkOperation *op)
-{
-    if (!muserId)
-        return Global::sendReply(op, notAuthorizedResult());
-    Global::sendReply(op, mstorage->getRecoveryCode(muserId));
-}
-
-void Connection::handleRecoverPassword(BNetworkOperation *op)
-{
-    if (!muserId)
-        return Global::sendReply(op, notAuthorizedResult());
-    QVariantMap in = op->variantData().toMap();
-    QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
-    QByteArray password = in.value("password").toByteArray();
-    if (code.isNull() || password.isEmpty())
-        return Global::sendReply(op, Storage::invalidParametersResult());
-    Global::sendReply(op, mstorage->recoverPassword(muserId, code, password));
 }
 
 void Connection::handleCompileProjectRequest(BNetworkOperation *op)
