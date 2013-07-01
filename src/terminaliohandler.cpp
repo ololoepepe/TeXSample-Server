@@ -3,6 +3,7 @@
 #include "connection.h"
 #include "storage.h"
 #include "global.h"
+#include "translator.h"
 
 #include <TeXSample>
 #include <TOperationResult>
@@ -36,6 +37,8 @@
 #include <QDateTime>
 #include <QTimer>
 #include <QTcpSocket>
+#include <QMutex>
+#include <QMutexLocker>
 
 #include <QDebug>
 
@@ -69,6 +72,22 @@ private:
     QVariant::Type mtype;
     QVariantMap mproperties;
     QList<SettingsItem> mchildren;
+};
+
+/*============================================================================
+================================ TranslateFunctor ============================
+============================================================================*/
+
+class TranslateFunctor
+{
+public:
+    explicit TranslateFunctor(Connection *c = 0);
+public:
+    void setConnection(Connection *c);
+public:
+    QString operator()(const char *context, const char *sourceText, const char *disambiguation = 0, int n = -1);
+private:
+    Connection *mconnection;
 };
 
 /*============================================================================
@@ -261,6 +280,32 @@ bool SettingsItem::operator ==(const SettingsItem &other) const
 }
 
 /*============================================================================
+================================ TranslateFunctor ============================
+============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+TranslateFunctor::TranslateFunctor(Connection *c)
+{
+    mconnection = c;
+}
+
+/*============================== Public methods ============================*/
+
+void TranslateFunctor::setConnection(Connection *c)
+{
+    mconnection = c;
+}
+
+/*============================== Protected operators =======================*/
+
+QString TranslateFunctor::operator ()(const char *context, const char *sourceText, const char *disambiguation, int n)
+{
+    return mconnection ? mconnection->translate(context, sourceText, disambiguation, n) :
+                         BeQt::translate(context, sourceText, disambiguation, n);
+}
+
+/*============================================================================
 ================================ RegistrationConnection ======================
 ============================================================================*/
 
@@ -269,10 +314,15 @@ bool SettingsItem::operator ==(const SettingsItem &other) const
 RegistrationConnection::RegistrationConnection(BNetworkServer *server, BGenericSocket *socket) :
     BNetworkConnection(server, socket)
 {
-    setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
+    mstorage = new Storage;
+    if (!mstorage->isValid())
+    {
+        log(Global::string(Global::StorageError));
+        close();
+    }
+    setCriticalBufferSize(2 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    mstorage = new Storage;
     installRequestHandler(Texsample::RegisterRequest,
                           (InternalHandler) &RegistrationConnection::handleRegisterRequest);
     QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
@@ -298,14 +348,23 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QUuid invite = BeQt::uuidFromText(in.value("invite").toString());
     TUserInfo info = in.value("user_info").value<TUserInfo>();
-    log(tr("Register request:", "log text") + " " + info.login());
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
+    log("Register request: " + info.login());
     if (invite.isNull() || !info.isValid(TUserInfo::RegisterContext))
-        return Global::sendReply(op, Storage::invalidParametersResult());
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
     info.setContext(TUserInfo::AddContext);
     info.setAccessLevel(TAccessLevel::UserLevel);
     quint64 id = mstorage->inviteId(invite);
     if (!id)
-        return Global::sendReply(op, TOperationResult(tr("Invalid invite", "errorString")));
+    {
+        Global::sendReply(op, Global::result(Global::InvalidInvite, &t));
+        op->waitForFinished();
+        return close();
+    }
     Global::sendReply(op, mstorage->addUser(info, invite));
     op->waitForFinished();
     close();
@@ -320,10 +379,15 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
 RecoveryConnection::RecoveryConnection(BNetworkServer *server, BGenericSocket *socket) :
     BNetworkConnection(server, socket)
 {
+    mstorage = new Storage;
+    if (!mstorage->isValid())
+    {
+        log(Global::string(Global::StorageError));
+        close();
+    }
     setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
     setCloseOnCriticalBufferSize(true);
     socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    mstorage = new Storage;
     installRequestHandler(Texsample::GetRecoveryCodeRequest,
                           (InternalHandler) &RecoveryConnection::handleGetRecoveryCode);
     installRequestHandler(Texsample::RecoverAccountRequest,
@@ -348,10 +412,17 @@ void RecoveryConnection::log(const QString &text, BLogger::Level lvl)
 
 void RecoveryConnection::handleGetRecoveryCode(BNetworkOperation *op)
 {
-    QString email = op->variantData().toMap().value("email").toString();
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
     if (email.isEmpty())
-        return Global::sendReply(op, Storage::invalidParametersResult());
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
     Global::sendReply(op, mstorage->getRecoveryCode(email));
+    op->waitForFinished();
 }
 
 void RecoveryConnection::handleRecoverAccount(BNetworkOperation *op)
@@ -360,9 +431,16 @@ void RecoveryConnection::handleRecoverAccount(BNetworkOperation *op)
     QString email = in.value("email").toString();
     QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
     QByteArray password = in.value("password").toByteArray();
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
     if (email.isEmpty() || code.isNull() || password.isEmpty())
-        return Global::sendReply(op, Storage::invalidParametersResult());
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
     Global::sendReply(op, mstorage->recoverAccount(email, code, password));
+    op->waitForFinished();
+    close();
 }
 
 /*============================================================================
@@ -435,15 +513,19 @@ void TerminalIOHandler::sendLogRequest(const QString &text, BLogger::Level lvl)
     Server *s = TerminalIOHandler::server();
     if (!s)
         return;
+    s->lock();
     foreach (BNetworkConnection *c, s->connections())
     {
         Connection *cc = static_cast<Connection *>(c);
         cc->sendLogRequest(text, lvl);
     }
+    s->unlock();
 }
 
 void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &args, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     TerminalIOHandler *inst = instance();
     if (!inst)
         return;
@@ -503,7 +585,7 @@ TerminalIOHandler::~TerminalIOHandler()
 
 /*============================== Static private methods ====================*/
 
-QString TerminalIOHandler::msecsToString(qint64 msecs)
+QString TerminalIOHandler::msecsToString(qint64 msecs, Connection *c)
 {
     QString days = QString::number(msecs / (24 * BeQt::Hour));
     msecs %= (24 * BeQt::Hour);
@@ -515,7 +597,9 @@ QString TerminalIOHandler::msecsToString(qint64 msecs)
     msecs %= BeQt::Minute;
     QString seconds = QString::number(msecs / BeQt::Second);
     seconds.prepend(QString().fill('0', 2 - seconds.length()));
-    return days + " " + tr("days", "") + " " + hours + ":" + minutes + ":" + seconds;
+    static TranslateFunctor translate;
+    translate.setConnection(c);
+    return days + " " + translate("TerminalIOHandler", "days") + " " + hours + ":" + minutes + ":" + seconds;
 }
 
 QString TerminalIOHandler::userPrefix(Connection *user)
@@ -573,27 +657,32 @@ void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
                   tr("Show information about the user(s) connected", "help"));
     writeHelpLine("set <key> [value]", tr("Set configuration variable", "help"));
     writeHelpLine("start", tr("Start the main server and the auxiliary servers", "help"));
-    writeHelpLine("stop", tr("Stop the main server and the registration server", "help"));
+    writeHelpLine("stop", tr("Stop the main server and the auxiliary servers", "help"));
 }
 
 void TerminalIOHandler::handleUserImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static TranslateFunctor translate;
+    translate.setConnection(c);
     if (args.isEmpty())
     {
-        writeLine(tr("Users:", "") + " " + QString::number(mserver->connections().size()), c);
+        writeLine(translate("TerminalIOHandler", "Connected user count:") + " "
+                  + QString::number(mserver->currentConnectionCount()), c);
     }
     else if (args.first() == "--list")
     {
-        int sz = mserver->connections().size();
+        int sz = mserver->currentConnectionCount();
         if (sz)
-            writeLine(tr("Listing users", "") + " (" + QString::number(sz) + "):", c);
+            writeLine(translate("TerminalIOHandler", "Listing connected users") + " (" + QString::number(sz) + "):", c);
         else
-            writeLine(tr("There are no connected users", ""), c);
+            writeLine(translate("TerminalIOHandler", "There are no connected users"), c);
+        mserver->lock();
         foreach (BNetworkConnection *cc, mserver->connections())
         {
             Connection *ccc = static_cast<Connection *>(cc);
             writeLine("[" + ccc->login() + "] [" + ccc->peerAddress() + "] " + ccc->uniqueId().toString(), c);
         }
+        mserver->unlock();
     }
     else
     {
@@ -603,15 +692,18 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
         QUuid uuid = BeQt::uuidFromText(args.at(1));
         if (uuid.isNull())
         {
+            mserver->lock();
             foreach (BNetworkConnection *c, mserver->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->login() == args.at(1))
                     users << cc;
             }
+            mserver->unlock();
         }
         else
         {
+            mserver->lock();
             foreach (BNetworkConnection *c, mserver->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
@@ -621,6 +713,7 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
                     break;
                 }
             }
+            mserver->unlock();
         }
         if (args.first() == "--kick")
         {
@@ -635,12 +728,13 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
         else if (args.first() == "--uptime")
         {
             foreach (Connection *cc, users)
-                writeLine(tr("Uptime for", "") + " " + userPrefix(cc) + " " + msecsToString(cc->uptime()), c);
+                writeLine(translate("TerminalIOHandler", "Uptime of") + " " + userPrefix(cc) + " "
+                          + msecsToString(cc->uptime(), c), c);
         }
         else if (args.first() == "--connected-at")
         {
             foreach (Connection *cc, users)
-                writeLine(tr("Connection time for", "") + " " + userPrefix(cc) + " "
+                writeLine(translate("TerminalIOHandler", "Connection time of") + " " + userPrefix(cc) + " "
                           + cc->connectedAt().toString(bLogger->dateTimeFormat()), c);
         }
     }
@@ -648,16 +742,21 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
 
 void TerminalIOHandler::handleUptimeImplementation(const QString &, const QStringList &, Connection *c)
 {
-    writeLine(tr("Uptime:", "") + " " + msecsToString(melapsedTimer.elapsed()), c);
+    static TranslateFunctor translate;
+    translate.setConnection(c);
+    writeLine(translate("TerminalIOHandler", "Uptime:") + " " + msecsToString(melapsedTimer.elapsed(), c), c);
 }
 
 void TerminalIOHandler::handleSetImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static TranslateFunctor translate;
+    translate.setConnection(c);
     init_once(SettingsItem, Settings, SettingsItem())
     {
         SettingsItem mail("Mail");
           mail.addChildItem("server_address");
           mail.addChildItem("server_port", QVariant::UInt);
+          mail.addChildItem("local_host_name");
           mail.addChildItem("login");
           SettingsItem i("password");
             i.setProperty("mail_password", true);
@@ -671,18 +770,18 @@ void TerminalIOHandler::handleSetImplementation(const QString &, const QStringLi
         Settings.addChildItem(beqt);
     }
     if (args.size() < 1 || args.size() > 2)
-        return writeLine(tr("Invalid parameters", ""), c);
+        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
     if (args.size() == 1 && c)
-        return writeLine(tr("Invalid parameters", ""), c);
+        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
     QString path = args.first();
     SettingsItem si = Settings.testPath(path);
     if (QVariant::Invalid == si.type())
-        return writeLine(tr("No such option", ""), c);
+        return writeLine(translate("TerminalIOHandler", "No such option"), c);
     path.replace('.', '/');
     if (si.property("mail_password").toBool() && args.size() == 1)
     {
         setStdinEchoEnabled(false);
-        mmailPassword = readLine(tr("Enter e-mail password:", "") + " ");
+        mmailPassword = readLine(translate("TerminalIOHandler", "Enter e-mail password:") + " ");
         setStdinEchoEnabled(true);
         writeLine(c);
     }
@@ -692,7 +791,7 @@ void TerminalIOHandler::handleSetImplementation(const QString &, const QStringLi
         if (args.size() == 2)
             v = args.last();
         else
-            v = readLine(tr("Enter value for", "") + " \"" + path.split("/").last() + "\": ");
+            v = readLine(translate("TerminalIOHandler", "Enter value for") + " \"" + path.split("/").last() + "\": ");
         switch (si.type())
         {
         case QVariant::Locale:
@@ -700,18 +799,20 @@ void TerminalIOHandler::handleSetImplementation(const QString &, const QStringLi
             break;
         default:
             if (!v.convert(si.type()))
-                return writeLine(tr("Invalid value", ""), c);
+                return writeLine(translate("TerminalIOHandler", "Invalid value"), c);
             break;
         }
         bSettings->setValue(path, v);
     }
-    writeLine(tr("OK", ""), c);
+    writeLine(translate("TerminalIOHandler", "OK"), c);
 }
 
 void TerminalIOHandler::handleStartImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static TranslateFunctor translate;
+    translate.setConnection(c);
     if (mserver->isListening())
-        return writeLine(tr("The server is already running", ""), c);
+        return writeLine(translate("TerminalIOHandler", "The server is already running"), c);
     QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
     if (!mserver->listen(addr, Texsample::MainPort) || !mregistrationServer->listen(addr, Texsample::RegistrationPort)
             || !mrecoveryServer->listen(addr, Texsample::RecoveryPort))
@@ -719,19 +820,21 @@ void TerminalIOHandler::handleStartImplementation(const QString &, const QString
         mserver->close();
         mregistrationServer->close();
         mrecoveryServer->close();
-        return writeLine(tr("Failed to start server", ""), c);
+        return writeLine(translate("TerminalIOHandler", "Failed to start server"), c);
     }
-    writeLine(tr("OK", ""), c);
+    writeLine(translate("TerminalIOHandler", "OK"), c);
 }
 
 void TerminalIOHandler::handleStopImplementation(const QString &, const QStringList &, Connection *c)
 {
+    static TranslateFunctor translate;
+    translate.setConnection(c);
     if (!mserver->isListening())
-        return writeLine(tr("The server is not running", ""), c);
+        return writeLine(translate("TerminalIOHandler", "The server is not running"), c);
     mserver->close();
     mregistrationServer->close();
     mrecoveryServer->close();
-    writeLine(tr("OK", ""), c);
+    writeLine(translate("TerminalIOHandler", "OK"), c);
 }
 
 /*============================== Private variables =========================*/

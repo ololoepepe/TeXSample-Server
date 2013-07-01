@@ -2,6 +2,7 @@
 #define CONNECTION_H
 
 class Storage;
+class Translator;
 
 class TOperationResult;
 
@@ -42,17 +43,19 @@ public:
 public:
     void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void sendWriteRequest(const QString &text);
+    QString translate(const char *context, const char *sourceText, const char *disambiguation = 0, int n = -1);
     QString login() const;
     TClientInfo clientInfo() const;
-    QString infoString(const QString &format = "") const; //"%u - login, %p - address, %i - id, %a - access level
+    QString infoString(const QString &format = "") const;
+    //%d - user id, "%u - login, %p - address, %i - id
+    //%a - access level
     QDateTime connectedAt(Qt::TimeSpec spec = Qt::LocalTime) const;
     bool isSubscribed() const;
     qint64 uptime() const;
 protected:
     void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
-private:
-    static TOperationResult notAuthorizedResult();
+    void logRemote(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
     void handleAuthorizeRequest(BNetworkOperation *op);
     void handleAddUserRequest(BNetworkOperation *op);
@@ -79,6 +82,7 @@ private slots:
     void sendWriteRequestInternal(const QString &text);
 private:
     Storage *mstorage;
+    Translator *mtranslator;
     QString mlogin;
     quint64 muserId;
     TAccessLevel maccessLevel;

@@ -21,10 +21,7 @@
 
 #include <QDebug>
 
-QString translate(const char *context, const char *key, const char *disambiguation = 0)
-{
-    return QCoreApplication::translate(context, key, disambiguation);
-}
+B_DECLARE_TRANSLATE_FUNCTION
 
 int main(int argc, char *argv[])
 {

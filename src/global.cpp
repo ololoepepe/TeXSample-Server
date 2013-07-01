@@ -1,6 +1,7 @@
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
+#include "translator.h"
 
 #include <TCompilationResult>
 #include <TCompilerParameters>
@@ -22,22 +23,61 @@
 #include <QTextStream>
 #include <QSettings>
 
+#include <QDebug>
+
 namespace Global
 {
 
-TOperationResult notAuthorizedResult()
+struct TrStruct
 {
-    return TOperationResult(QCoreApplication::translate("Global", "Not authorized", "errorString"));
+    const char *source;
+    const char *comment;
+};
+
+static const TrStruct Messages[] =
+{
+    QT_TRANSLATE_NOOP3("Global", "Referred to invalid storage instance", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Failed to commit transaction or execute internal operation", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Failed to execute query", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Failed to perform file system read or write operation", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Received invalid parameters", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while not authorized", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while not enough rights", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on another user's account", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on another user's sample", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on read-only sample", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent user", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent sample", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to register using occupied login or e-mail", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to register using invalid invite code", "message")
+};
+
+QString string(Message msg, Translator *t)
+{
+    bool b = bRangeD(0, NOMESSAGE - 1).contains(msg);
+    const char *source = b ? Messages[msg].source : 0;
+    const char *comment = b ? Messages[msg].comment : 0;
+    return t ? t->translate("Global", source, comment) : QString(source);
 }
 
-TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, int timeout)
+TOperationResult result(Message msg, Translator *t)
+{
+    return TOperationResult(string(msg, t));
+}
+
+TCompilationResult compilationResult(Message msg, Translator *t)
+{
+    return TCompilationResult(string(msg, t));
+}
+
+TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, Translator *t)
 {
     if (receiver.isEmpty() || subject.isEmpty() || body.isEmpty())
-        return Storage::invalidParametersResult();
+        return result(InvalidParameters, t);
     BSmtpSender smtp;
     smtp.setServer(bSettings->value("Mail/server_address").toString(),
                    bSettings->value("Mail/server_port", 25).toUInt());
-    smtp.setLocalHostName("texsample-server.no-ip.org");
+    smtp.setLocalHostName(bSettings->value("Mail/local_host_name").toString());
     smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
                                                                         BGenericSocket::TcpSocket);
     smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
@@ -46,87 +86,87 @@ TOperationResult sendEmail(const QString &receiver, const QString &subject, cons
     email.setReceiver(receiver);
     email.setSubject(subject);
     email.setBody(body);
-    bool b = smtp.waitForFinished(timeout);
+    smtp.setEmail(email);
+    smtp.send();
+    bool b = smtp.waitForFinished();
     return TOperationResult(b, smtp.lastTransferError());
 }
 
-TCompilationResult compileProject(const QString &path, TProject project, const TCompilerParameters &param,
-                                  TCompiledProject *compiledProject, TCompilationResult *makeindexResult,
-                                  TCompilationResult *dvipsResult)
+TCompilationResult compileProject(const CompileParameters &p, Translator *t)
 {
     static const QStringList Suffixes = QStringList() << "*.aux" << "*.dvi" << "*.idx" << "*.ilg" << "*.ind"
                                                       << "*.log" << "*.out" << "*.pdf" << "*.toc";
-    if (path.isEmpty() || !project.isValid())
-        return Storage::invalidParametersResult();
-    if (!BDirTools::mkpath(path))
-        return Storage::fileSystemErrorResult();
-    QString codecName = compiledProject ? param.codecName() : QString("UTF-8");
-    if (!project.save(path, codecName) || !Storage::copyTexsample(path, codecName))
+    if (p.path.isEmpty() || !p.project.isValid())
+        return compilationResult(NotAuthorized, t);
+    if (!BDirTools::mkpath(p.path))
+        return compilationResult(FileSystemError, t);
+    QString codecName = p.compiledProject ? p.param.codecName() : QString("UTF-8");
+    if (!p.project.save(p.path, codecName) || !Storage::copyTexsample(p.path, codecName))
     {
-        BDirTools::rmdir(path);
-        return Storage::fileSystemErrorResult();
+        BDirTools::rmdir(p.path);
+        return compilationResult(FileSystemError, t);
     }
-    QString fn = project.rootFileName();
+    QString fn = p.project.rootFileName();
     QString tmpfn = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
     QString baseName = QFileInfo(fn).baseName();
     TCompilationResult r;
-    QString command = !compiledProject ? "pdflatex" : param.compilerString();
+    QString command = !p.compiledProject ? "pdflatex" : p.param.compilerString();
     QStringList args = QStringList() << "-interaction=nonstopmode";
-    if (!compiledProject)
+    if (!p.compiledProject)
     {
-        if (!QFile::rename(path + "/" + fn, path + "/" + tmpfn))
-            return Storage::fileSystemErrorResult();
+        if (!QFile::rename(p.path + "/" + fn, p.path + "/" + tmpfn))
+            return compilationResult(FileSystemError, t);
         args << ("-jobname=" + baseName)
              << ("\\input texsample.tex \\input " + tmpfn + " \\end{document}");
     }
     else
     {
-        args << param.commands() << (path + "/" + fn) << param.options();
+        args << p.param.commands() << (p.path + "/" + fn) << p.param.options();
     }
     QString log;
-    int code = BeQt::execProcess(path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
-    if (!compiledProject && !QFile::rename(path + "/" + tmpfn, path + "/" + fn))
-        return Storage::fileSystemErrorResult();
-    if (!Storage::removeTexsample(path))
-        return Storage::fileSystemErrorResult();
+    int code = BeQt::execProcess(p.path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
+    if (!p.compiledProject && !QFile::rename(p.path + "/" + tmpfn, p.path + "/" + fn))
+        return compilationResult(FileSystemError, t);
+    if (!Storage::removeTexsample(p.path))
+        return compilationResult(FileSystemError, t);
     r.setSuccess(!code);
     r.setExitCode(code);
     r.setLog(log);
-    if (compiledProject && r && param.makeindexEnabled())
+    if (p.compiledProject && r && p.param.makeindexEnabled())
     {
         QString mlog;
-        int mcode = BeQt::execProcess(path, "makeindex", QStringList() << (path + "/" + baseName),
+        int mcode = BeQt::execProcess(p.path, "makeindex", QStringList() << (p.path + "/" + baseName),
                                       5 * BeQt::Second, BeQt::Minute, &mlog);
-        if (makeindexResult)
+        if (p.makeindexResult)
         {
-            makeindexResult->setSuccess(!mcode);
-            makeindexResult->setExitCode(mcode);
-            makeindexResult->setLog(mlog);
+            p.makeindexResult->setSuccess(!mcode);
+            p.makeindexResult->setExitCode(mcode);
+            p.makeindexResult->setLog(mlog);
         }
         if (!mcode)
         {
-            code = BeQt::execProcess(path, param.compilerString(), args, 5 * BeQt::Second, 5 * BeQt::Minute, &log);
+            code = BeQt::execProcess(p.path, p.param.compilerString(), args, 5 * BeQt::Second, 5 * BeQt::Minute, &log);
             r.setSuccess(!code);
             r.setExitCode(code);
             r.setLog(log);
         }
     }
-    if (compiledProject && r && param.dvipsEnabled())
+    if (p.compiledProject && r && p.param.dvipsEnabled())
     {
         QString dlog;
-        int dcode = BeQt::execProcess(path, "dvips", QStringList() << (path + "/" + baseName),
+        int dcode = BeQt::execProcess(p.path, "dvips", QStringList() << (p.path + "/" + baseName),
                                       5 * BeQt::Second, BeQt::Minute, &dlog);
-        if (dvipsResult)
+        if (p.dvipsResult)
         {
-            dvipsResult->setSuccess(!dcode);
-            dvipsResult->setExitCode(dcode);
-            dvipsResult->setLog(dlog);
+            p.dvipsResult->setSuccess(!dcode);
+            p.dvipsResult->setExitCode(dcode);
+            p.dvipsResult->setLog(dlog);
         }
     }
-    if (r && compiledProject)
-        compiledProject->load(path, Suffixes);
-    if (compiledProject || !r)
-        BDirTools::rmdir(path);
+    if (r && p.compiledProject)
+        p.compiledProject->load(p.path, Suffixes);
+    if (p.compiledProject || !r)
+        BDirTools::rmdir(p.path);
     return r;
 }
 
