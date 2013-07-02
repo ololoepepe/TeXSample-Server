@@ -472,7 +472,7 @@ TOperationResult Storage::getSamplePreview(quint64 sampleId, TProjectFile &file,
 }
 
 TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, Texsample::IdList &deletedSamples,
-                                         QDateTime &updateDT)
+                                         QDateTime &updateDT, bool hack)
 {
     if (!isValid())
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -503,8 +503,10 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
-        info.setProjectSize(TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
-                                           "UTF-8"));
+        int sz = -1; //HACK: Must fix
+        if (!hack)
+            sz = TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(), "UTF-8");
+        info.setProjectSize(sz);
         info.setTags(m.value("tags").toString());
         info.setRating(m.value("rating").toUInt());
         info.setComment(m.value("comment").toString());

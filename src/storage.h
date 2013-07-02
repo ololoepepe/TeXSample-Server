@@ -49,7 +49,7 @@ public:
     TOperationResult getSampleSource(quint64 sampleId, TProject &project, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplesList(TSampleInfo::SamplesList &newSamples, Texsample::IdList &deletedSamples,
-                                    QDateTime &updateDT);
+                                    QDateTime &updateDT, bool hack);
     TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                      TInviteInfo::InvitesList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
