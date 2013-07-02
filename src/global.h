@@ -2,58 +2,83 @@
 #define GLOBAL_H
 
 class Storage;
+class Translator;
 
 class TOperationResult;
 class TCompilationResult;
-class TProject;
-class TCompiledProject;
 
+#include <TProject>
+#include <TCompiledProject>
 #include <TCompilerParameters>
 
 #include <BNetworkOperation>
 #include <BNetworkConnection>
+#include <BTranslator>
 
 #include <QString>
 #include <QStringList>
 #include <QVariantMap>
 
+#define DECLARE_TRANSLATE_FUNCTION \
+static QString translate(const char *context, const char *sourceText, BTranslator *translator) \
+{ \
+    return translate(context, sourceText, translator); \
+} \
+static QString translate(const char *context, const char *sourceText, const char *disambiguation, \
+                         BTranslator *translator) \
+{ \
+    return translator ? translator->translate(context, sourceText, disambiguation) : \
+                        QCoreApplication::translate(context, sourceText, disambiguation); \
+}
+
 namespace Global
 {
 
-struct Host
+enum Message
 {
-    QString address;
-    quint16 port;
-    QString name;
-    //
-    Host()
+    StorageError = 0,
+    DatabaseError,
+    QueryError,
+    FileSystemError,
+    InvalidParameters,
+    NotAuthorized,
+    NotEnoughRights,
+    NotYourAccount,
+    NotYourSample,
+    NotModifiableSample,
+    NoSuchUser,
+    NoSuchSample,
+    LoginOrEmailOccupied,
+    InvalidInvite,
+    NOMESSAGE
+};
+
+struct CompileParameters
+{
+    QString path;
+    mutable TProject project;
+    TCompilerParameters param;
+    mutable TCompiledProject *compiledProject;
+    mutable TCompilationResult *makeindexResult;
+    mutable TCompilationResult *dvipsResult;
+public:
+    CompileParameters()
     {
-        port = 25;
+        compiledProject = 0;
+        makeindexResult = 0;
+        dvipsResult = 0;
     }
 };
 
-struct User
-{
-    QString login;
-    QString password;
-};
+QString string(Message msg, Translator *t = 0);
 
-struct Mail
-{
-    QString from;
-    QStringList to;
-    QString subject;
-    QString body;
-};
+TOperationResult result(Message msg, Translator *t = 0);
 
-TOperationResult notAuthorizedResult();
+TCompilationResult compilationResult(Message msg, Translator *t = 0);
 
-TCompilationResult compileProject(const QString &path, TProject project,
-                                  const TCompilerParameters &param = TCompilerParameters(),
-                                  TCompiledProject *compiledProject = 0, TCompilationResult *makeindexResult = 0,
-                                  TCompilationResult *dvipsResult = 0);
+TCompilationResult compileProject(const CompileParameters &p, Translator *t = 0);
 
-TOperationResult sendMail(Host host, User user, Mail mail, bool ssl = false);
+TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, Translator *t = 0);
 
 template<typename T> void sendReply(BNetworkOperation *op, QVariantMap out, const QString &key, const T &t)
 {

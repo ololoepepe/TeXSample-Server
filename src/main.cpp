@@ -21,17 +21,14 @@
 
 #include <QDebug>
 
-QString translate(const char *context, const char *key, const char *disambiguation = 0)
-{
-    return QCoreApplication::translate(context, key, disambiguation);
-}
+B_DECLARE_TRANSLATE_FUNCTION
 
 int main(int argc, char *argv[])
 {
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.0.3");
+    QCoreApplication::setApplicationVersion("1.1.0");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
@@ -73,6 +70,10 @@ int main(int argc, char *argv[])
     TerminalIOHandler::writeLine(translate("main", "Please, don't forget to configure e-mail and start the server"));
     TerminalIOHandler::writeLine(translate("main", "Enter \"help\" to see commands list"));
     ret = app.exec();
+#if defined(BUILTIN_RESOURCES)
+     Q_CLEANUP_RESOURCE(texsample_server);
+     Q_CLEANUP_RESOURCE(texsample_server_translations);
+#endif
     }
     else
     {
@@ -80,5 +81,6 @@ int main(int argc, char *argv[])
                                       + QCoreApplication::applicationName() + " "
                                       + translate("main", "is already running. Quitting..."));
     }
+    tCleanup();
     return ret;
 }

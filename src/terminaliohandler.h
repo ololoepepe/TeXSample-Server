@@ -3,6 +3,7 @@
 
 class Server;
 class RegistrationServer;
+class RecoveryServer;
 class Connection;
 
 class QStringList;
@@ -35,7 +36,7 @@ public:
     explicit TerminalIOHandler(QObject *parent = 0);
     ~TerminalIOHandler();
 private:
-    static QString msecsToString(qint64 msecs);
+    static QString msecsToString(qint64 msecs, Connection *c = 0);
     static QString userPrefix(Connection *user);
     static void writeHelpLine(const QString &command, const QString &description);
 private:
@@ -54,7 +55,8 @@ private:
     static QString mmailPassword;
 private:
     Server *mserver;
-    RegistrationServer *mrserver;
+    RegistrationServer *mregistrationServer;
+    RecoveryServer *mrecoveryServer;
     QElapsedTimer melapsedTimer;
 };
 

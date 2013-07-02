@@ -4,7 +4,7 @@ TARGET = texsample-server
 CONFIG += console release
 
 QT = core network sql
-BEQT = core network
+BEQT = core network sql
 
 isEmpty(BEQT_PREFIX) {
     #TODO: Add MacOS support
@@ -27,29 +27,24 @@ isEmpty(TSMP_PREFIX) {
 include($${TSMP_PREFIX}/depend.pri)
 
 SOURCES += \
-    main.cpp \
-    terminaliohandler.cpp \
-    server.cpp \
+    application.cpp \
     connection.cpp \
-    database.cpp \
-    sqlqueryresult.cpp \
-    registrationserver.cpp \
-    registrationconnection.cpp \
     global.cpp \
+    main.cpp \
+    server.cpp \
     storage.cpp \
-    application.cpp
+    terminaliohandler.cpp \
+    translator.cpp
 
 HEADERS += \
-    terminaliohandler.h \
-    server.h \
+    application.h \
     connection.h \
-    database.h \
-    sqlqueryresult.h \
-    registrationserver.h \
-    registrationconnection.h \
     global.h \
+    server.h \
     storage.h \
-    application.h
+    terminaliohandler.h \
+    translator.h
+
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts

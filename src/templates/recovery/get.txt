@@ -1,0 +1,7 @@
+Hello, %username%!
+
+You requested restoring your TeXSample account.
+
+Use this code for recovering: %code%
+
+The code will be valid for 24 hours only!
