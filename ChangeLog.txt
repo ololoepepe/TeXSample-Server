@@ -1,3 +1,8 @@
+=== TeXSample Server 1.1.1 (02 July 2013) ===
+    * Add ability to disable local logging of connection tests
+    * Fix client info displaying
+    * Add a hack for preventing compatibility breaking
+
 === TeXSample Server 1.1.0 (02 July 2013) ===
     * Use BeQt 2.1.0
     * Use TeXSample 0.2.0

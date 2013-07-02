@@ -37,6 +37,7 @@
 #include <QProcess>
 #include <QTcpSocket>
 #include <QMetaObject>
+#include <QSettings>
 
 #include <QDebug>
 
@@ -140,8 +141,7 @@ QString Connection::infoString(const QString &format) const
     QString f = format;
     if (f.isEmpty())
     {
-        if (TClientInfo::compareVersions(mclientInfo.clientVersion(), "2.1.0") >= 0
-                || mclientInfo.client() == "TeXSample Console")
+        if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
             f = "[%u] [%p] %i\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q";
         else
             f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
@@ -214,8 +214,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     QString f = "Authorized\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
-    if (TClientInfo::compareVersions(mclientInfo.clientVersion(), "2.1.0") >= 0
-            || mclientInfo.client() == "TeXSample Console")
+    if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
     {
         f += "%l\nClient: %c";
         mtranslator = new Translator(mclientInfo.locale());
@@ -363,7 +362,8 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     log("Get samples list request");
     TSampleInfo::SamplesList newSamples;
     Texsample::IdList deletedSamples;
-    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT);
+    bool oldHack = TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") < 0;
+    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT, oldHack);
     if (!r)
         Global::sendReply(op, r);
     QVariantMap out;
@@ -528,8 +528,13 @@ void Connection::keepAlive()
     if (!muserId || !isConnected())
         return;
     mtimer.stop();
-    logLocal("Testing connection...");
-    BNetworkOperation *op = sendRequest("noop");
+    int l = bSettings->value("Log/noop").toInt();
+    QString s = "Testing connection...";
+    if (1 == l)
+        logLocal(s);
+    else if (l > 1)
+        log(s);
+    BNetworkOperation *op = sendRequest(NoopRequest);
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b)
     {

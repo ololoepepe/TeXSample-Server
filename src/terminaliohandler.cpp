@@ -583,6 +583,13 @@ TerminalIOHandler::~TerminalIOHandler()
     //
 }
 
+/*============================== Protected methods =========================*/
+
+void TerminalIOHandler::handleCommand(const QString &, const QStringList &)
+{
+    writeLine(tr("Unknown command. Enter \"help\" to see the list of available commands"));
+}
+
 /*============================== Static private methods ====================*/
 
 QString TerminalIOHandler::msecsToString(qint64 msecs, Connection *c)
@@ -768,6 +775,9 @@ void TerminalIOHandler::handleSetImplementation(const QString &, const QStringLi
           i.addChildItem("locale", QVariant::Locale);
           beqt.addChildItem(i);
         Settings.addChildItem(beqt);
+        SettingsItem l("Log");
+          l.addChildItem("noop", QVariant::Int);
+        Settings.addChildItem(l);
     }
     if (args.size() < 1 || args.size() > 2)
         return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);

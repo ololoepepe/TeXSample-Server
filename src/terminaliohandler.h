@@ -35,6 +35,8 @@ public:
 public:
     explicit TerminalIOHandler(QObject *parent = 0);
     ~TerminalIOHandler();
+protected:
+    void handleCommand(const QString &command, const QStringList &arguments);
 private:
     static QString msecsToString(qint64 msecs, Connection *c = 0);
     static QString userPrefix(Connection *user);
