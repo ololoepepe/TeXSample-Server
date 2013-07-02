@@ -1,4 +1,13 @@
-== TeXSample Server 1.0.3 (29 June 2013) ===
+=== TeXSample Server 1.1.0 (02 July 2013) ===
+    * Use BeQt 2.1.0
+    * Use TeXSample 0.2.0
+    * Use BeQtSql module and BSmtpSender
+    * Add ability to provide project size information
+    * Add ability to restore password using e-mail
+    * Improve translations
+    * Fix client info displaying
+
+=== TeXSample Server 1.0.3 (29 June 2013) ===
     * Implement help command
     * Optimize operations, remove locking
     * Implement uptime counting for each user
@@ -8,13 +17,13 @@
     * Add e-mail notifications templates
     * Improve write request sending
 
-== TeXSample Server 1.0.2 (26 June 2013) ===
+=== TeXSample Server 1.0.2 (26 June 2013) ===
     * Implement automatic invites checking and removing
     * Implement single application instance check
     * Imlement proper database/storage locking
     * Improve translations
 
-== TeXSample Server 1.0.1 (23 June 2013) ===
+=== TeXSample Server 1.0.1 (23 June 2013) ===
     * Add "noop" requests for testing connections
     * Fix sample adding and editing
 

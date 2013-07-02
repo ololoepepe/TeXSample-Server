@@ -4,13 +4,7 @@
 
 === MINOR ===
 
-[done] Use BeQt 2.1.0
-[done] Use TeXSample 0.2.0
-[done] Use BeQtSql module and BSmtpSender
-[done] Add ability to provide project size information
-[done] Add ability to restore password using e-mail
-[done] Improve translations
-[done] Fix client info displaying
+
 
 === MAJOR ===
 
