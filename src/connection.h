@@ -2,7 +2,6 @@
 #define CONNECTION_H
 
 class Storage;
-class Translator;
 
 class TOperationResult;
 
@@ -13,6 +12,8 @@ class BNetworkOperation;
 class QSqlDatabase;
 class QUuid;
 class QByteArray;
+
+#include "translator.h"
 
 #include <TClientInfo>
 #include <TAccessLevel>
@@ -74,6 +75,7 @@ private:
     void handleCompileProjectRequest(BNetworkOperation *op);
     void handleSubscribeRequest(BNetworkOperation *op);
     void handleExecuteCommandRequest(BNetworkOperation *op);
+    void handleChangeLocale(BNetworkOperation *op);
 private slots:
     void testAuthorization();
     void restartTimer(BNetworkOperation *op = 0);
@@ -82,7 +84,7 @@ private slots:
     void sendWriteRequestInternal(const QString &text);
 private:
     Storage *mstorage;
-    Translator *mtranslator;
+    Translator mtranslator;
     QString mlogin;
     quint64 muserId;
     TAccessLevel maccessLevel;

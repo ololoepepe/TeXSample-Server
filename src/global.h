@@ -5,11 +5,11 @@ class Storage;
 class Translator;
 
 class TOperationResult;
-class TCompilationResult;
 
 #include <TProject>
 #include <TCompiledProject>
 #include <TCompilerParameters>
+#include <TCompilationResult>
 
 #include <BNetworkOperation>
 #include <BNetworkConnection>
@@ -67,6 +67,12 @@ public:
         compiledProject = 0;
         makeindexResult = 0;
         dvipsResult = 0;
+    }
+    ~CompileParameters()
+    {
+        delete compiledProject;
+        delete makeindexResult;
+        delete dvipsResult;
     }
 };
 

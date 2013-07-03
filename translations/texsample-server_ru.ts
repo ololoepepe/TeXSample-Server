@@ -130,6 +130,21 @@
         <source>Enter root password:</source>
         <translation>Введите пароль для root:</translation>
     </message>
+    <message>
+        <location filename="../src/storage.cpp" line="199"/>
+        <source>TeXSample registration</source>
+        <translation>Регистрация в TeXSample</translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="617"/>
+        <source>TeXSample account recovering</source>
+        <translation>Восстановление аккаунта TeXSample</translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="652"/>
+        <source>TeXSample account recovered</source>
+        <translation>Аккаунт TeXSample восстановлен</translation>
+    </message>
 </context>
 <context>
     <name>TerminalIOHandler</name>

@@ -365,7 +365,7 @@ void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
         op->waitForFinished();
         return close();
     }
-    Global::sendReply(op, mstorage->addUser(info, invite));
+    Global::sendReply(op, mstorage->addUser(info, &t, invite));
     op->waitForFinished();
     close();
 }
@@ -421,7 +421,7 @@ void RecoveryConnection::handleGetRecoveryCode(BNetworkOperation *op)
         op->waitForFinished();
         return close();
     }
-    Global::sendReply(op, mstorage->getRecoveryCode(email));
+    Global::sendReply(op, mstorage->getRecoveryCode(email, t));
     op->waitForFinished();
 }
 
@@ -438,7 +438,7 @@ void RecoveryConnection::handleRecoverAccount(BNetworkOperation *op)
         op->waitForFinished();
         return close();
     }
-    Global::sendReply(op, mstorage->recoverAccount(email, code, password));
+    Global::sendReply(op, mstorage->recoverAccount(email, code, password, t));
     op->waitForFinished();
     close();
 }
