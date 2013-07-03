@@ -157,7 +157,7 @@ void Storage::setTranslator(Translator *t)
     mtranslator = t;
 }
 
-TOperationResult Storage::addUser(const TUserInfo &info, const QUuid &invite)
+TOperationResult Storage::addUser(const TUserInfo &info, Translator *t, const QUuid &invite)
 {
     if (!info.isValid(TUserInfo::AddContext))
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -196,7 +196,8 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QUuid &invite)
         QString fn = BDirTools::findResource("templates/registration", BDirTools::GlobalOnly) + "/registration.txt";
         QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
         text.replace("%username%", info.login());
-        Global::sendEmail(info.email(), "TeXSample registration", text, mtranslator);
+        QString s = t ? t->translate("Storage", "TeXSample registration") : QString("TeXSample registration");
+        Global::sendEmail(info.email(), s, text, mtranslator);
     }
     return TOperationResult(true);
 }
@@ -584,7 +585,7 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
     return TOperationResult(true);
 }
 
-TOperationResult Storage::getRecoveryCode(const QString &email)
+TOperationResult Storage::getRecoveryCode(const QString &email, const Translator &t)
 {
     if (email.isEmpty())
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -613,11 +614,12 @@ TOperationResult Storage::getRecoveryCode(const QString &email)
     QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/get.txt";
     QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
     text.replace("%code%", code).replace("%username%", userLogin(userId));
-    Global::sendEmail(email, "TeXSample account recovering", text);
+    Global::sendEmail(email, t.translate("Storage", "TeXSample account recovering"), text);
     return TOperationResult(true);
 }
 
-TOperationResult Storage::recoverAccount(const QString &email, const QUuid &code, const QByteArray &password)
+TOperationResult Storage::recoverAccount(const QString &email, const QUuid &code, const QByteArray &password,
+                                         const Translator &t)
 {
     if (email.isEmpty() || code.isNull() || password.isEmpty())
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -647,7 +649,7 @@ TOperationResult Storage::recoverAccount(const QString &email, const QUuid &code
         return Global::result(Global::DatabaseError, mtranslator);
     QString fn = BDirTools::findResource("templates/recovery", BDirTools::GlobalOnly) + "/recovered.txt";
     QString text = BDirTools::readTextFile(BDirTools::localeBasedFileName(fn), "UTF-8");
-    Global::sendEmail(email, "TeXSample account recovered", text);
+    Global::sendEmail(email, t.translate("Storage", "TeXSample account recovered"), text);
     return TOperationResult(true);
 }
 

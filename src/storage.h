@@ -39,7 +39,7 @@ public:
     ~Storage();
 public:
     void setTranslator(Translator *t);
-    TOperationResult addUser(const TUserInfo &info, const QUuid &invite = QUuid());
+    TOperationResult addUser(const TUserInfo &info, Translator *t = 0, const QUuid &invite = QUuid());
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
@@ -53,8 +53,9 @@ public:
     TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                      TInviteInfo::InvitesList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
-    TOperationResult getRecoveryCode(const QString &email);
-    TOperationResult recoverAccount(const QString &email, const QUuid &code, const QByteArray &password);
+    TOperationResult getRecoveryCode(const QString &email, const Translator &t);
+    TOperationResult recoverAccount(const QString &email, const QUuid &code, const QByteArray &password,
+                                    const Translator &t);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);

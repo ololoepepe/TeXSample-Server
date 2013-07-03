@@ -17,18 +17,9 @@
 
 /*============================== Public constructors =======================*/
 
-Translator::Translator(const QLocale &locale) :
-    mLocale(locale)
+Translator::Translator(const QLocale &locale)
 {
-    QStringList dirs = BCoreApplication::locations(BCoreApplication::TranslationsPath);
-    foreach (int i, bRangeR(dirs.size() - 1, 0)) //User translators come last, having higher priority
-    {
-        QTranslator *t = new QTranslator;
-        if (t->load(mLocale, "texsample-server", "_", dirs.at(i), ".qm"))
-            mtranslators << t;
-        else
-            delete t;
-    }
+    setLocale(locale);
 }
 
 Translator::~Translator()
@@ -39,9 +30,28 @@ Translator::~Translator()
 
 /*============================== Public methods ============================*/
 
+void Translator::setLocale(const QLocale &locale)
+{
+    if (locale == mlocale)
+        return;
+    foreach (QTranslator *t, mtranslators)
+        delete t;
+    mtranslators.clear();
+    mlocale = locale;
+    QStringList dirs = BCoreApplication::locations(BCoreApplication::TranslationsPath);
+    foreach (int i, bRangeR(dirs.size() - 1, 0)) //User translators come last, having higher priority
+    {
+        QTranslator *t = new QTranslator;
+        if (t->load(mlocale, "texsample-server", "_", dirs.at(i), ".qm"))
+            mtranslators << t;
+        else
+            delete t;
+    }
+}
+
 QLocale Translator::locale() const
 {
-    return mLocale;
+    return mlocale;
 }
 
 QString Translator::translate(const char *context, const char *sourceText, const char *disambiguation, int n) const
