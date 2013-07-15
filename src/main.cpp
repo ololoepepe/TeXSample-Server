@@ -1,6 +1,7 @@
 #include "terminaliohandler.h"
 #include "storage.h"
 #include "application.h"
+#include "global.h"
 
 #include <TeXSampleGlobal>
 
@@ -28,7 +29,7 @@ int main(int argc, char *argv[])
     tRegister();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("1.1.3");
+    QCoreApplication::setApplicationVersion("1.1.4");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
 #if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
@@ -37,42 +38,47 @@ int main(int argc, char *argv[])
     BApplicationServer s(QCoreApplication::applicationName() + QDir::home().dirName());
 #endif
     int ret = 0;
-    if (!s.testServer())
+    if (Global::readOnly() || !s.testServer())
     {
-        s.listen();
+        if (!Global::readOnly())
+            s.listen();
 #if defined(BUILTIN_RESOURCES)
-    Q_INIT_RESOURCE(texsample_server);
-    Q_INIT_RESOURCE(texsample_server_translations);
+        Q_INIT_RESOURCE(texsample_server);
+        Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    Application bapp;
-    Q_UNUSED(bapp);
-    Application::installTranslator(new BTranslator("qt"));
-    Application::installTranslator(new BTranslator("beqt"));
-    Application::installTranslator(new BTranslator("texsample"));
-    Application::installTranslator(new BTranslator("texsample-server"));
-    TerminalIOHandler::writeLine(translate("main", "This is") + " " + QCoreApplication::applicationName() +
-                                 " v" + QCoreApplication::applicationVersion());
-    BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
-    Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
-    QString logfn = Application::location(Application::DataPath, Application::UserResources) + "/logs/";
-    logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
-    Application::logger()->setFileName(logfn);
-    TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
-    TerminalIOHandler handler;
-    Q_UNUSED(handler)
-    QString errs;
-    if (!Storage::initStorage(&errs))
-    {
-        TerminalIOHandler::writeLine(translate("main", "Error:") + " " + errs);
-        return 0;
-    }
-    TerminalIOHandler::writeLine(translate("main", "Success!"));
-    TerminalIOHandler::writeLine(translate("main", "Please, don't forget to configure e-mail and start the server"));
-    TerminalIOHandler::writeLine(translate("main", "Enter \"help\" to see commands list"));
-    ret = app.exec();
+        Application bapp;
+        Q_UNUSED(bapp);
+        Application::installTranslator(new BTranslator("qt"));
+        Application::installTranslator(new BTranslator("beqt"));
+        Application::installTranslator(new BTranslator("texsample"));
+        Application::installTranslator(new BTranslator("texsample-server"));
+        QString msg = translate("main", "This is") + " " + QCoreApplication::applicationName() +
+                " v" + QCoreApplication::applicationVersion();
+        if (Global::readOnly())
+            msg += " (" + translate("main", "read-only mode") + ")";
+        TerminalIOHandler::writeLine(msg);
+        BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
+        Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
+        QString logfn = Application::location(Application::DataPath, Application::UserResources) + "/logs/";
+        logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
+        Application::logger()->setFileName(logfn);
+        TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
+        TerminalIOHandler handler;
+        Q_UNUSED(handler)
+        QString errs;
+        if (!Storage::initStorage(&errs))
+        {
+            TerminalIOHandler::writeLine(translate("main", "Error:") + " " + errs);
+            return 0;
+        }
+        TerminalIOHandler::writeLine(translate("main", "Success!"));
+        TerminalIOHandler::writeLine(translate("main",
+                                               "Please, don't forget to configure e-mail and start the server"));
+        TerminalIOHandler::writeLine(translate("main", "Enter \"help\" to see commands list"));
+        ret = app.exec();
 #if defined(BUILTIN_RESOURCES)
-     Q_CLEANUP_RESOURCE(texsample_server);
-     Q_CLEANUP_RESOURCE(texsample_server_translations);
+        Q_CLEANUP_RESOURCE(texsample_server);
+        Q_CLEANUP_RESOURCE(texsample_server_translations);
 #endif
     }
     else

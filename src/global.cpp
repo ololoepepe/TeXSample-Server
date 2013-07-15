@@ -49,8 +49,16 @@ static const TrStruct Messages[] =
     QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent user", "message"),
     QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent sample", "message"),
     QT_TRANSLATE_NOOP3("Global", "Attempted to register using occupied login or e-mail", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to register using invalid invite code", "message")
+    QT_TRANSLATE_NOOP3("Global", "Attempted to register using invalid invite code", "message"),
+    QT_TRANSLATE_NOOP3("Global", "Attempted to perform write operation in read-only mode", "message")
 };
+
+bool readOnly()
+{
+    init_once(bool, ro, false)
+        ro = QCoreApplication::arguments().contains("--read-only");
+    return ro;
+}
 
 QString string(Message msg, Translator *t)
 {
