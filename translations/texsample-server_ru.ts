@@ -196,7 +196,7 @@
         <translation>Установить значение переменной конфигурации</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="685"/>
+        <location filename="../src/terminaliohandler.cpp" line="687"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
@@ -212,75 +212,76 @@
         <translation>Неизвестная команда. Введите &quot;help&quot; чтобы посмотреть список доступных команд</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="676"/>
+        <location filename="../src/terminaliohandler.cpp" line="678"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="683"/>
+        <location filename="../src/terminaliohandler.cpp" line="685"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="738"/>
+        <location filename="../src/terminaliohandler.cpp" line="737"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="744"/>
+        <location filename="../src/terminaliohandler.cpp" line="743"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="754"/>
+        <location filename="../src/terminaliohandler.cpp" line="756"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="783"/>
-        <location filename="../src/terminaliohandler.cpp" line="785"/>
+        <location filename="../src/terminaliohandler.cpp" line="699"/>
+        <location filename="../src/terminaliohandler.cpp" line="787"/>
+        <location filename="../src/terminaliohandler.cpp" line="789"/>
         <source>Invalid parameters</source>
-        <translation>Недействиетльные параметры</translation>
+        <translation>Недействительные параметры</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="789"/>
+        <location filename="../src/terminaliohandler.cpp" line="793"/>
         <source>No such option</source>
         <translation>Нет такой опции</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="794"/>
+        <location filename="../src/terminaliohandler.cpp" line="798"/>
         <source>Enter e-mail password:</source>
         <translation>Введите пароль от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="804"/>
+        <location filename="../src/terminaliohandler.cpp" line="808"/>
         <source>Enter value for</source>
         <translation>Введите значение для</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="812"/>
+        <location filename="../src/terminaliohandler.cpp" line="816"/>
         <source>Invalid value</source>
         <translation>Недкорректное значение</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="817"/>
-        <location filename="../src/terminaliohandler.cpp" line="835"/>
-        <location filename="../src/terminaliohandler.cpp" line="847"/>
+        <location filename="../src/terminaliohandler.cpp" line="821"/>
+        <location filename="../src/terminaliohandler.cpp" line="841"/>
+        <location filename="../src/terminaliohandler.cpp" line="855"/>
         <source>OK</source>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="825"/>
+        <location filename="../src/terminaliohandler.cpp" line="831"/>
         <source>The server is already running</source>
         <translation>Сервер уже запущен</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="833"/>
+        <location filename="../src/terminaliohandler.cpp" line="839"/>
         <source>Failed to start server</source>
         <translation>Не удалось запустить сервер</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="843"/>
+        <location filename="../src/terminaliohandler.cpp" line="851"/>
         <source>The server is not running</source>
         <translation>Сервер не запущен</translation>
     </message>

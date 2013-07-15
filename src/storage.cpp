@@ -657,9 +657,9 @@ bool Storage::isUserUnique(const QString &login, const QString &email)
 {
     if (login.isEmpty() || email.isEmpty() || !isValid())
         return false;
-    BSqlResult r1 = mdb->select("users", "id", BSqlWhere("login = :login", ":login", login));
-    BSqlResult r2 = mdb->select("users", "id", BSqlWhere("email = :email", ":email", email));
-    return r1 && r2 && !r1.value("id").toULongLong() && !r2.value("id").toULongLong();
+    BSqlWhere w("login = :login OR email = :email", ":login", login, ":email", email);
+    BSqlResult r = mdb->select("users", "id", w);
+    return r && !r.value("id").toULongLong();
 }
 
 quint64 Storage::userId(const QString &login, const QByteArray &password)
