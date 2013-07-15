@@ -38,6 +38,7 @@
 #include <QTcpSocket>
 #include <QMetaObject>
 #include <QSettings>
+#include <QThread>
 
 #include <QDebug>
 
@@ -108,13 +109,16 @@ Connection::~Connection()
 
 void Connection::sendLogRequest(const QString &text, BLogger::Level lvl)
 {
-    QMetaObject::invokeMethod(this, "sendLogRequestInternal", Qt::QueuedConnection, Q_ARG(QString, text),
-                              Q_ARG(int, lvl));
+    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection :
+                                                                     Qt::BlockingQueuedConnection;
+    QMetaObject::invokeMethod(this, "sendLogRequestInternal", ct, Q_ARG(QString, text), Q_ARG(int, lvl));
 }
 
 void Connection::sendWriteRequest(const QString &text)
 {
-    QMetaObject::invokeMethod(this, "sendWriteRequestInternal", Qt::QueuedConnection, Q_ARG(QString, text));
+    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection :
+                                                                     Qt::BlockingQueuedConnection;
+    QMetaObject::invokeMethod(this, "sendWriteRequestInternal", ct, Q_ARG(QString, text));
 }
 
 QString Connection::translate(const char *context, const char *sourceText, const char *disambiguation, int n)
@@ -187,8 +191,7 @@ void Connection::logLocal(const QString &text, BLogger::Level lvl)
 void Connection::logRemote(const QString &text, BLogger::Level lvl)
 {
     QString msg = (muserId ? ("[" + mlogin + "] ") : QString()) + text;
-    if (isConnected())
-        TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
+    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
 }
 
 /*============================== Private methods ===========================*/
@@ -565,9 +568,7 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
     QVariantMap out;
     out.insert("log_text", text);
     out.insert("level", lvl);
-    BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
-    op->waitForFinished();
-    op->deleteLater();
+    sendRequest(Texsample::LogRequest, out);
 }
 
 void Connection::sendWriteRequestInternal(const QString &text)
@@ -576,7 +577,5 @@ void Connection::sendWriteRequestInternal(const QString &text)
         return;
     QVariantMap out;
     out.insert("text", text);
-    BNetworkOperation *op = sendRequest(Texsample::WriteRequest, out);
-    op->waitForFinished();
-    op->deleteLater();
+    sendRequest(Texsample::WriteRequest, out);
 }
