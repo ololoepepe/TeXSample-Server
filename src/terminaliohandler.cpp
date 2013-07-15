@@ -337,8 +337,8 @@ RegistrationConnection::~RegistrationConnection()
 
 void RegistrationConnection::log(const QString &text, BLogger::Level lvl)
 {
-    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
     BNetworkConnection::log(text, lvl);
+    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
 }
 
 /*============================== Private methods ===========================*/
@@ -404,8 +404,8 @@ RecoveryConnection::~RecoveryConnection()
 
 void RecoveryConnection::log(const QString &text, BLogger::Level lvl)
 {
-    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
     BNetworkConnection::log(text, lvl);
+    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
 }
 
 /*============================== Private methods ===========================*/
@@ -669,6 +669,8 @@ void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
 
 void TerminalIOHandler::handleUserImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     static TranslateFunctor translate;
     translate.setConnection(c);
     if (args.isEmpty())
@@ -694,23 +696,21 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
     else
     {
         if (args.size() < 2)
-            return;
+            return writeLine(translate("TerminalIOHandler", "Invalid parameters"));
         QList<Connection *> users;
         QUuid uuid = BeQt::uuidFromText(args.at(1));
+        mserver->lock();
         if (uuid.isNull())
         {
-            mserver->lock();
             foreach (BNetworkConnection *c, mserver->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->login() == args.at(1))
                     users << cc;
             }
-            mserver->unlock();
         }
         else
         {
-            mserver->lock();
             foreach (BNetworkConnection *c, mserver->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
@@ -720,7 +720,6 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
                     break;
                 }
             }
-            mserver->unlock();
         }
         if (args.first() == "--kick")
         {
@@ -744,11 +743,14 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
                 writeLine(translate("TerminalIOHandler", "Connection time of") + " " + userPrefix(cc) + " "
                           + cc->connectedAt().toString(bLogger->dateTimeFormat()), c);
         }
+        mserver->unlock();
     }
 }
 
 void TerminalIOHandler::handleUptimeImplementation(const QString &, const QStringList &, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     static TranslateFunctor translate;
     translate.setConnection(c);
     writeLine(translate("TerminalIOHandler", "Uptime:") + " " + msecsToString(melapsedTimer.elapsed(), c), c);
@@ -756,6 +758,8 @@ void TerminalIOHandler::handleUptimeImplementation(const QString &, const QStrin
 
 void TerminalIOHandler::handleSetImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     static TranslateFunctor translate;
     translate.setConnection(c);
     init_once(SettingsItem, Settings, SettingsItem())
@@ -819,6 +823,8 @@ void TerminalIOHandler::handleSetImplementation(const QString &, const QStringLi
 
 void TerminalIOHandler::handleStartImplementation(const QString &, const QStringList &args, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     static TranslateFunctor translate;
     translate.setConnection(c);
     if (mserver->isListening())
@@ -837,6 +843,8 @@ void TerminalIOHandler::handleStartImplementation(const QString &, const QString
 
 void TerminalIOHandler::handleStopImplementation(const QString &, const QStringList &, Connection *c)
 {
+    static QMutex mutex;
+    QMutexLocker locker(&mutex);
     static TranslateFunctor translate;
     translate.setConnection(c);
     if (!mserver->isListening())
