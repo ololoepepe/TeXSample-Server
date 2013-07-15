@@ -87,6 +87,12 @@
         <comment>message</comment>
         <translation>Попытка зарегистрироваться с использованием недействительного инвайт-кода</translation>
     </message>
+    <message>
+        <location filename="../src/global.cpp" line="53"/>
+        <source>Attempted to perform write operation in read-only mode</source>
+        <comment>message</comment>
+        <translation>Попытка выполнить операцию записи в режиме только для чтения</translation>
+    </message>
 </context>
 <context>
     <name>Storage</name>
@@ -109,39 +115,45 @@
         <translation>Не удалось произвести разбор схемы базы данных</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="95"/>
+        <location filename="../src/storage.cpp" line="80"/>
+        <source>Invalid database</source>
+        <comment>error</comment>
+        <translation>Недействительная база данных</translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="97"/>
         <source>Failed to test invites or recovery codes</source>
         <comment>error</comment>
         <translation>Не удалось проверить инвайты или коды восстановления</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="98"/>
+        <location filename="../src/storage.cpp" line="100"/>
         <source>Enter root e-mail:</source>
         <translation>Введите электронную почту для root:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="99"/>
+        <location filename="../src/storage.cpp" line="101"/>
         <source>Operation cancelled</source>
         <comment>error</comment>
         <translation>Операция отменена</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="103"/>
+        <location filename="../src/storage.cpp" line="105"/>
         <source>Enter root password:</source>
         <translation>Введите пароль для root:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="199"/>
+        <location filename="../src/storage.cpp" line="203"/>
         <source>TeXSample registration</source>
         <translation>Регистрация в TeXSample</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="617"/>
+        <location filename="../src/storage.cpp" line="633"/>
         <source>TeXSample account recovering</source>
         <translation>Восстановление аккаунта TeXSample</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="652"/>
+        <location filename="../src/storage.cpp" line="670"/>
         <source>TeXSample account recovered</source>
         <translation>Аккаунт TeXSample восстановлен</translation>
     </message>
@@ -289,42 +301,47 @@
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="53"/>
+        <location filename="../src/main.cpp" line="55"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="60"/>
+        <location filename="../src/main.cpp" line="58"/>
+        <source>read-only mode</source>
+        <translation>режим только для чтения</translation>
+    </message>
+    <message>
+        <location filename="../src/main.cpp" line="65"/>
         <source>Initializing storage...</source>
         <translation>Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="66"/>
+        <location filename="../src/main.cpp" line="71"/>
         <source>Error:</source>
         <translation>Ошибка:</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="69"/>
+        <location filename="../src/main.cpp" line="74"/>
         <source>Success!</source>
         <translation>Удачно!</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="70"/>
+        <location filename="../src/main.cpp" line="75"/>
         <source>Please, don&apos;t forget to configure e-mail and start the server</source>
         <translation>Пожалуйста, не забудьте настроить электронную почту и запустить сервер</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="71"/>
+        <location filename="../src/main.cpp" line="77"/>
         <source>Enter &quot;help&quot; to see commands list</source>
         <translation>Введите &quot;help&quot; чтобы посмотреть список команд</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="80"/>
+        <location filename="../src/main.cpp" line="86"/>
         <source>Another instance of</source>
         <translation>Другой экземпляр</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="82"/>
+        <location filename="../src/main.cpp" line="88"/>
         <source>is already running. Quitting...</source>
         <translation>уже запущен. Выходим...</translation>
     </message>

@@ -50,6 +50,7 @@ enum Message
     NoSuchSample,
     LoginOrEmailOccupied,
     InvalidInvite,
+    ReadOnly,
     NOMESSAGE
 };
 
@@ -75,6 +76,8 @@ public:
         delete dvipsResult;
     }
 };
+
+bool readOnly();
 
 QString string(Message msg, Translator *t = 0);
 

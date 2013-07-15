@@ -76,6 +76,8 @@ bool Storage::initStorage(QString *errs)
     if (list.isEmpty())
         return bRet(errs, tr("Failed to parse database schema", "error"), false);
     bool users = !db.select("users", "id", BSqlWhere("login = :login", ":login", QString("root"))).values().isEmpty();
+    if (Global::readOnly() && !users)
+        return bRet(errs, tr("Invalid database", "error"), false);
     foreach (const QString &qs, list)
     {
         if (!db.transaction())
@@ -91,7 +93,7 @@ bool Storage::initStorage(QString *errs)
     Storage s;
     if (!s.isValid())
         return bRet(errs, Global::string(Global::StorageError, &t), false);
-    if (!s.testInvites() || !s.testRecoveryCodes())
+    if (!Global::readOnly() && (!s.testInvites() || !s.testRecoveryCodes()))
         return bRet(errs, tr("Failed to test invites or recovery codes", "error"), false);
     if (!users)
     {
@@ -159,6 +161,8 @@ void Storage::setTranslator(Translator *t)
 
 TOperationResult Storage::addUser(const TUserInfo &info, Translator *t, const QUuid &invite)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!info.isValid(TUserInfo::AddContext))
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -204,6 +208,8 @@ TOperationResult Storage::addUser(const TUserInfo &info, Translator *t, const QU
 
 TOperationResult Storage::editUser(const TUserInfo &info)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!info.isValid(TUserInfo::EditContext))
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -274,6 +280,8 @@ TOperationResult Storage::getShortUserInfo(quint64 userId, TUserInfo &info)
 
 TCompilationResult Storage::addSample(quint64 userId, TProject project, const TSampleInfo &info)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!userId || !project.isValid() || !info.isValid(TSampleInfo::AddContext))
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -323,6 +331,8 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
 
 TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!info.isValid(TSampleInfo::EditContext) && !info.isValid(TSampleInfo::UpdateContext))
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -401,6 +411,8 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
 
 TOperationResult Storage::deleteSample(quint64 sampleId, const QString &reason)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!sampleId)
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -524,6 +536,8 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
 TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
                                           TInviteInfo::InvitesList &invites)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (!userId || !expiresDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -587,6 +601,8 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
 
 TOperationResult Storage::getRecoveryCode(const QString &email, const Translator &t)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (email.isEmpty())
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
@@ -621,6 +637,8 @@ TOperationResult Storage::getRecoveryCode(const QString &email, const Translator
 TOperationResult Storage::recoverAccount(const QString &email, const QUuid &code, const QByteArray &password,
                                          const Translator &t)
 {
+    if (Global::readOnly())
+        return Global::result(Global::ReadOnly, mtranslator);
     if (email.isEmpty() || code.isNull() || password.isEmpty())
         return Global::result(Global::InvalidParameters, mtranslator);
     if (!isValid())
