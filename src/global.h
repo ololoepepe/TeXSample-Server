@@ -66,6 +66,8 @@ public:
 };
 
 bool readOnly();
+bool initMail(TMessage *msg = 0);
+QString mailPassword();
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                            const StringMap &replace = StringMap());
 TCompilationResult compileProject(const CompileParameters &p);

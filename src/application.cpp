@@ -1,5 +1,7 @@
 #include "application.h"
 #include "storage.h"
+#include "server.h"
+#include "connection.h"
 
 #include <TInviteInfo>
 
@@ -14,17 +16,26 @@
 ================================ Application =================================
 ============================================================================*/
 
+/*============================== Static public methods =====================*/
+
+Server *Application::server()
+{
+    return bApp ? bApp->mserver : 0;
+}
+
 /*============================== Public constructors =======================*/
 
 Application::Application() :
     BCoreApplication()
 {
     mstorage = 0;
+    mserver = new Server(this);
 }
 
 Application::~Application()
 {
     delete mstorage;
+    delete mserver;
 }
 
 /*============================== Public methods ============================*/

@@ -44,7 +44,6 @@ public:
 public:
     void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void sendMessageRequest(const TMessage &msg);
-    //QString translate(const char *context, const char *sourceText, const char *disambiguation = 0, int n = -1);
     QString login() const;
     TClientInfo clientInfo() const;
     QString infoString(const QString &format = "") const;

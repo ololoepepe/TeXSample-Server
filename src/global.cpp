@@ -31,6 +31,8 @@
 
 #include <QDebug>
 
+B_DECLARE_TRANSLATE_FUNCTION
+
 namespace Global
 {
 
@@ -54,11 +56,64 @@ static const TrStruct Messages[] =
     QT_TRANSLATE_NOOP3("Global", "Attempted to perform write operation in read-only mode", "message")
 };*/
 
+QString mmailPassword;
+
 bool readOnly()
 {
     init_once(bool, ro, false)
         ro = QCoreApplication::arguments().contains("--read-only");
     return ro;
+}
+
+bool initMail(TMessage *msg)
+{
+    static bool initialized = false;
+    if (initialized)
+        return true; //TODO: message
+    bWriteLine(translate("Global", "Initializing e-mail..."));
+    QString address = bSettings->value("Mail/server_address").toString();
+    if (address.isEmpty())
+    {
+        address = bReadLine(translate("Global", "Enter e-mail server address:") + " ");
+        if (address.isEmpty())
+            return bRet(msg, TMessage(), false); //TODO
+    }
+    QString port;
+    if (!bSettings->contains("Mail/server_port"))
+        port = bReadLine(translate("Global", "Enter e-mail server port (default 25):") + " ");
+    QVariant vport(!port.isEmpty() ? port : QString("25"));
+    if (!vport.convert(QVariant::UInt))
+        return bRet(msg, TMessage(), false); //TODO
+    QString name;
+    if (!bSettings->contains("Mail/local_host_name"))
+        name = bReadLine(translate("Global", "Enter local host name or empty string:") + " ");
+    QString ssl;
+    if (!bSettings->contains("Mail/ssl_required"))
+        ssl = bReadLine(translate("Global", "Enter SSL mode [true|false] (default false):") + " ");
+    QVariant vssl(ssl);
+    if (!vssl.convert(QVariant::Bool))
+        return bRet(msg, TMessage(), false); //TODO
+    QString login = bSettings->value("Mail/login").toString();
+    if (login.isEmpty())
+    {
+        login = bReadLine(translate("Global", "Enter e-mail login:") + " ");
+        if (login.isEmpty())
+            return bRet(msg, TMessage(), false); //TODO
+    }
+    mmailPassword = bReadLine(translate("Global", "Enter e-mail password:") + " ");
+    if (mmailPassword.isEmpty())
+        return bRet(msg, TMessage(), false); //TODO
+    bSettings->setValue("Mail/server_address", address);
+    bSettings->setValue("Mail/server_port", vport);
+    bSettings->setValue("Mail/local_host_name", name);
+    bSettings->setValue("Mail/ssl_required", vssl);
+    initialized = true;
+    return true;
+}
+
+QString mailPassword()
+{
+    return mmailPassword;
 }
 
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
@@ -85,13 +140,12 @@ TOperationResult sendEmail(const QString &receiver, const QString &templateName,
         body.replace(k, v);
     }
     BSmtpSender smtp;
-    //TODO: test address, port, etc.
     smtp.setServer(bSettings->value("Mail/server_address").toString(),
                    bSettings->value("Mail/server_port", 25).toUInt());
     smtp.setLocalHostName(bSettings->value("Mail/local_host_name").toString());
     smtp.setSocketType(bSettings->value("Mail/ssl_required").toBool() ? BGenericSocket::SslSocket :
                                                                         BGenericSocket::TcpSocket);
-    smtp.setUser(bSettings->value("Mail/login").toString(), TerminalIOHandler::mailPassword());
+    smtp.setUser(bSettings->value("Mail/login").toString(), mmailPassword);
     BEmail email;
     email.setSender("TeXSample Team");
     email.setReceiver(receiver);

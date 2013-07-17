@@ -50,10 +50,11 @@
 bool Storage::initStorage(TMessage *msg)
 {
     static QMutex mutex;
-    static bool isInit = false;
+    static bool initialized = false;
     QMutexLocker locker(&mutex);
-    if (isInit)
+    if (initialized)
         return true; //TODO: message
+    bWriteLine(tr("Initializing storage..."));
     QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
     sty = BDirTools::readTextFile(sty, "UTF-8");
     if (sty.isEmpty())
@@ -133,7 +134,7 @@ bool Storage::initStorage(TMessage *msg)
     }
     mtexsampleSty = sty;
     mtexsampleTex = tex;
-    isInit = true;
+    initialized = true;
     return true;
 }
 
@@ -735,6 +736,14 @@ QString Storage::sampleFileName(quint64 sampleId)
         return "";
     BSqlWhere w("id = :id", ":id", sampleId);
     return mdb->select("samples", "file_name", w).value("file_name").toString();
+}
+
+int Storage::sampleState(quint64 sampleId)
+{
+    if (!sampleId || !isValid())
+        return -1;
+    BSqlWhere w("id = :id", ":id", sampleId);
+    return mdb->select("samples", "state", w).value("state", -1).toInt();
 }
 
 QDateTime Storage::sampleCreationDateTime(quint64 sampleId, Qt::TimeSpec spec)

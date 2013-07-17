@@ -33,8 +33,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion("1.1.4");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
-    BApplicationServer s(QCoreApplication::applicationName() + QDir::home().dirName(),
-                         9930 + qHash(QDir::home().dirName()) % 10);
+    QString home = QDir::home().dirName();
+    BApplicationServer s(QCoreApplication::applicationName() + home, 9930 + qHash(home) % 10);
     int ret = 0;
     if (Global::readOnly() || !s.testServer())
     {
@@ -54,25 +54,22 @@ int main(int argc, char *argv[])
                 " v" + QCoreApplication::applicationVersion();
         if (Global::readOnly())
             msg += " (" + translate("main", "read-only mode") + ")";
-        TerminalIOHandler::writeLine(msg);
+        bWriteLine(msg);
         BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
         Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
         QString logfn = Application::location(Application::DataPath, Application::UserResources) + "/logs/";
         logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
         Application::logger()->setFileName(logfn);
-        TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
         TerminalIOHandler handler;
         Q_UNUSED(handler)
         TMessage imsg;
-        if (!Storage::initStorage(&imsg))
-        {
-            TerminalIOHandler::writeLine(translate("main", "Error:") + " " + imsg.messageString());
-            return 0;
-        }
-        TerminalIOHandler::writeLine(translate("main", "Success!"));
-        TerminalIOHandler::writeLine(translate("main",
-                                               "Please, don't forget to configure e-mail and start the server"));
-        TerminalIOHandler::writeLine(translate("main", "Enter \"help\" to see commands list"));
+        //if (!Global::initMail(&imsg) || !Storage::initStorage(&imsg))
+        //{
+            //bWriteLine(translate("main", "Error:") + " " + imsg.messageString());
+            //return 0;
+        //}
+        bWriteLine(translate("main", "Success!"));
+        bWriteLine(translate("main", "Enter \"help\" to see commands list"));
         ret = app.exec();
 #if defined(BUILTIN_RESOURCES)
         Q_CLEANUP_RESOURCE(texsample_server);
@@ -81,9 +78,8 @@ int main(int argc, char *argv[])
     }
     else
     {
-        BTerminalIOHandler::writeLine(translate("main", "Another instance of") + " "
-                                      + QCoreApplication::applicationName() + " "
-                                      + translate("main", "is already running. Quitting..."));
+        bWriteLine(translate("main", "Another instance of") + " "  + QCoreApplication::applicationName() + " "
+                   + translate("main", "is already running. Quitting..."));
     }
     tCleanup();
     return ret;

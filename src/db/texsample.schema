@@ -52,6 +52,7 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
   expiration_dt     INTEGER NOT NULL
 );
 
+REPLACE INTO access_levels (level) VALUES (0);
 REPLACE INTO access_levels (level) VALUES (10);
 REPLACE INTO access_levels (level) VALUES (100);
 REPLACE INTO access_levels (level) VALUES (1000);
