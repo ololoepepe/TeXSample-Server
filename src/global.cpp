@@ -70,12 +70,12 @@ QString string(Message msg, Translator *t)
 
 TOperationResult result(Message msg, Translator *t)
 {
-    return TOperationResult(string(msg, t));
+    return TOperationResult(0); //TODO
 }
 
 TCompilationResult compilationResult(Message msg, Translator *t)
 {
-    return TCompilationResult(string(msg, t));
+    return TCompilationResult(0); //TODO
 }
 
 TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, Translator *t)
@@ -97,7 +97,7 @@ TOperationResult sendEmail(const QString &receiver, const QString &subject, cons
     smtp.setEmail(email);
     smtp.send();
     bool b = smtp.waitForFinished();
-    return TOperationResult(b, smtp.lastTransferError());
+    return TOperationResult(b, 0); //TODO
 }
 
 TCompilationResult compileProject(const CompileParameters &p, Translator *t)

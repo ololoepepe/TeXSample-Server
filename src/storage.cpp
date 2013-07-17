@@ -12,6 +12,8 @@
 #include <TInviteInfo>
 #include <TCompilationResult>
 #include <TProject>
+#include <TMessage>
+
 #include <BSmtpSender>
 #include <BEmail>
 #include <BGenericSocket>
@@ -45,27 +47,26 @@
 
 /*============================== Static public methods =====================*/
 
-bool Storage::initStorage(QString *errs)
+bool Storage::initStorage(TMessage *msg)
 {
     static QMutex mutex;
     static bool isInit = false;
     QMutexLocker locker(&mutex);
     if (isInit)
-        return true;
-    Translator t(BCoreApplication::locale());
-    QString sty = BDirTools::readTextFile(BDirTools::findResource("texsample-framework/texsample.sty",
-                                                                  BDirTools::GlobalOnly), "UTF-8");
+        return true; //TODO: message
+    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
+    sty = BDirTools::readTextFile(sty, "UTF-8");
     if (sty.isEmpty())
-        return bRet(errs, tr("Failed to load texsample.sty", "error"), false);
-    QString tex = BDirTools::readTextFile(BDirTools::findResource("texsample-framework/texsample.tex",
-                                                                  BDirTools::GlobalOnly), "UTF-8");
+        return bRet(msg, TMessage(), false); //TODO: message
+    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
+    tex = BDirTools::readTextFile(tex, "UTF-8");
     if (tex.isEmpty())
-        return bRet(errs, tr("Failed to load texsample.tex", "error"), false);
+        return bRet(msg, TMessage(), false); //TODO: message
     BSqlDatabase db("QSQLITE", QUuid::createUuid().toString());
     db.setDatabaseName(rootDir() + "/texsample.sqlite");
     db.setOnOpenQuery("PRAGMA foreign_keys = ON");
-    QStringList list = BDirTools::readTextFile(BDirTools::findResource("db/texsample.schema",
-                                                                       BDirTools::GlobalOnly), "UTF-8").split(";\n");
+    QString schema = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
+    QStringList list = BDirTools::readTextFile(schema, "UTF-8").split(";\n");
     foreach (int i, bRangeD(0, list.size() - 1))
     {
         list[i].replace('\n', ' ');
@@ -74,39 +75,53 @@ bool Storage::initStorage(QString *errs)
     list.removeAll("");
     list.removeDuplicates();
     if (list.isEmpty())
-        return bRet(errs, tr("Failed to parse database schema", "error"), false);
+        return bRet(msg, TMessage(), false); //TODO: message
+    if (Global::readOnly())
+    {
+        foreach (const QString &qs, list)
+        {
+            QString table;
+            if (qs.startsWith("CREATE TABLE IF NOT EXISTS"))
+                table = qs.section(QRegExp("\\s+"), 5, 5);
+            else if (qs.startsWith("CREATE TABLE"))
+                table = qs.section(QRegExp("\\s+"), 2, 2);
+            if (table.isEmpty())
+                continue;
+            if (!db.tableExists(table))
+                return bRet(msg, TMessage(), false); //TODO
+        }
+    }
     bool users = !db.select("users", "id", BSqlWhere("login = :login", ":login", QString("root"))).values().isEmpty();
     if (Global::readOnly() && !users)
-        return bRet(errs, tr("Invalid database", "error"), false);
+        return bRet(msg, TMessage(), false); //TODO: message
     foreach (const QString &qs, list)
     {
         if (!db.transaction())
-            return bRet(errs, Global::string(Global::DatabaseError, &t), false);
+            return bRet(msg, TMessage(), false); //TODO
         if (!db.exec(qs))
         {
             db.rollback();
-            return bRet(errs, Global::string(Global::QueryError, &t), false);
+            return bRet(msg, TMessage(), false); //TODO
         }
         if (!db.commit())
-            return bRet(errs, Global::string(Global::DatabaseError, &t), false);
+            return bRet(msg, TMessage(), false); //TODO
     }
     Storage s;
     if (!s.isValid())
-        return bRet(errs, Global::string(Global::StorageError, &t), false);
+        return bRet(msg, TMessage(), false); //TODO
     if (!Global::readOnly() && (!s.testInvites() || !s.testRecoveryCodes()))
-        return bRet(errs, tr("Failed to test invites or recovery codes", "error"), false);
+        return bRet(msg, TMessage(), false); //TODO
     if (!users)
     {
         QString mail = BTerminalIOHandler::readLine("\n" + tr("Enter root e-mail:") + " ");
-        QString e = tr("Operation cancelled", "error");
         if (mail.isEmpty())
-            return bRet(errs, e, false);
+            return bRet(msg, TMessage(), false); //TODO
         BTerminalIOHandler::setStdinEchoEnabled(false);
         QString pwd = BTerminalIOHandler::readLine(tr("Enter root password:") + " ");
         BTerminalIOHandler::setStdinEchoEnabled(true);
         BTerminalIOHandler::writeLine();
         if (pwd.isEmpty())
-            return bRet(errs, e, false);
+            return bRet(msg, TMessage(), false); //TODO
         TUserInfo info(TUserInfo::AddContext);
         info.setLogin("root");
         info.setEmail(mail);
@@ -114,7 +129,7 @@ bool Storage::initStorage(QString *errs)
         info.setAccessLevel(TAccessLevel::RootLevel);
         TOperationResult r = s.addUser(info);
         if (!r)
-            return bRet(errs, r.errorString(), false);
+            return bRet(msg, TMessage(), false); //TODO
     }
     mtexsampleSty = sty;
     mtexsampleTex = tex;
@@ -484,8 +499,7 @@ TOperationResult Storage::getSamplePreview(quint64 sampleId, TProjectFile &file,
     return TOperationResult(file.loadAsBinary(fn, ""));
 }
 
-TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, Texsample::IdList &deletedSamples,
-                                         QDateTime &updateDT, bool hack)
+TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT)
 {
     if (!isValid())
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -516,10 +530,8 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
-        int sz = -1; //HACK: Must fix
-        if (!hack)
-            sz = TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(), "UTF-8");
-        info.setProjectSize(sz);
+        info.setProjectSize(TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
+                                           "UTF-8"));
         info.setTags(m.value("tags").toString());
         info.setRating(m.value("rating").toUInt());
         info.setComment(m.value("comment").toString());
@@ -534,7 +546,7 @@ TOperationResult Storage::getSamplesList(TSampleInfo::SamplesList &newSamples, T
 }
 
 TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
-                                          TInviteInfo::InvitesList &invites)
+                                          TInviteInfoList &invites)
 {
     if (Global::readOnly())
         return Global::result(Global::ReadOnly, mtranslator);
@@ -565,7 +577,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
             return Global::result(Global::QueryError, mtranslator);
         }
         info.setId(r.lastInsertId().toULongLong());
-        info.setUuid(uuid);
+        info.setCode(uuid);
         info.setCreationDateTime(createdDT);
         invites << info;
         ++i;
@@ -576,7 +588,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
     return TOperationResult(true);
 }
 
-TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites)
+TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfoList &invites)
 {
     if (!userId)
         return Global::result(Global::InvalidParameters, mtranslator);
@@ -590,7 +602,7 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfo::InvitesLis
     {
         TInviteInfo info;
         info.setId(m.value("id").toULongLong());
-        info.setUuid(m.value("uuid").toString());
+        info.setCode(m.value("uuid").toString());
         info.setCreatorId(userId);
         info.setExpirationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("expires_dt").toULongLong()));
         info.setCreationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("created_dt").toULongLong()));
@@ -784,7 +796,7 @@ bool Storage::testInvites()
 {
     if (!isValid() || !mdb->transaction())
         return false;
-    BSqlWhere w("expires_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    BSqlWhere w("expiration_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     bool b = mdb->deleteFrom("invites", w);
     return mdb->endTransaction(b) && b;
 }
@@ -793,7 +805,7 @@ bool Storage::testRecoveryCodes()
 {
     if (!isValid() || !mdb->transaction())
         return false;
-    BSqlWhere w("expires_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    BSqlWhere w("expiration_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     bool b = mdb->deleteFrom("recovery_codes", w);
     return mdb->endTransaction(b) && b;
 }

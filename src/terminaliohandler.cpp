@@ -530,7 +530,7 @@ void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &ar
     if (!inst)
         return;
     if (cmd == "quit" || cmd == "exit")
-        BeQt::handleQuit(cmd, args);
+        inst->handleQuit(cmd, args);
     else if (cmd == "user")
         inst->handleUserImplementation(cmd, args, c);
     else if (cmd == "uptime")
@@ -567,8 +567,7 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     mserver = new Server(this);
     mregistrationServer = new RegistrationServer(this);
     mrecoveryServer = new RecoveryServer(this);
-    installHandler("quit", &BeQt::handleQuit);
-    installHandler("exit", &BeQt::handleQuit);
+    installHandler(QuitCommand);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
     installHandler("set", (InternalHandler) &TerminalIOHandler::handleSet);
@@ -585,7 +584,7 @@ TerminalIOHandler::~TerminalIOHandler()
 
 /*============================== Protected methods =========================*/
 
-void TerminalIOHandler::handleCommand(const QString &, const QStringList &)
+bool TerminalIOHandler::handleCommand(const QString &, const QStringList &)
 {
     writeLine(tr("Unknown command. Enter \"help\" to see the list of available commands"));
 }
@@ -830,8 +829,8 @@ void TerminalIOHandler::handleStartImplementation(const QString &, const QString
     if (mserver->isListening())
         return writeLine(translate("TerminalIOHandler", "The server is already running"), c);
     QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
-    if (!mserver->listen(addr, Texsample::MainPort) || !mregistrationServer->listen(addr, Texsample::RegistrationPort)
-            || !mrecoveryServer->listen(addr, Texsample::RecoveryPort))
+    if (!mserver->listen(addr, Texsample::MainPort) /*|| !mregistrationServer->listen(addr, Texsample::RegistrationPort)
+            || !mrecoveryServer->listen(addr, Texsample::RecoveryPort)*/)
     {
         mserver->close();
         mregistrationServer->close();

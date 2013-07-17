@@ -9,6 +9,7 @@ class TAccessLevel;
 class TCompilationResult;
 class TProject;
 class TProjectFile;
+class TMessage;
 
 class BSqlDatabase;
 
@@ -17,6 +18,9 @@ class QDateTime;
 #include <TeXSample>
 #include <TSampleInfo>
 #include <TInviteInfo>
+#include <TSampleInfoList>
+#include <TInviteInfoList>
+#include <TIdList>
 
 #include <QString>
 #include <QCoreApplication>
@@ -31,7 +35,7 @@ class Storage
 {
     Q_DECLARE_TR_FUNCTIONS(Storage)
 public:
-    static bool initStorage(QString *errorString = 0);
+    static bool initStorage(TMessage *msg = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
 public:
@@ -48,11 +52,10 @@ public:
     TOperationResult deleteSample(quint64 sampleId, const QString &reason);
     TOperationResult getSampleSource(quint64 sampleId, TProject &project, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
-    TOperationResult getSamplesList(TSampleInfo::SamplesList &newSamples, Texsample::IdList &deletedSamples,
-                                    QDateTime &updateDT, bool hack);
+    TOperationResult getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT);
     TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
-                                     TInviteInfo::InvitesList &invites);
-    TOperationResult getInvitesList(quint64 userId, TInviteInfo::InvitesList &invites);
+                                     TInviteInfoList &invites);
+    TOperationResult getInvitesList(quint64 userId, TInviteInfoList &invites);
     TOperationResult getRecoveryCode(const QString &email, const Translator &t);
     TOperationResult recoverAccount(const QString &email, const QUuid &code, const QByteArray &password,
                                     const Translator &t);

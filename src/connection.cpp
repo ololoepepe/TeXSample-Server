@@ -143,12 +143,7 @@ QString Connection::infoString(const QString &format) const
         return "";
     QString f = format;
     if (f.isEmpty())
-    {
-        if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
-            f = "[%u] [%p] %i\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q";
-        else
-            f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
-    }
+        f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
     f.replace("%l", mtranslator.locale().name());
     QString s = mclientInfo.toString(f);
     s.replace("%d", QString::number(muserId));
@@ -217,16 +212,9 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     QString f = "Authorized\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
-    if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
-    {
-        f += "%l\nClient: %c";
-        mtranslator.setLocale(mclientInfo.locale());
-        mstorage->setTranslator(&mtranslator);
-    }
-    else
-    {
-        f += "Unknown\nClient: Unknown";
-    }
+    f += "%l\nClient: %c";
+    mtranslator.setLocale(mclientInfo.locale());
+    mstorage->setTranslator(&mtranslator);
     f += "\nClient version: %v\nTeXSample version: %t\nBeQt version: %b\nQt version: %q";
     log(infoString(f));
     QVariantMap out;
@@ -363,10 +351,9 @@ void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log("Get samples list request");
-    TSampleInfo::SamplesList newSamples;
-    Texsample::IdList deletedSamples;
-    bool oldHack = TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") < 0;
-    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT, oldHack);
+    TSampleInfoList newSamples;
+    TIdList deletedSamples;
+    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT);
     if (!r)
         Global::sendReply(op, r);
     QVariantMap out;
@@ -432,7 +419,7 @@ void Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
     QDateTime expiresDT = in.value("expiration_dt").toDateTime().toUTC();
     quint8 count = in.value("count").toUInt();
     log("Generate invites request (" + QString::number(count) + ")");
-    TInviteInfo::InvitesList invites;
+    TInviteInfoList invites;
     TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, invites);
     if (!r)
         Global::sendReply(op, r);
@@ -448,7 +435,7 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     if (maccessLevel < TAccessLevel::ModeratorLevel)
         return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
     log("Get invites list request");
-    TInviteInfo::InvitesList invites;
+    TInviteInfoList invites;
     TOperationResult r = mstorage->getInvitesList(muserId, invites);
     if (!r)
         Global::sendReply(op, r);
@@ -549,7 +536,7 @@ void Connection::keepAlive()
         logLocal(s);
     else if (l > 1)
         log(s);
-    BNetworkOperation *op = sendRequest(NoopRequest);
+    BNetworkOperation *op = sendRequest(/*NoopRequest*/ "tmp");
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b)
     {
@@ -568,7 +555,7 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
     QVariantMap out;
     out.insert("log_text", text);
     out.insert("level", lvl);
-    sendRequest(Texsample::LogRequest, out);
+    //sendRequest(Texsample::LogRequest, out);
 }
 
 void Connection::sendWriteRequestInternal(const QString &text)
@@ -577,5 +564,5 @@ void Connection::sendWriteRequestInternal(const QString &text)
         return;
     QVariantMap out;
     out.insert("text", text);
-    sendRequest(Texsample::WriteRequest, out);
+    //sendRequest(Texsample::WriteRequest, out);
 }

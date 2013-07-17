@@ -4,6 +4,7 @@
 #include "global.h"
 
 #include <TeXSampleGlobal>
+#include <TMessage>
 
 #include <BCoreApplication>
 #include <BDirTools>
@@ -26,7 +27,7 @@ B_DECLARE_TRANSLATE_FUNCTION
 
 int main(int argc, char *argv[])
 {
-    tRegister();
+    tInit();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
     QCoreApplication::setApplicationVersion("1.1.4");
@@ -65,10 +66,10 @@ int main(int argc, char *argv[])
         TerminalIOHandler::write(QCoreApplication::translate("main", "Initializing storage...", "") + " ");
         TerminalIOHandler handler;
         Q_UNUSED(handler)
-        QString errs;
-        if (!Storage::initStorage(&errs))
+        TMessage imsg;
+        if (!Storage::initStorage(&imsg))
         {
-            TerminalIOHandler::writeLine(translate("main", "Error:") + " " + errs);
+            TerminalIOHandler::writeLine(translate("main", "Error:") + " " + imsg.messageString());
             return 0;
         }
         TerminalIOHandler::writeLine(translate("main", "Success!"));
