@@ -33,11 +33,8 @@ int main(int argc, char *argv[])
     QCoreApplication::setApplicationVersion("1.1.4");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
-#if (QT_VERSION < QT_VERSION_CHECK(5, 0, 0))
-    BApplicationServer s(9930 + qHash(QDir::home().dirName()) % 10);
-#else
-    BApplicationServer s(QCoreApplication::applicationName() + QDir::home().dirName());
-#endif
+    BApplicationServer s(QCoreApplication::applicationName() + QDir::home().dirName(),
+                         9930 + qHash(QDir::home().dirName()) % 10);
     int ret = 0;
     if (Global::readOnly() || !s.testServer())
     {

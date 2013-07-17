@@ -1,8 +1,6 @@
 #ifndef STORAGE_H
 #define STORAGE_H
 
-class Translator;
-
 class TUserInfo;
 class TOperationResult;
 class TAccessLevel;
@@ -39,11 +37,10 @@ public:
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
 public:
-    explicit Storage(Translator *t = 0);
+    explicit Storage();
     ~Storage();
 public:
-    void setTranslator(Translator *t);
-    TOperationResult addUser(const TUserInfo &info, Translator *t = 0, const QUuid &invite = QUuid());
+    TOperationResult addUser(const TUserInfo &info, const QLocale &locale, const QString &inviteCode = QString());
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
@@ -53,12 +50,12 @@ public:
     TOperationResult getSampleSource(quint64 sampleId, TProject &project, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT);
-    TOperationResult generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
+    TOperationResult generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,
                                      TInviteInfoList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfoList &invites);
-    TOperationResult getRecoveryCode(const QString &email, const Translator &t);
-    TOperationResult recoverAccount(const QString &email, const QUuid &code, const QByteArray &password,
-                                    const Translator &t);
+    TOperationResult getRecoveryCode(const QString &email, const QLocale &locale);
+    TOperationResult recoverAccount(const QString &email, const QString &code, const QByteArray &password,
+                                    const QLocale &locale);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);
@@ -66,10 +63,10 @@ public:
     QString userLogin(quint64 userId);
     TSampleInfo::Type sampleType(quint64 sampleId);
     QString sampleFileName(quint64 sampleId);
+    int sampleState(quint64 sampleId);
     QDateTime sampleCreationDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
-    QDateTime sampleModificationDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
+    QDateTime sampleUpdateDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
     TAccessLevel userAccessLevel(quint64 userId);
-    quint64 inviteId(const QUuid &invite);
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
     bool testInvites();
@@ -84,7 +81,6 @@ private:
     static QString mtexsampleTex;
 private:
     BSqlDatabase *mdb;
-    Translator *mtranslator;
 };
 
 #endif // STORAGE_H

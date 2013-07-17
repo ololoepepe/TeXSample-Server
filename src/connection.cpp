@@ -2,7 +2,6 @@
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
-#include "translator.h"
 
 #include <TAccessLevel>
 #include <TUserInfo>
@@ -14,6 +13,7 @@
 #include <TCompiledProject>
 #include <TCompilationResult>
 #include <TInviteInfo>
+#include <TMessage>
 
 #include <BNetworkConnection>
 #include <BNetworkServer>
@@ -191,6 +191,67 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 
 /*============================== Private methods ===========================*/
 
+bool Connection::handleRegisterRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QUuid invite = BeQt::uuidFromText(in.value("invite").toString());
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
+    log("Register request: " + info.login());
+    if (invite.isNull() || !info.isValid(TUserInfo::RegisterContext))
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
+    info.setContext(TUserInfo::AddContext);
+    info.setAccessLevel(TAccessLevel::UserLevel);
+    quint64 id = mstorage->inviteId(invite);
+    if (!id)
+    {
+        Global::sendReply(op, Global::result(Global::InvalidInvite, &t));
+        op->waitForFinished();
+        return close();
+    }
+    Global::sendReply(op, mstorage->addUser(info, &t, invite));
+    op->waitForFinished();
+    close();
+}
+
+bool Connection::handleGetRecoveryCodeRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
+    if (email.isEmpty())
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
+    Global::sendReply(op, mstorage->getRecoveryCode(email, t));
+    op->waitForFinished();
+    close();
+}
+
+bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
+    QByteArray password = in.value("password").toByteArray();
+    Translator t(in.value("client_info").value<TClientInfo>().locale());
+    if (email.isEmpty() || code.isNull() || password.isEmpty())
+    {
+        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
+        op->waitForFinished();
+        return close();
+    }
+    Global::sendReply(op, mstorage->recoverAccount(email, code, password, t));
+    op->waitForFinished();
+    close();
+}
+
 void Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
     if (muserId)
@@ -206,6 +267,7 @@ void Connection::handleAuthorizeRequest(BNetworkOperation *op)
         return Global::sendReply(op, Global::result(Global::NoSuchUser, &mtranslator));
     mlogin = login;
     mclientInfo = in.value("client_info").value<TClientInfo>();
+    mlocale = mclientInfo.locale();
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
     if (maccessLevel >= TAccessLevel::AdminLevel)
@@ -444,11 +506,10 @@ void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
     Global::sendReply(op, out, r);
 }
 
-void Connection::handleCompileProjectRequest(BNetworkOperation *op)
+bool Connection::handleCompileProjectRequest(BNetworkOperation *op)
 {
     if (!muserId)
-        return Global::sendReply(op, "compilation_result",
-                                 Global::compilationResult(Global::NotAuthorized, &mtranslator));
+        return Global::sendReply(op, TCompilationResult(TMessage())); //TODO
     Global::CompileParameters p;
     QVariantMap in = op->variantData().toMap();
     p.project = in.value("project").value<TProject>();
@@ -458,7 +519,7 @@ void Connection::handleCompileProjectRequest(BNetworkOperation *op)
     p.compiledProject = new TCompiledProject;
     p.makeindexResult = p.param.makeindexEnabled() ? new TCompilationResult : 0;
     p.dvipsResult = p.param.dvipsEnabled() ? new TCompilationResult : 0;
-    TCompilationResult r = Global::compileProject(p, &mtranslator);
+    TCompilationResult r = Global::compileProject(p);
     QVariantMap out;
     if (p.makeindexResult)
         out.insert("makeindex_result", *p.makeindexResult);
@@ -466,45 +527,29 @@ void Connection::handleCompileProjectRequest(BNetworkOperation *op)
         out.insert("dvips_result", *p.dvipsResult);
     if (r)
         out.insert("compiled_project", *p.compiledProject);
-    Global::sendReply(op, out, "compilation_result", r);
+    return Global::sendReply(op, out, r);
 }
 
-void Connection::handleSubscribeRequest(BNetworkOperation *op)
+bool Connection::handleSubscribeRequest(BNetworkOperation *op)
 {
     if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
+        return Global::sendReply(op, TMessage()); //TODO
     if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
+        return Global::sendReply(op, TMessage()); //TODO
     msubscribed = op->variantData().toMap().value("subscription").toBool();
     log("Subscribe resuest: " + QString(msubscribed ? "true" : "false"));
-    Global::sendReply(op, TOperationResult(true));
+    return Global::sendReply(op);
 }
 
-void Connection::handleExecuteCommandRequest(BNetworkOperation *op)
+bool Connection::handleChangeLocale(BNetworkOperation *op)
 {
     if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
-    if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
+        return Global::sendReply(op, TMessage()); //TODO
     QVariantMap in = op->variantData().toMap();
-    QString command = in.value("command").toString();
-    QStringList args = in.value("arguments").toStringList();
-    logLocal("Execute command request: " + command + (!args.isEmpty() ? " " : "") + args.join(" "));
-    if (command.isEmpty())
-        return Global::sendReply(op, Global::result(Global::InvalidParameters, &mtranslator));
-    TerminalIOHandler::executeCommand(command, args, this);
+    mlocale = in.value("locale").toLocale();
+    logLocal("Change locale request: " + mlocale.name());
     Global::sendReply(op, TOperationResult(true));
-}
-
-void Connection::handleChangeLocale(BNetworkOperation *op)
-{
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
-    QVariantMap in = op->variantData().toMap();
-    QLocale l = in.value("locale").toLocale();
-    logLocal("Change locale request: " + l.name());
-    mtranslator.setLocale(l);
-    Global::sendReply(op, TOperationResult(true));
+    return true;
 }
 
 /*============================== Private slots =============================*/
@@ -536,7 +581,7 @@ void Connection::keepAlive()
         logLocal(s);
     else if (l > 1)
         log(s);
-    BNetworkOperation *op = sendRequest(/*NoopRequest*/ "tmp");
+    BNetworkOperation *op = sendRequest(operation(NoopOperation));
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b)
     {
@@ -553,16 +598,20 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
     if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
         return;
     QVariantMap out;
-    out.insert("log_text", text);
+    out.insert("text", text);
     out.insert("level", lvl);
-    //sendRequest(Texsample::LogRequest, out);
+    BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
 }
 
-void Connection::sendWriteRequestInternal(const QString &text)
+void Connection::sendMessageRequestInternal(int msg)
 {
-    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+    if (!muserId || !msubscribed || msg < 0 || !isConnected())
         return;
     QVariantMap out;
-    out.insert("text", text);
-    //sendRequest(Texsample::WriteRequest, out);
+    out.insert("message", TMessage(msg));
+    BNetworkOperation *op = sendRequest(Texsample::MessageRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
 }

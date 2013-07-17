@@ -18,7 +18,7 @@ CREATE TABLE IF NOT EXISTS users (
   access_level      INTEGER NOT NULL REFERENCES access_levels(level) ON DELETE RESTRICT ON UPDATE RESTRICT,
   real_name         TEXT,
   creation_dt       INTEGER NOT NULL,
-  modification_dt   INTEGER NOT NULL
+  update_dt         INTEGER NOT NULL
 );
 CREATE TABLE IF NOT EXISTS samples (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -34,7 +34,7 @@ CREATE TABLE IF NOT EXISTS samples (
   state             INTEGER NOT NULL DEFAULT 0 REFERENCES sample_states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
   deletion_reason   TEXT,
   creation_dt       INTEGER NOT NULL,
-  modification_dt   INTEGER NOT NULL,
+  update_dt         INTEGER NOT NULL,
   deletion_dt       INTEGER
 );
 CREATE TABLE IF NOT EXISTS invites (
@@ -47,7 +47,7 @@ CREATE TABLE IF NOT EXISTS invites (
 CREATE TABLE IF NOT EXISTS recovery_codes (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   code              TEXT UNIQUE NOT NULL,
-  requewster_id     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  requester_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
   creation_dt       INTEGER NOT NULL,
   expiration_dt     INTEGER NOT NULL
 );

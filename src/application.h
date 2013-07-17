@@ -28,7 +28,7 @@ public:
     ~Application();
 public:
     void scheduleInvitesAutoTest(const TInviteInfo &info);
-    void scheduleRecoveryCodesAutoTest(const QDateTime &expiresDT);
+    void scheduleRecoveryCodesAutoTest(const QDateTime &expirationDT);
 private slots:
     void invitesTestTimeout();
     void recoveryCodesTestTimeout();

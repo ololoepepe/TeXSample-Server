@@ -3,11 +3,11 @@
         <file>db/texsample.schema</file>
         <file>texsample-framework/texsample.sty</file>
         <file>texsample-framework/texsample.tex</file>
-        <file>templates/registration/registration.txt</file>
-        <file>templates/registration/registration_ru.txt</file>
-        <file>templates/recovery/get.txt</file>
-        <file>templates/recovery/get_ru.txt</file>
-        <file>templates/recovery/recovered.txt</file>
-        <file>templates/recovery/recovered_ru.txt</file>
+        <file>templates/get_recovery_code/body.txt</file>
+        <file>templates/get_recovery_code/body_ru.txt</file>
+        <file>templates/recover_account/body.txt</file>
+        <file>templates/recover_account/body_ru.txt</file>
+        <file>templates/register/body.txt</file>
+        <file>templates/register/body_ru.txt</file>
     </qresource>
 </RCC>

@@ -42,13 +42,13 @@ void Application::scheduleInvitesAutoTest(const TInviteInfo &info)
     QTimer::singleShot(msecs, this, SLOT(invitesTestTimeout()));
 }
 
-void Application::scheduleRecoveryCodesAutoTest(const QDateTime &expiresDT)
+void Application::scheduleRecoveryCodesAutoTest(const QDateTime &expirationDT)
 {
     static QMutex mutex;
     QMutexLocker locker(&mutex);
     if (!mstorage)
         mstorage = new Storage;
-    int msecs = expiresDT.toMSecsSinceEpoch() - QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+    int msecs = expirationDT.toMSecsSinceEpoch() - QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     msecs *= 1.1;
     QTimer::singleShot(msecs, this, SLOT(recoveryCodesTestTimeout()));
 }

@@ -57,8 +57,6 @@ private:
     static QString mmailPassword;
 private:
     Server *mserver;
-    RegistrationServer *mregistrationServer;
-    RecoveryServer *mrecoveryServer;
     QElapsedTimer melapsedTimer;
 };
 

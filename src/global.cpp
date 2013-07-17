@@ -1,18 +1,20 @@
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
-#include "translator.h"
 
 #include <TCompilationResult>
 #include <TCompilerParameters>
 #include <TProject>
 #include <TCompiledProject>
+#include <TMessage>
+#include <TOperationResult>
 
 #include <BeQt>
 #include <BDirTools>
 #include <BGenericSocket>
 #include <BSmtpSender>
 #include <BEmail>
+#include <BNetworkOperation>
 
 #include <QString>
 #include <QFileInfo>
@@ -22,18 +24,17 @@
 #include <QSslSocket>
 #include <QTextStream>
 #include <QSettings>
+#include <QLocale>
+#include <QFileInfo>
+#include <QLocale>
+#include <QMap>
 
 #include <QDebug>
 
 namespace Global
 {
 
-struct TrStruct
-{
-    const char *source;
-    const char *comment;
-};
-
+/*
 static const TrStruct Messages[] =
 {
     QT_TRANSLATE_NOOP3("Global", "Referred to invalid storage instance", "message"),
@@ -51,7 +52,7 @@ static const TrStruct Messages[] =
     QT_TRANSLATE_NOOP3("Global", "Attempted to register using occupied login or e-mail", "message"),
     QT_TRANSLATE_NOOP3("Global", "Attempted to register using invalid invite code", "message"),
     QT_TRANSLATE_NOOP3("Global", "Attempted to perform write operation in read-only mode", "message")
-};
+};*/
 
 bool readOnly()
 {
@@ -60,29 +61,31 @@ bool readOnly()
     return ro;
 }
 
-QString string(Message msg, Translator *t)
+TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
+                           const StringMap &replace)
 {
-    bool b = bRangeD(0, NOMESSAGE - 1).contains(msg);
-    const char *source = b ? Messages[msg].source : 0;
-    const char *comment = b ? Messages[msg].comment : 0;
-    return t ? t->translate("Global", source, comment) : QString(source);
-}
-
-TOperationResult result(Message msg, Translator *t)
-{
-    return TOperationResult(0); //TODO
-}
-
-TCompilationResult compilationResult(Message msg, Translator *t)
-{
-    return TCompilationResult(0); //TODO
-}
-
-TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, Translator *t)
-{
-    if (receiver.isEmpty() || subject.isEmpty() || body.isEmpty())
-        return result(InvalidParameters, t);
+    if (receiver.isEmpty() || templateName.isEmpty())
+        return TOperationResult(TMessage()); //TODO: message
+    QString templatePath = BDirTools::findResource("templates/" + templateName, BDirTools::GlobalOnly);
+    if (!QFileInfo(templatePath).isDir())
+        return TOperationResult(TMessage()); //TODO: message
+    QString subject = BDirTools::localeBasedFileName(templatePath + "/subject.txt", locale);
+    QString body = BDirTools::localeBasedFileName(templatePath + "/body.txt", locale);
+    bool ok = false;
+    subject = BDirTools::readTextFile(subject, "UTF-8", &ok);
+    if (!ok)
+        return TOperationResult(TMessage()); //TODO: message
+    body = BDirTools::readTextFile(body, "UTF-8", &ok);
+    if (!ok)
+        return TOperationResult(TMessage()); //TODO: message
+    foreach (const QString &k, replace.keys())
+    {
+        QString v = replace.value(k);
+        subject.replace(k, v);
+        body.replace(k, v);
+    }
     BSmtpSender smtp;
+    //TODO: test address, port, etc.
     smtp.setServer(bSettings->value("Mail/server_address").toString(),
                    bSettings->value("Mail/server_port", 25).toUInt());
     smtp.setLocalHostName(bSettings->value("Mail/local_host_name").toString());
@@ -97,22 +100,22 @@ TOperationResult sendEmail(const QString &receiver, const QString &subject, cons
     smtp.setEmail(email);
     smtp.send();
     bool b = smtp.waitForFinished();
-    return TOperationResult(b, 0); //TODO
+    return TOperationResult(b, TMessage()); //TODO: message
 }
 
-TCompilationResult compileProject(const CompileParameters &p, Translator *t)
+TCompilationResult compileProject(const CompileParameters &p)
 {
     static const QStringList Suffixes = QStringList() << "*.aux" << "*.dvi" << "*.idx" << "*.ilg" << "*.ind"
                                                       << "*.log" << "*.out" << "*.pdf" << "*.toc";
     if (p.path.isEmpty() || !p.project.isValid())
-        return compilationResult(NotAuthorized, t);
+        return TCompilationResult(TOperationResult()); //TODO: message
     if (!BDirTools::mkpath(p.path))
-        return compilationResult(FileSystemError, t);
+        return TCompilationResult(TOperationResult()); //TODO: message
     QString codecName = p.compiledProject ? p.param.codecName() : QString("UTF-8");
     if (!p.project.save(p.path, codecName) || !Storage::copyTexsample(p.path, codecName))
     {
         BDirTools::rmdir(p.path);
-        return compilationResult(FileSystemError, t);
+        return TCompilationResult(TOperationResult()); //TODO: message
     }
     QString fn = p.project.rootFileName();
     QString tmpfn = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
@@ -123,7 +126,7 @@ TCompilationResult compileProject(const CompileParameters &p, Translator *t)
     if (!p.compiledProject)
     {
         if (!QFile::rename(p.path + "/" + fn, p.path + "/" + tmpfn))
-            return compilationResult(FileSystemError, t);
+            return TCompilationResult(TOperationResult()); //TODO: message
         args << ("-jobname=" + baseName)
              << ("\\input texsample.tex \\input " + tmpfn + " \\end{document}");
     }
@@ -134,9 +137,9 @@ TCompilationResult compileProject(const CompileParameters &p, Translator *t)
     QString log;
     int code = BeQt::execProcess(p.path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
     if (!p.compiledProject && !QFile::rename(p.path + "/" + tmpfn, p.path + "/" + fn))
-        return compilationResult(FileSystemError, t);
+        return TCompilationResult(TOperationResult()); //TODO: message
     if (!Storage::removeTexsample(p.path))
-        return compilationResult(FileSystemError, t);
+        return TCompilationResult(TOperationResult()); //TODO: message
     r.setSuccess(!code);
     r.setExitCode(code);
     r.setLog(log);
@@ -176,6 +179,50 @@ TCompilationResult compileProject(const CompileParameters &p, Translator *t)
     if (p.compiledProject || !r)
         BDirTools::rmdir(p.path);
     return r;
+}
+
+bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r)
+{
+    out.insert("operation_result", r);
+    op->reply(out);
+    return r;
+}
+
+bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r)
+{
+    out.insert("compilation_result", r);
+    op->reply(out);
+    return r;
+}
+
+bool sendReply(BNetworkOperation *op, QVariantMap out, const TMessage msg)
+{
+    return sendReply(op, out, TOperationResult(msg));
+}
+
+bool sendReply(BNetworkOperation *op, const TOperationResult &r)
+{
+    return sendReply(op, QVariantMap(), r);
+}
+
+bool sendReply(BNetworkOperation *op, const TCompilationResult &r)
+{
+    return sendReply(op, QVariantMap(), r);
+}
+
+bool sendReply(BNetworkOperation *op, const TMessage msg)
+{
+    return sendReply(op, TOperationResult(msg));
+}
+
+bool sendReply(BNetworkOperation *op, QVariantMap out)
+{
+    return sendReply(op, out, TOperationResult(true));
+}
+
+bool sendReply(BNetworkOperation *op)
+{
+    return sendReply(op, QVariantMap(), TOperationResult(true));
 }
 
 }
