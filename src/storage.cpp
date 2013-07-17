@@ -49,9 +49,7 @@
 
 bool Storage::initStorage(TMessage *msg)
 {
-    static QMutex mutex;
     static bool initialized = false;
-    QMutexLocker locker(&mutex);
     if (initialized)
         return true; //TODO: message
     bWriteLine(tr("Initializing storage..."));
@@ -65,16 +63,10 @@ bool Storage::initStorage(TMessage *msg)
         return bRet(msg, TMessage(), false); //TODO: message
     BSqlDatabase db("QSQLITE", QUuid::createUuid().toString());
     db.setDatabaseName(rootDir() + "/texsample.sqlite");
+    db.setOpenOnDemand(true);
     db.setOnOpenQuery("PRAGMA foreign_keys = ON");
-    QString schema = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
-    QStringList list = BDirTools::readTextFile(schema, "UTF-8").split(";\n");
-    foreach (int i, bRangeD(0, list.size() - 1))
-    {
-        list[i].replace('\n', ' ');
-        list[i].replace(QRegExp("\\s+"), " ");
-    }
-    list.removeAll("");
-    list.removeDuplicates();
+    QString fn = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
+    QStringList list = BSqlDatabase::schemaFromFile(fn, "UTF-8");
     if (list.isEmpty())
         return bRet(msg, TMessage(), false); //TODO: message
     if (Global::readOnly())
@@ -95,18 +87,8 @@ bool Storage::initStorage(TMessage *msg)
     bool users = !db.select("users", "id", BSqlWhere("login = :login", ":login", QString("root"))).values().isEmpty();
     if (Global::readOnly() && !users)
         return bRet(msg, TMessage(), false); //TODO: message
-    foreach (const QString &qs, list)
-    {
-        if (!db.transaction())
-            return bRet(msg, TMessage(), false); //TODO
-        if (!db.exec(qs))
-        {
-            db.rollback();
-            return bRet(msg, TMessage(), false); //TODO
-        }
-        if (!db.commit())
-            return bRet(msg, TMessage(), false); //TODO
-    }
+    if (!db.initializeFromSchema(list))
+        return bRet(msg, TMessage(), false); //TODO
     Storage s;
     if (!s.isValid())
         return bRet(msg, TMessage(), false); //TODO
@@ -114,13 +96,10 @@ bool Storage::initStorage(TMessage *msg)
         return bRet(msg, TMessage(), false); //TODO
     if (!users)
     {
-        QString mail = BTerminalIOHandler::readLine("\n" + tr("Enter root e-mail:") + " ");
+        QString mail = bReadLine(tr("Enter root e-mail:") + " ");
         if (mail.isEmpty())
             return bRet(msg, TMessage(), false); //TODO
-        BTerminalIOHandler::setStdinEchoEnabled(false);
-        QString pwd = BTerminalIOHandler::readLine(tr("Enter root password:") + " ");
-        BTerminalIOHandler::setStdinEchoEnabled(true);
-        BTerminalIOHandler::writeLine();
+        QString pwd = bReadLineSecure(tr("Enter root password:") + " ");
         if (pwd.isEmpty())
             return bRet(msg, TMessage(), false); //TODO
         TUserInfo info(TUserInfo::AddContext);
@@ -135,6 +114,7 @@ bool Storage::initStorage(TMessage *msg)
     mtexsampleSty = sty;
     mtexsampleTex = tex;
     initialized = true;
+    bWriteLine(tr("Success!"));
     return true;
 }
 
@@ -188,12 +168,12 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, 
     m.insert("password", info.password());
     m.insert("access_level", (int) info.accessLevel());
     m.insert("real_name", info.realName());
-    m.insert("createdion_dt", msecs);
+    m.insert("creation_dt", msecs);
     m.insert("update_dt", msecs);
     BSqlResult qr = mdb->insert("users", m);
     QUuid uuid = BeQt::uuidFromText(inviteCode);
-    if (!qr || (!uuid.isNull() && !mdb->deleteFrom("invites", BSqlWhere("code = :code", ":code",
-                                                                        BeQt::pureUuidText(uuid)))))
+    BSqlWhere w("code = :code", ":code", BeQt::pureUuidText(uuid));
+    if (!qr || (!uuid.isNull() && !mdb->deleteFrom("invite_codes", w)))
     {
         mdb->rollback();
         return TOperationResult(0); //TODO
@@ -562,7 +542,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
         QDateTime createdDT = QDateTime::currentDateTimeUtc();
         m.insert("code", BeQt::pureUuidText(uuid));
         m.insert("creation_dt", createdDT.toMSecsSinceEpoch());
-        BSqlResult r = mdb->insert("invites", m);
+        BSqlResult r = mdb->insert("invite_codes", m);
         if (!r)
         {
             mdb->rollback();
@@ -587,7 +567,7 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfoList &invite
     if (!isValid())
         return TOperationResult(0); //TODO
     QStringList fields = QStringList() << "id" << "code" << "creator_id" << "expiration_dt" << "creation_dt";
-    BSqlResult r = mdb->select("invites", fields, BSqlWhere("creator_id = :creator_id", ":creator_id", userId));
+    BSqlResult r = mdb->select("invite_codes", fields, BSqlWhere("creator_id = :creator_id", ":creator_id", userId));
     if (!r)
         return TOperationResult(0); //TODO
     foreach (const QVariantMap &m, r.values())
@@ -778,7 +758,7 @@ quint64 Storage::inviteId(const QString &inviteCode)
         return 0;
     BSqlWhere w("code = :code AND expiration_dt > :expiration_dt", ":code", BeQt::pureUuidText(inviteCode),
                 ":expiration_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    return mdb->select("invites", "id", w).value("id").toULongLong();
+    return mdb->select("invite_codes", "id", w).value("id").toULongLong();
 }
 
 bool Storage::isValid() const
@@ -791,7 +771,7 @@ bool Storage::testInvites()
     if (!isValid() || !mdb->transaction())
         return false;
     BSqlWhere w("expiration_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    bool b = mdb->deleteFrom("invites", w);
+    bool b = mdb->deleteFrom("invite_codes", w);
     return mdb->endTransaction(b) && b;
 }
 
@@ -818,7 +798,7 @@ bool Storage::saveUserAvatar(quint64 userId, const QByteArray &data) const
     if (!isValid() || !userId)
         return false;
     QString path = rootDir() + "/users/" + QString::number(userId);
-    if (!QFileInfo(path).isDir())
+    if (!BDirTools::mkpath(path))
         return false;
     return data.isEmpty() || BDirTools::writeFile(path + "/avatar.dat", data);
 }

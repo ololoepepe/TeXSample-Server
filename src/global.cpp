@@ -28,6 +28,7 @@
 #include <QFileInfo>
 #include <QLocale>
 #include <QMap>
+#include <QVariant>
 
 #include <QDebug>
 
@@ -65,6 +66,13 @@ bool readOnly()
     return ro;
 }
 
+bool noMail()
+{
+    init_once(bool, nm, false)
+        nm = QCoreApplication::arguments().contains("--no-mail");
+    return nm;
+}
+
 bool initMail(TMessage *msg)
 {
     static bool initialized = false;
@@ -90,7 +98,7 @@ bool initMail(TMessage *msg)
     QString ssl;
     if (!bSettings->contains("Mail/ssl_required"))
         ssl = bReadLine(translate("Global", "Enter SSL mode [true|false] (default false):") + " ");
-    QVariant vssl(ssl);
+    QVariant vssl(!ssl.isEmpty() ? ssl : QString("false"));
     if (!vssl.convert(QVariant::Bool))
         return bRet(msg, TMessage(), false); //TODO
     QString login = bSettings->value("Mail/login").toString();
@@ -100,14 +108,31 @@ bool initMail(TMessage *msg)
         if (login.isEmpty())
             return bRet(msg, TMessage(), false); //TODO
     }
-    mmailPassword = bReadLine(translate("Global", "Enter e-mail password:") + " ");
+    mmailPassword = bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
     if (mmailPassword.isEmpty())
         return bRet(msg, TMessage(), false); //TODO
     bSettings->setValue("Mail/server_address", address);
     bSettings->setValue("Mail/server_port", vport);
     bSettings->setValue("Mail/local_host_name", name);
     bSettings->setValue("Mail/ssl_required", vssl);
+    bSettings->setValue("Mail/login", login);
     initialized = true;
+    bWriteLine(translate("Global", "Done!"));
+    return true;
+}
+
+bool setMailPassword(const QVariant &v)
+{
+    mmailPassword = !v.isNull() ? v.toString() : bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
+    return !mmailPassword.isEmpty();
+}
+
+bool showMailPassword(const QVariant &)
+{
+    if (!QVariant(bReadLine(translate("Global", "Printing password is unsecure! Do tou want to continue?") +
+                            " [yes|No] ")).toBool())
+        return false;
+    bWriteLine(translate("Global", "Value for") + " \"password\": " + mmailPassword);
     return true;
 }
 

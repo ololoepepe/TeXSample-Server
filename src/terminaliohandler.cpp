@@ -53,71 +53,6 @@ TerminalIOHandler *TerminalIOHandler::instance()
     return static_cast<TerminalIOHandler *>(BTerminalIOHandler::instance());
 }
 
-/*void TerminalIOHandler::handleSetImplementation(const QString &, const QStringList &args, Connection *c)
-{
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    init_once(SettingsItem, Settings, SettingsItem())
-    {
-        SettingsItem mail("Mail");
-          mail.addChildItem("server_address");
-          mail.addChildItem("server_port", QVariant::UInt);
-          mail.addChildItem("local_host_name");
-          mail.addChildItem("login");
-          SettingsItem i("password");
-            i.setProperty("mail_password", true);
-          mail.addChildItem(i);
-          mail.addChildItem("ssl_required", QVariant::Bool);
-        Settings.addChildItem(mail);
-        SettingsItem beqt("BeQt");
-          i.setKey("Core");
-          i.addChildItem("locale", QVariant::Locale);
-          beqt.addChildItem(i);
-        Settings.addChildItem(beqt);
-        SettingsItem l("Log");
-          l.addChildItem("noop", QVariant::Int);
-        Settings.addChildItem(l);
-    }
-    if (args.size() < 1 || args.size() > 2)
-        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
-    if (args.size() == 1 && c)
-        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
-    QString path = args.first();
-    SettingsItem si = Settings.testPath(path);
-    if (QVariant::Invalid == si.type())
-        return writeLine(translate("TerminalIOHandler", "No such option"), c);
-    path.replace('.', '/');
-    if (si.property("mail_password").toBool() && args.size() == 1)
-    {
-        setStdinEchoEnabled(false);
-        mmailPassword = readLine(translate("TerminalIOHandler", "Enter e-mail password:") + " ");
-        setStdinEchoEnabled(true);
-        writeLine(c);
-    }
-    else
-    {
-        QVariant v;
-        if (args.size() == 2)
-            v = args.last();
-        else
-            v = readLine(translate("TerminalIOHandler", "Enter value for") + " \"" + path.split("/").last() + "\": ");
-        switch (si.type())
-        {
-        case QVariant::Locale:
-            v = QLocale(v.toString());
-            break;
-        default:
-            if (!v.convert(si.type()))
-                return writeLine(translate("TerminalIOHandler", "Invalid value"), c);
-            break;
-        }
-        bSettings->setValue(path, v);
-    }
-    writeLine(translate("TerminalIOHandler", "OK"), c);
-}*/
-
 /*============================== Public constructors =======================*/
 
 TerminalIOHandler::TerminalIOHandler(QObject *parent) :
@@ -130,11 +65,35 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
     installHandler("start", (InternalHandler) &TerminalIOHandler::handleStart);
     installHandler("stop", (InternalHandler) &TerminalIOHandler::handleStop);
+    //TODO: Improve settings description
     BSettingsNode *root = new BSettingsNode;
-    //TODO: Settings structute
+      BSettingsNode *n = new BSettingsNode("Mail", root);
+        BSettingsNode *nn = new BSettingsNode("server_address", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "E-mail server address used for e-mail delivery"));
+        nn = new BSettingsNode(QVariant::UInt, "server_port", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "E-mail server port"));
+        nn = new BSettingsNode("local_host_name", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Name of local host passed to the e-mail server"));
+        nn = new BSettingsNode("ssl_required", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Determines wether the e-mail server requires SSL "
+                                               "connection"));
+        nn = new BSettingsNode("login", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Identifier used to log into the e-mail server"));
+        nn = new BSettingsNode("password", n);
+          nn->setUserSetFunction(&Global::setMailPassword);
+          nn->setUserShowFunction(&Global::showMailPassword);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Password used to log into the e-mail server"));
+      n = new BSettingsNode("BeQt", root);
+        nn = new BSettingsNode("Core", n);
+          BSettingsNode *nnn = new BSettingsNode(QVariant::Locale, "locale", nn);
+            nnn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Locale for the whole application"));
+      n = new BSettingsNode("Log", root);
+        nn = new BSettingsNode("noop", n);
+          nn->setDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "Logging the \"keep alive\" operations: [0|1|2]"));
     setRootSettingsNode(root);
     //TODO: Improve sescription
-    setHelpDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "This is TeXSample Server"));
+    setHelpDescription(QT_TRANSLATE_NOOP("TerminalIOHandler", "This is TeXSample Server.\n"
+                                         "Enter \"help --all\" to see full Help"));
     CommandHelp ch;
     ch.usage = "help [--all|--commands|--settings]\nhelp <command>";
     ch.description = QT_TRANSLATE_NOOP("TerminalIOHandler", "Show application help");

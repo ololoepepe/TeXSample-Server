@@ -7,6 +7,7 @@ class TMessage;
 class BNetworkOperation;
 
 class QLocale;
+class QVariant;
 
 #include <TProject>
 #include <TCompilerParameters>
@@ -66,7 +67,10 @@ public:
 };
 
 bool readOnly();
+bool noMail();
 bool initMail(TMessage *msg = 0);
+bool setMailPassword(const QVariant &v = QVariant());
+bool showMailPassword(const QVariant &);
 QString mailPassword();
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                            const StringMap &replace = StringMap());

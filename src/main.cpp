@@ -63,13 +63,12 @@ int main(int argc, char *argv[])
         TerminalIOHandler handler;
         Q_UNUSED(handler)
         TMessage imsg;
-        //if (!Global::initMail(&imsg) || !Storage::initStorage(&imsg))
-        //{
-            //bWriteLine(translate("main", "Error:") + " " + imsg.messageString());
-            //return 0;
-        //}
-        bWriteLine(translate("main", "Success!"));
-        bWriteLine(translate("main", "Enter \"help\" to see commands list"));
+        if ((!Global::noMail() && !Global::initMail(&imsg)) || !Storage::initStorage(&imsg))
+        {
+            bWriteLine(translate("main", "Error:") + " " + imsg.messageString());
+            return 0;
+        }
+        bWriteLine(translate("main", "Enter \"help --commands\" to see commands list"));
         ret = app.exec();
 #if defined(BUILTIN_RESOURCES)
         Q_CLEANUP_RESOURCE(texsample_server);
