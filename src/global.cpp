@@ -89,7 +89,7 @@ bool initMail(TMessage *msg)
     QString port;
     if (!bSettings->contains("Mail/server_port"))
         port = bReadLine(translate("Global", "Enter e-mail server port (default 25):") + " ");
-    QVariant vport(!port.isEmpty() ? port : QString("25"));
+    QVariant vport(!port.isEmpty() ? port : bSettings->value("Mail/server_port", QString("25")).toString());
     if (!vport.convert(QVariant::UInt))
         return bRet(msg, TMessage(), false); //TODO
     QString name;
@@ -98,7 +98,7 @@ bool initMail(TMessage *msg)
     QString ssl;
     if (!bSettings->contains("Mail/ssl_required"))
         ssl = bReadLine(translate("Global", "Enter SSL mode [true|false] (default false):") + " ");
-    QVariant vssl(!ssl.isEmpty() ? ssl : QString("false"));
+    QVariant vssl(!ssl.isEmpty() ? ssl : bSettings->value("Mail/ssl_required", QString("false")).toString());
     if (!vssl.convert(QVariant::Bool))
         return bRet(msg, TMessage(), false); //TODO
     QString login = bSettings->value("Mail/login").toString();

@@ -396,9 +396,9 @@ bool Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (!newSamples.isEmpty())
-        out.insert("new_sample_infos", QVariant::fromValue(newSamples));
+        out.insert("new_sample_infos", newSamples);
     if (!deletedSamples.isEmpty())
-        out.insert("deleted_sample_infos", QVariant::fromValue(deletedSamples));
+        out.insert("deleted_sample_infos", deletedSamples);
     return Global::sendReply(op, out, r);
 }
 

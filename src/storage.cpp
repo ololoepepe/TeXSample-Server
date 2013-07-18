@@ -205,7 +205,7 @@ TOperationResult Storage::editUser(const TUserInfo &info)
     QVariantMap m;
     m.insert("real_name", info.realName());
     m.insert("access_level", (int) info.accessLevel());
-    m.insert("mupdate_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     if (!info.password().isEmpty())
         m.insert("password", info.password());
     if (!mdb->update("users", m, BSqlWhere("id = :id", ":id", info.id())))
@@ -280,8 +280,8 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
     m.insert("sender_id", userId);
     m.insert("title", info.title());
     m.insert("file_name", info.fileName());
-    m.insert("authors", info.authorsString());
-    m.insert("tags", info.tagsString());
+    m.insert("authors", BeQt::serialize(info.authors()));
+    m.insert("tags", BeQt::serialize(info.tags()));
     m.insert("comment", info.comment());
     m.insert("creation_dt", msecs);
     m.insert("update_dt", msecs);
@@ -330,8 +330,8 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project
         return TOperationResult(0); //TODO
     QVariantMap m;
     m.insert("title", info.title());
-    m.insert("authors", info.authorsString());
-    m.insert("tags", info.tagsString());
+    m.insert("authors", BeQt::serialize(info.authors()));
+    m.insert("tags", BeQt::serialize(info.tags()));
     m.insert("comment", info.comment());
     m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     if (info.context() == TSampleInfo::EditContext)
@@ -417,12 +417,7 @@ TOperationResult Storage::deleteSample(quint64 sampleId, const QString &reason)
         mdb->rollback();
         return TOperationResult(0); //TODO
     }
-    //TODO: backup files
-    if (!BDirTools::rmdir(rootDir() + "/samples/" + QString::number(sampleId)))
-    {
-        mdb->rollback();
-        return TOperationResult(0); //TODO
-    }
+    //Data is not deleted and files are not deleted, so the sample may be undeleted later
     if (!mdb->commit())
         return TOperationResult(0); //TODO
     return TOperationResult(true);
@@ -498,13 +493,13 @@ TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &d
         if (!ur)
             return ur;
         info.setSender(uinfo);
-        info.setAuthors(m.value("authors").toString());
+        info.setAuthors(BeQt::deserialize(m.value("authors").toByteArray()).toStringList());
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
         info.setProjectSize(TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
                                            "UTF-8"));
-        info.setTags(m.value("tags").toString());
+        info.setTags(BeQt::deserialize(m.value("tags").toByteArray()).toStringList());
         info.setRating(m.value("rating").toUInt());
         info.setComment(m.value("comment").toString());
         info.setAdminRemark(m.value("admin_remark").toString());
@@ -812,7 +807,7 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
         return bRet(ok, false, QByteArray());
     if (!QFileInfo(path + "/avatar.dat").exists())
         return bRet(ok, true, QByteArray());
-    return  BDirTools::readFile(path + "/avatar.dat", -1, ok);
+    return BDirTools::readFile(path + "/avatar.dat", -1, ok);
 }
 
 /*============================== Static private members ====================*/
