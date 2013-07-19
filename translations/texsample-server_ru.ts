@@ -2,6 +2,20 @@
 <!DOCTYPE TS>
 <TS version="2.0" language="ru_RU">
 <context>
+    <name>Connection</name>
+    <message>
+        <location filename="../src/connection.cpp" line="60"/>
+        <source>Invalid storage instance</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="567"/>
+        <location filename="../src/connection.cpp" line="591"/>
+        <source>Success!</source>
+        <translation type="unfinished">Удачно!</translation>
+    </message>
+</context>
+<context>
     <name>Global</name>
     <message>
         <source>Referred to invalid storage instance</source>
@@ -79,53 +93,83 @@
         <translation type="obsolete">Попытка выполнить операцию записи в режиме только для чтения</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="81"/>
+        <location filename="../src/global.cpp" line="80"/>
+        <source>E-mail already initialized</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="83"/>
         <source>Initializing e-mail...</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="85"/>
+        <location filename="../src/global.cpp" line="87"/>
         <source>Enter e-mail server address:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="91"/>
+        <location filename="../src/global.cpp" line="89"/>
+        <source>Invalid address</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="93"/>
         <source>Enter e-mail server port (default 25):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="97"/>
+        <location filename="../src/global.cpp" line="96"/>
+        <source>Invalid port</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="99"/>
         <source>Enter local host name or empty string:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="100"/>
+        <location filename="../src/global.cpp" line="102"/>
         <source>Enter SSL mode [true|false] (default false):</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="107"/>
+        <location filename="../src/global.cpp" line="105"/>
+        <source>Invalid value</source>
+        <translation type="unfinished">Недкорректное значение</translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="109"/>
         <source>Enter e-mail login:</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/global.cpp" line="111"/>
-        <location filename="../src/global.cpp" line="126"/>
+        <source>Invalid login</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="113"/>
+        <location filename="../src/global.cpp" line="128"/>
         <source>Enter e-mail password:</source>
         <translation type="unfinished">Введите пароль от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="120"/>
+        <location filename="../src/global.cpp" line="115"/>
+        <source>Invalid password</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/global.cpp" line="122"/>
         <source>Done!</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="132"/>
+        <location filename="../src/global.cpp" line="134"/>
         <source>Printing password is unsecure! Do tou want to continue?</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="135"/>
+        <location filename="../src/global.cpp" line="137"/>
         <source>Value for</source>
         <translation type="unfinished"></translation>
     </message>
@@ -158,19 +202,28 @@
         <translation type="obsolete">Не удалось проверить инвайты или коды восстановления</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="55"/>
+        <location filename="../src/storage.cpp" line="57"/>
+        <source>Storage already initialized</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="60"/>
         <source>Initializing storage...</source>
         <translation type="unfinished">Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="99"/>
+        <location filename="../src/storage.cpp" line="104"/>
         <source>Enter root e-mail:</source>
         <translation>Введите электронную почту для root:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="117"/>
+        <location filename="../src/storage.cpp" line="122"/>
+        <source>Done!</source>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
         <source>Success!</source>
-        <translation type="unfinished">Удачно!</translation>
+        <translation type="obsolete">Удачно!</translation>
     </message>
     <message>
         <source>Operation cancelled</source>
@@ -178,7 +231,7 @@
         <translation type="obsolete">Операция отменена</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="102"/>
+        <location filename="../src/storage.cpp" line="107"/>
         <source>Enter root password:</source>
         <translation>Введите пароль для root:</translation>
     </message>
@@ -408,17 +461,17 @@ Enter &quot;help --all&quot; to see full Help</source>
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="53"/>
+        <location filename="../src/main.cpp" line="52"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="56"/>
+        <location filename="../src/main.cpp" line="55"/>
         <source>read-only mode</source>
         <translation>режим только для чтения</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="71"/>
+        <location filename="../src/main.cpp" line="70"/>
         <source>Enter &quot;help --commands&quot; to see commands list</source>
         <translation type="unfinished"></translation>
     </message>
@@ -427,7 +480,7 @@ Enter &quot;help --all&quot; to see full Help</source>
         <translation type="obsolete">Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="68"/>
+        <location filename="../src/main.cpp" line="67"/>
         <source>Error:</source>
         <translation>Ошибка:</translation>
     </message>
@@ -444,12 +497,12 @@ Enter &quot;help --all&quot; to see full Help</source>
         <translation type="obsolete">Введите &quot;help&quot; чтобы посмотреть список команд</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="80"/>
+        <location filename="../src/main.cpp" line="79"/>
         <source>Another instance of</source>
         <translation>Другой экземпляр</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="81"/>
+        <location filename="../src/main.cpp" line="80"/>
         <source>is already running. Quitting...</source>
         <translation>уже запущен. Выходим...</translation>
     </message>

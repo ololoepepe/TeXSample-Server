@@ -5,6 +5,7 @@ class Storage;
 
 class TOperationResult;
 class TMessage;
+class TCompilationResult;
 
 class BNetworkServer;
 class BGenericSocket;
@@ -57,6 +58,14 @@ protected:
     void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logRemote(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
+    enum LogTarget
+    {
+        NoTarget = 0,
+        LocalOnly,
+        RemoteOnly,
+        LocalAndRemote
+    };
+private:
     bool handleRegisterRequest(BNetworkOperation *op);
     bool handleGetRecoveryCodeRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
@@ -77,6 +86,22 @@ private:
     bool handleCompileProjectRequest(BNetworkOperation *op);
     bool handleSubscribeRequest(BNetworkOperation *op);
     bool handleChangeLocale(BNetworkOperation *op);
+    bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, int msg, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, const TOperationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, const TCompilationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, int msg, LogTarget lt = LocalAndRemote, const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, int msg, bool success, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, LogTarget lt = LocalAndRemote, const QString &prefix = QString());
 private slots:
     void testAuthorization();
     void restartTimer(BNetworkOperation *op = 0);

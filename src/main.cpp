@@ -4,7 +4,6 @@
 #include "global.h"
 
 #include <TeXSampleGlobal>
-#include <TMessage>
 
 #include <BCoreApplication>
 #include <BDirTools>
@@ -62,10 +61,10 @@ int main(int argc, char *argv[])
         Application::logger()->setFileName(logfn);
         TerminalIOHandler handler;
         Q_UNUSED(handler)
-        TMessage imsg;
-        if ((!Global::noMail() && !Global::initMail(&imsg)) || !Storage::initStorage(&imsg))
+        QString errs;
+        if ((!Global::noMail() && !Global::initMail(&errs)) || !Storage::initStorage(&errs))
         {
-            bWriteLine(translate("main", "Error:") + " " + imsg.messageString());
+            bWriteLine(translate("main", "Error:") + " " + errs);
             return 0;
         }
         bWriteLine(translate("main", "Enter \"help --commands\" to see commands list"));

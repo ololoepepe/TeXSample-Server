@@ -24,6 +24,7 @@ class QDateTime;
 #include <QCoreApplication>
 #include <QByteArray>
 #include <QUuid>
+#include <QVariantMap>
 
 /*============================================================================
 ================================ Storage =====================================
@@ -33,15 +34,17 @@ class Storage
 {
     Q_DECLARE_TR_FUNCTIONS(Storage)
 public:
-    static bool initStorage(TMessage *msg = 0);
+    static bool initStorage(QString *errs = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
 public:
     explicit Storage();
     ~Storage();
 public:
-    TOperationResult addUser(const TUserInfo &info, const QLocale &locale, const QString &inviteCode = QString());
+    TOperationResult addUser(const TUserInfo &info, const QLocale &locale);
+    TOperationResult registerUser(TUserInfo info, const QLocale &locale, const QString &inviteCode);
     TOperationResult editUser(const TUserInfo &info);
+    TOperationResult updateUser(TUserInfo info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
     TCompilationResult addSample(quint64 userId, TProject project, const TSampleInfo &info);
@@ -74,6 +77,9 @@ public:
 private:
     static QString rootDir();
 private:
+    TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale,
+                                     const QString &inviteCode = QString());
+    TOperationResult editUserInternal(const TUserInfo &info);
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;
 private:

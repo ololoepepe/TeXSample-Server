@@ -14,7 +14,6 @@
 #include <BGenericSocket>
 #include <BSmtpSender>
 #include <BEmail>
-#include <BNetworkOperation>
 
 #include <QString>
 #include <QFileInfo>
@@ -73,25 +72,28 @@ bool noMail()
     return nm;
 }
 
-bool initMail(TMessage *msg)
+bool initMail(QString *errs)
 {
     static bool initialized = false;
     if (initialized)
-        return true; //TODO: message
+    {
+        bWriteLine(translate("Global", "E-mail already initialized"));
+        return true;
+    }
     bWriteLine(translate("Global", "Initializing e-mail..."));
     QString address = bSettings->value("Mail/server_address").toString();
     if (address.isEmpty())
     {
         address = bReadLine(translate("Global", "Enter e-mail server address:") + " ");
         if (address.isEmpty())
-            return bRet(msg, TMessage(), false); //TODO
+            return bRet(errs, translate("Global", "Invalid address"), false);
     }
     QString port;
     if (!bSettings->contains("Mail/server_port"))
         port = bReadLine(translate("Global", "Enter e-mail server port (default 25):") + " ");
     QVariant vport(!port.isEmpty() ? port : bSettings->value("Mail/server_port", QString("25")).toString());
     if (!vport.convert(QVariant::UInt))
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, translate("Global", "Invalid port"), false);
     QString name;
     if (!bSettings->contains("Mail/local_host_name"))
         name = bReadLine(translate("Global", "Enter local host name or empty string:") + " ");
@@ -100,17 +102,17 @@ bool initMail(TMessage *msg)
         ssl = bReadLine(translate("Global", "Enter SSL mode [true|false] (default false):") + " ");
     QVariant vssl(!ssl.isEmpty() ? ssl : bSettings->value("Mail/ssl_required", QString("false")).toString());
     if (!vssl.convert(QVariant::Bool))
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, translate("Global", "Invalid value"), false);
     QString login = bSettings->value("Mail/login").toString();
     if (login.isEmpty())
     {
         login = bReadLine(translate("Global", "Enter e-mail login:") + " ");
         if (login.isEmpty())
-            return bRet(msg, TMessage(), false); //TODO
+            return bRet(errs, translate("Global", "Invalid login"), false);
     }
     mmailPassword = bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
     if (mmailPassword.isEmpty())
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, translate("Global", "Invalid password"), false);
     bSettings->setValue("Mail/server_address", address);
     bSettings->setValue("Mail/server_port", vport);
     bSettings->setValue("Mail/local_host_name", name);
@@ -145,19 +147,19 @@ TOperationResult sendEmail(const QString &receiver, const QString &templateName,
                            const StringMap &replace)
 {
     if (receiver.isEmpty() || templateName.isEmpty())
-        return TOperationResult(TMessage()); //TODO: message
+        return TOperationResult(TMessage::InternalParametersError);
     QString templatePath = BDirTools::findResource("templates/" + templateName, BDirTools::GlobalOnly);
     if (!QFileInfo(templatePath).isDir())
-        return TOperationResult(TMessage()); //TODO: message
+        return TOperationResult(TMessage::InternalParametersError);
     QString subject = BDirTools::localeBasedFileName(templatePath + "/subject.txt", locale);
     QString body = BDirTools::localeBasedFileName(templatePath + "/body.txt", locale);
     bool ok = false;
     subject = BDirTools::readTextFile(subject, "UTF-8", &ok);
     if (!ok)
-        return TOperationResult(TMessage()); //TODO: message
+        return TOperationResult(TMessage::InternalFileSystemError);
     body = BDirTools::readTextFile(body, "UTF-8", &ok);
     if (!ok)
-        return TOperationResult(TMessage()); //TODO: message
+        return TOperationResult(TMessage::InternalFileSystemError);
     foreach (const QString &k, replace.keys())
     {
         QString v = replace.value(k);
@@ -179,22 +181,22 @@ TOperationResult sendEmail(const QString &receiver, const QString &templateName,
     smtp.setEmail(email);
     smtp.send();
     bool b = smtp.waitForFinished();
-    return TOperationResult(b, TMessage()); //TODO: message
+    return TOperationResult(b, b ? TMessage::NoMessage : TMessage::InternalNetworkError);
 }
 
 TCompilationResult compileProject(const CompileParameters &p)
 {
     static const QStringList Suffixes = QStringList() << "*.aux" << "*.dvi" << "*.idx" << "*.ilg" << "*.ind"
                                                       << "*.log" << "*.out" << "*.pdf" << "*.toc";
-    if (p.path.isEmpty() || !p.project.isValid())
-        return TCompilationResult(TOperationResult()); //TODO: message
-    if (!BDirTools::mkpath(p.path))
-        return TCompilationResult(TOperationResult()); //TODO: message
+    if (!p.project.isValid())
+        return TCompilationResult(TMessage::InvalidProjectError);
+    if (p.path.isEmpty() || !BDirTools::mkpath(p.path))
+        return TCompilationResult(TMessage::InternalFileSystemError);
     QString codecName = p.compiledProject ? p.param.codecName() : QString("UTF-8");
     if (!p.project.save(p.path, codecName) || !Storage::copyTexsample(p.path, codecName))
     {
         BDirTools::rmdir(p.path);
-        return TCompilationResult(TOperationResult()); //TODO: message
+        return TCompilationResult(TMessage::InternalFileSystemError);
     }
     QString fn = p.project.rootFileName();
     QString tmpfn = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
@@ -205,9 +207,8 @@ TCompilationResult compileProject(const CompileParameters &p)
     if (!p.compiledProject)
     {
         if (!QFile::rename(p.path + "/" + fn, p.path + "/" + tmpfn))
-            return TCompilationResult(TOperationResult()); //TODO: message
-        args << ("-jobname=" + baseName)
-             << ("\\input texsample.tex \\input " + tmpfn + " \\end{document}");
+            return TCompilationResult(TMessage::InternalFileSystemError);
+        args << ("-jobname=" + baseName) << ("\\input texsample.tex \\input " + tmpfn + " \\end{document}");
     }
     else
     {
@@ -216,9 +217,9 @@ TCompilationResult compileProject(const CompileParameters &p)
     QString log;
     int code = BeQt::execProcess(p.path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
     if (!p.compiledProject && !QFile::rename(p.path + "/" + tmpfn, p.path + "/" + fn))
-        return TCompilationResult(TOperationResult()); //TODO: message
+        return TCompilationResult(TMessage::InternalFileSystemError);
     if (!Storage::removeTexsample(p.path))
-        return TCompilationResult(TOperationResult()); //TODO: message
+        return TCompilationResult(TMessage::InternalFileSystemError);
     r.setSuccess(!code);
     r.setExitCode(code);
     r.setLog(log);
@@ -258,50 +259,6 @@ TCompilationResult compileProject(const CompileParameters &p)
     if (p.compiledProject || !r)
         BDirTools::rmdir(p.path);
     return r;
-}
-
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r)
-{
-    out.insert("operation_result", r);
-    op->reply(out);
-    return r;
-}
-
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r)
-{
-    out.insert("compilation_result", r);
-    op->reply(out);
-    return r;
-}
-
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TMessage msg)
-{
-    return sendReply(op, out, TOperationResult(msg));
-}
-
-bool sendReply(BNetworkOperation *op, const TOperationResult &r)
-{
-    return sendReply(op, QVariantMap(), r);
-}
-
-bool sendReply(BNetworkOperation *op, const TCompilationResult &r)
-{
-    return sendReply(op, QVariantMap(), r);
-}
-
-bool sendReply(BNetworkOperation *op, const TMessage msg)
-{
-    return sendReply(op, TOperationResult(msg));
-}
-
-bool sendReply(BNetworkOperation *op, QVariantMap out)
-{
-    return sendReply(op, out, TOperationResult(true));
-}
-
-bool sendReply(BNetworkOperation *op)
-{
-    return sendReply(op, QVariantMap(), TOperationResult(true));
 }
 
 }

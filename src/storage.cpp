@@ -47,20 +47,25 @@
 
 /*============================== Static public methods =====================*/
 
-bool Storage::initStorage(TMessage *msg)
+#include <QCryptographicHash>
+
+bool Storage::initStorage(QString *errs)
 {
     static bool initialized = false;
     if (initialized)
-        return true; //TODO: message
+    {
+        bWriteLine(tr("Storage already initialized"));
+        return true;
+    }
     bWriteLine(tr("Initializing storage..."));
     QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
     sty = BDirTools::readTextFile(sty, "UTF-8");
     if (sty.isEmpty())
-        return bRet(msg, TMessage(), false); //TODO: message
+        return bRet(errs, tr(""), false); //TODO: message
     QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
     tex = BDirTools::readTextFile(tex, "UTF-8");
     if (tex.isEmpty())
-        return bRet(msg, TMessage(), false); //TODO: message
+        return bRet(errs, tr(""), false); //TODO: message
     BSqlDatabase db("QSQLITE", QUuid::createUuid().toString());
     db.setDatabaseName(rootDir() + "/texsample.sqlite");
     db.setOpenOnDemand(true);
@@ -68,7 +73,7 @@ bool Storage::initStorage(TMessage *msg)
     QString fn = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
     QStringList list = BSqlDatabase::schemaFromFile(fn, "UTF-8");
     if (list.isEmpty())
-        return bRet(msg, TMessage(), false); //TODO: message
+        return bRet(errs, tr(""), false); //TODO: message
     if (Global::readOnly())
     {
         foreach (const QString &qs, list)
@@ -81,27 +86,27 @@ bool Storage::initStorage(TMessage *msg)
             if (table.isEmpty())
                 continue;
             if (!db.tableExists(table))
-                return bRet(msg, TMessage(), false); //TODO
+                return bRet(errs, tr(""), false); //TODO: message
         }
     }
     bool users = !db.select("users", "id", BSqlWhere("login = :login", ":login", QString("root"))).values().isEmpty();
     if (Global::readOnly() && !users)
-        return bRet(msg, TMessage(), false); //TODO: message
+        return bRet(errs, tr(""), false); //TODO: message
     if (!db.initializeFromSchema(list))
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, tr(""), false); //TODO: message
     Storage s;
     if (!s.isValid())
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, tr(""), false); //TODO: message
     if (!Global::readOnly() && (!s.testInvites() || !s.testRecoveryCodes()))
-        return bRet(msg, TMessage(), false); //TODO
+        return bRet(errs, tr(""), false); //TODO: message
     if (!users)
     {
         QString mail = bReadLine(tr("Enter root e-mail:") + " ");
         if (mail.isEmpty())
-            return bRet(msg, TMessage(), false); //TODO
+            return bRet(errs, tr(""), false); //TODO: message
         QString pwd = bReadLineSecure(tr("Enter root password:") + " ");
         if (pwd.isEmpty())
-            return bRet(msg, TMessage(), false); //TODO
+            return bRet(errs, tr(""), false); //TODO: message
         TUserInfo info(TUserInfo::AddContext);
         info.setLogin("root");
         info.setEmail(mail);
@@ -109,12 +114,12 @@ bool Storage::initStorage(TMessage *msg)
         info.setAccessLevel(TAccessLevel::RootLevel);
         TOperationResult r = s.addUser(info, BCoreApplication::locale());
         if (!r)
-            return bRet(msg, TMessage(), false); //TODO
+            return bRet(errs, tr(""), false); //TODO: message
     }
     mtexsampleSty = sty;
     mtexsampleTex = tex;
     initialized = true;
-    bWriteLine(tr("Success!"));
+    bWriteLine(tr("Done!"));
     return true;
 }
 
@@ -149,7 +154,7 @@ Storage::~Storage()
 
 /*============================== Public methods ============================*/
 
-TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, const QString &inviteCode)
+TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale)
 {
     if (Global::readOnly())
         return TOperationResult(0); //TODO
@@ -157,39 +162,22 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, 
         return TOperationResult(0); //TODO
     if (!isValid())
         return TOperationResult(0); //TODO
-    if (!isUserUnique(info.login(), info.email()))
+    return addUserInternal(info, locale);
+}
+
+TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale, const QString &inviteCode)
+{
+    if (Global::readOnly())
         return TOperationResult(0); //TODO
-    if (!mdb->transaction())
+    if (!info.isValid(TUserInfo::RegisterContext))
+        return TOperationResult(TMessage::InvalidUserInfoError);
+    if (BeQt::uuidFromText(inviteCode).isNull())
+        return TOperationResult(TMessage::InvalidCodeError);
+    if (!isValid())
         return TOperationResult(0); //TODO
-    qint64 msecs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    QVariantMap m;
-    m.insert("email", info.email());
-    m.insert("login", info.login());
-    m.insert("password", info.password());
-    m.insert("access_level", (int) info.accessLevel());
-    m.insert("real_name", info.realName());
-    m.insert("creation_dt", msecs);
-    m.insert("update_dt", msecs);
-    BSqlResult qr = mdb->insert("users", m);
-    QUuid uuid = BeQt::uuidFromText(inviteCode);
-    BSqlWhere w("code = :code", ":code", BeQt::pureUuidText(uuid));
-    if (!qr || (!uuid.isNull() && !mdb->deleteFrom("invite_codes", w)))
-    {
-        mdb->rollback();
-        return TOperationResult(0); //TODO
-    }
-    quint64 userId = qr.lastInsertId().toULongLong();
-    if(!saveUserAvatar(userId, info.avatar()))
-        return TOperationResult(0); //TODO
-    if (!mdb->commit())
-    {
-        BDirTools::rmdir(rootDir() + "/users/" + QString::number(userId));
-        return TOperationResult(0); //TODO
-    }
-    Global::StringMap replace;
-    replace.insert("%username%", info.login());
-    Global::sendEmail(info.email(), "register", locale, replace);
-    return TOperationResult(true);
+    info.setContext(TUserInfo::AddContext);
+    info.setAccessLevel(TAccessLevel::UserLevel);
+    return registerUser(info, locale, inviteCode);
 }
 
 TOperationResult Storage::editUser(const TUserInfo &info)
@@ -200,25 +188,18 @@ TOperationResult Storage::editUser(const TUserInfo &info)
         return TOperationResult(0); //TODO
     if (!isValid())
         return TOperationResult(0); //TODO
-    if (!mdb->transaction())
+    return editUserInternal(info);
+}
+
+TOperationResult Storage::updateUser(TUserInfo info)
+{
+    if (Global::readOnly())
         return TOperationResult(0); //TODO
-    QVariantMap m;
-    m.insert("real_name", info.realName());
-    m.insert("access_level", (int) info.accessLevel());
-    m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (!info.password().isEmpty())
-        m.insert("password", info.password());
-    if (!mdb->update("users", m, BSqlWhere("id = :id", ":id", info.id())))
-    {
-        mdb->rollback();
+    if (!info.isValid(TUserInfo::UpdateContext))
         return TOperationResult(0); //TODO
-    }
-    //TODO: backup avatar
-    if(!saveUserAvatar(info.id(), info.avatar()))
+    if (!isValid())
         return TOperationResult(0); //TODO
-    if (!mdb->commit())
-        return TOperationResult(0); //TODO
-    return TOperationResult(true);
+    return editUserInternal(info);
 }
 
 TOperationResult Storage::getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk)
@@ -787,6 +768,79 @@ QString Storage::rootDir()
 }
 
 /*============================== Private methods ===========================*/
+
+TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale, const QString &inviteCode)
+{
+    if (Global::readOnly())
+        return TOperationResult(0); //TODO
+    if (!info.isValid(TUserInfo::AddContext))
+        return TOperationResult(0); //TODO
+    if (!isValid())
+        return TOperationResult(0); //TODO
+    if (!isUserUnique(info.login(), info.email()))
+        return TOperationResult(0); //TODO
+    if (!mdb->transaction())
+        return TOperationResult(0); //TODO
+    qint64 msecs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+    QVariantMap m;
+    m.insert("email", info.email());
+    m.insert("login", info.login());
+    m.insert("password", info.password());
+    m.insert("access_level", (int) info.accessLevel());
+    m.insert("real_name", info.realName());
+    m.insert("creation_dt", msecs);
+    m.insert("update_dt", msecs);
+    BSqlResult qr = mdb->insert("users", m);
+    QUuid uuid = BeQt::uuidFromText(inviteCode);
+    BSqlWhere w("code = :code", ":code", BeQt::pureUuidText(uuid));
+    if (!qr || (!uuid.isNull() && !mdb->deleteFrom("invite_codes", w)))
+    {
+        mdb->rollback();
+        return TOperationResult(0); //TODO
+    }
+    quint64 userId = qr.lastInsertId().toULongLong();
+    if(!saveUserAvatar(userId, info.avatar()))
+        return TOperationResult(0); //TODO
+    if (!mdb->commit())
+    {
+        BDirTools::rmdir(rootDir() + "/users/" + QString::number(userId));
+        return TOperationResult(0); //TODO
+    }
+    Global::StringMap replace;
+    replace.insert("%username%", info.login());
+    Global::sendEmail(info.email(), "register", locale, replace);
+    return TOperationResult(true);
+}
+
+TOperationResult Storage::editUserInternal(const TUserInfo &info)
+{
+    if (Global::readOnly())
+        return TOperationResult(0); //TODO
+    if (!info.isValid(TUserInfo::EditContext) && !info.isValid(TUserInfo::UpdateContext))
+        return TOperationResult(0); //TODO
+    if (!isValid())
+        return TOperationResult(0); //TODO
+    if (!mdb->transaction())
+        return TOperationResult(0); //TODO
+    QVariantMap m;
+    m.insert("real_name", info.realName());
+    if (info.isValid(TUserInfo::EditContext))
+        m.insert("access_level", (int) info.accessLevel());
+    else
+        m.insert("password", info.password());
+    m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    if (!mdb->update("users", m, BSqlWhere("id = :id", ":id", info.id())))
+    {
+        mdb->rollback();
+        return TOperationResult(0); //TODO
+    }
+    //TODO: backup avatar
+    if(!saveUserAvatar(info.id(), info.avatar()))
+        return TOperationResult(0); //TODO
+    if (!mdb->commit())
+        return TOperationResult(0); //TODO
+    return TOperationResult(true);
+}
 
 bool Storage::saveUserAvatar(quint64 userId, const QByteArray &data) const
 {

@@ -4,8 +4,6 @@
 class TOperationResult;
 class TMessage;
 
-class BNetworkOperation;
-
 class QLocale;
 class QVariant;
 
@@ -16,7 +14,6 @@ class QVariant;
 
 #include <QString>
 #include <QMap>
-#include <QVariantMap>
 
 namespace Global
 {
@@ -68,21 +65,13 @@ public:
 
 bool readOnly();
 bool noMail();
-bool initMail(TMessage *msg = 0);
+bool initMail(QString *errs = 0);
 bool setMailPassword(const QVariant &v = QVariant());
 bool showMailPassword(const QVariant &);
 QString mailPassword();
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                            const StringMap &replace = StringMap());
 TCompilationResult compileProject(const CompileParameters &p);
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r);
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r);
-bool sendReply(BNetworkOperation *op, QVariantMap out, const TMessage msg);
-bool sendReply(BNetworkOperation *op, const TOperationResult &r);
-bool sendReply(BNetworkOperation *op, const TCompilationResult &r);
-bool sendReply(BNetworkOperation *op, const TMessage msg);
-bool sendReply(BNetworkOperation *op, QVariantMap out);
-bool sendReply(BNetworkOperation *op);
 
 }
 
