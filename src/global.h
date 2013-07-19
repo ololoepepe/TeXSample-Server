@@ -18,26 +18,6 @@ class QVariant;
 namespace Global
 {
 
-/*enum Message
-{
-    StorageError = 0,
-    DatabaseError,
-    QueryError,
-    FileSystemError,
-    InvalidParameters,
-    NotAuthorized,
-    NotEnoughRights,
-    NotYourAccount,
-    NotYourSample,
-    NotModifiableSample,
-    NoSuchUser,
-    NoSuchSample,
-    LoginOrEmailOccupied,
-    InvalidInvite,
-    ReadOnly,
-    NOMESSAGE
-};*/
-
 typedef QMap<QString, QString> StringMap;
 
 struct CompileParameters
@@ -68,6 +48,8 @@ bool noMail();
 bool initMail(QString *errs = 0);
 bool setMailPassword(const QVariant &v = QVariant());
 bool showMailPassword(const QVariant &);
+bool setLoggingMode(const QVariant &v = QVariant());
+void resetLoggingMode();
 QString mailPassword();
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                            const StringMap &replace = StringMap());

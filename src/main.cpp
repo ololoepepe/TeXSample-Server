@@ -56,6 +56,7 @@ int main(int argc, char *argv[])
         bWriteLine(msg);
         BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
         Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
+        Global::resetLoggingMode();
         QString logfn = Application::location(Application::DataPath, Application::UserResources) + "/logs/";
         logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
         Application::logger()->setFileName(logfn);
@@ -67,7 +68,7 @@ int main(int argc, char *argv[])
             bWriteLine(translate("main", "Error:") + " " + errs);
             return 0;
         }
-        bWriteLine(translate("main", "Enter \"help --commands\" to see commands list"));
+        bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
         ret = app.exec();
 #if defined(BUILTIN_RESOURCES)
         Q_CLEANUP_RESOURCE(texsample_server);

@@ -36,26 +36,6 @@ B_DECLARE_TRANSLATE_FUNCTION
 namespace Global
 {
 
-/*
-static const TrStruct Messages[] =
-{
-    QT_TRANSLATE_NOOP3("Global", "Referred to invalid storage instance", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Failed to commit transaction or execute internal operation", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Failed to execute query", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Failed to perform file system read or write operation", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Received invalid parameters", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while not authorized", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while not enough rights", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on another user's account", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on another user's sample", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation while on read-only sample", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent user", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform operation on nonexistent sample", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to register using occupied login or e-mail", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to register using invalid invite code", "message"),
-    QT_TRANSLATE_NOOP3("Global", "Attempted to perform write operation in read-only mode", "message")
-};*/
-
 QString mmailPassword;
 
 bool readOnly()
@@ -138,6 +118,45 @@ bool showMailPassword(const QVariant &)
     return true;
 }
 
+bool setLoggingMode(const QVariant &v)
+{
+    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Global", "Enter logging mode:") + " ");
+    if (s.isEmpty())
+        return false;
+    bool ok = false;
+    int m = s.toInt(&ok);
+    if (!ok)
+        return false;
+    bSettings->setValue("Log/mode", m);
+    resetLoggingMode();
+    return true;
+}
+
+void resetLoggingMode()
+{
+    int m = bSettings->value("Log/mode", 2).toInt();
+    if (m <= 0)
+    {
+        bLogger->setLogToConsoleEnabled(false);
+        bLogger->setLogToFileEnabled(false);
+    }
+    else if (1 == m)
+    {
+        bLogger->setLogToConsoleEnabled(true);
+        bLogger->setLogToFileEnabled(false);
+    }
+    else if (2 == m)
+    {
+        bLogger->setLogToConsoleEnabled(false);
+        bLogger->setLogToFileEnabled(true);
+    }
+    else if (m >= 3)
+    {
+        bLogger->setLogToConsoleEnabled(true);
+        bLogger->setLogToFileEnabled(true);
+    }
+}
+
 QString mailPassword()
 {
     return mmailPassword;
@@ -189,7 +208,7 @@ TCompilationResult compileProject(const CompileParameters &p)
     static const QStringList Suffixes = QStringList() << "*.aux" << "*.dvi" << "*.idx" << "*.ilg" << "*.ind"
                                                       << "*.log" << "*.out" << "*.pdf" << "*.toc";
     if (!p.project.isValid())
-        return TCompilationResult(TMessage::InvalidProjectError);
+        return TCompilationResult(TMessage::InternalParametersError);
     if (p.path.isEmpty() || !BDirTools::mkpath(p.path))
         return TCompilationResult(TMessage::InternalFileSystemError);
     QString codecName = p.compiledProject ? p.param.codecName() : QString("UTF-8");
