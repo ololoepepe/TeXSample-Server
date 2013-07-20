@@ -19,6 +19,7 @@
 #include <BCoreApplication>
 #include <BSpamNotifier>
 #include <BSettingsNode>
+#include <BTranslation>
 
 #include <QObject>
 #include <QString>
@@ -68,67 +69,71 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     BSettingsNode *root = new BSettingsNode;
       BSettingsNode *n = new BSettingsNode("Mail", root);
         BSettingsNode *nn = new BSettingsNode("server_address", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "E-mail server address used for e-mail delivery"));
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "E-mail server address used for e-mail delivery"));
         nn = new BSettingsNode(QVariant::UInt, "server_port", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "E-mail server port"));
+          nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port"));
         nn = new BSettingsNode("local_host_name", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Name of local host passed to the e-mail server"));
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Name of local host passed to the e-mail server"));
         nn = new BSettingsNode("ssl_required", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Determines wether the e-mail server requires SSL "
-                                               "connection"));
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Determines wether the e-mail server requires SSL connection"));
         nn = new BSettingsNode("login", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Identifier used to log into the e-mail server"));
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Identifier used to log into the e-mail server"));
         nn = new BSettingsNode("password", n);
           nn->setUserSetFunction(&Global::setMailPassword);
           nn->setUserShowFunction(&Global::showMailPassword);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Password used to log into the e-mail server"));
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server"));
       createBeQtSettingsNode(root);
       n = new BSettingsNode("Log", root);
         nn = new BSettingsNode("mode", n);
           nn->setUserSetFunction(&Global::setLoggingMode);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Logging mode. Possible values:\n"
-                                               "0 or less - don't log\n"
-                                               "1 - log to console only\n"
-                                               "2 - log to file only\n"
-                                               "3 and more - log to console and file\n"
-                                               "The default is 2"));
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Logging mode. Possible values:\n"
+                                                     "0 or less - don't log\n"
+                                                     "1 - log to console only\n"
+                                                     "2 - log to file only\n"
+                                                     "3 and more - log to console and file\n"
+                                                     "The default is 2"));
         nn = new BSettingsNode("noop", n);
-          nn->setDescription(QT_TRANSLATE_NOOP("BSettingsNode", "Logging the \"keep alive\" operations. "
-                                               "Possible values:\n"
-                                               "0 or less - don't log\n"
-                                               "1 - log locally\n"
-                                               "2 and more - log loaclly and remotely\n"
-                                               "The default is 0"));
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Logging the \"keep alive\" operations. "
+                                                     "Possible values:\n"
+                                                     "0 or less - don't log\n"
+                                                     "1 - log locally\n"
+                                                     "2 and more - log loaclly and remotely\n"
+                                                     "The default is 0"));
     setRootSettingsNode(root);
-    setHelpDescription(QT_TRANSLATE_NOOP("BTerminalIOHandler", "This is TeXSample Server.\n"
-                                         "Enter \"help --all\" to see full Help"));
+    setHelpDescription(BTranslation::translate("BTerminalIOHandler", "This is TeXSample Server.\n"
+                                               "Enter \"help --all\" to see full Help"));
     CommandHelpList chl;
     CommandHelp ch;
     ch.usage = "uptime";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Show for how long the application has been running");
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+                                             "Show for how long the application has been running");
     setCommandHelp("uptime", ch);
     ch.usage = "user [--list]";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Show connected user count or list them all");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show connected user count or list them all");
     chl << ch;
     ch.usage = "user --connected-at|--info|--uptime <id|login>";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Show information about the user.\n"
-                                       "The user may be specified by id or by login. Options:\n"
-                                       "  --connected-at - time when the user connected\n"
-                                       "  --info - detailed user information\n"
-                                       "  --uptime - for how long the user has been connected");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about the user.\n"
+                                             "The user may be specified by id or by login. Options:\n"
+                                             "  --connected-at - time when the user connected\n"
+                                             "  --info - detailed user information\n"
+                                             "  --uptime - for how long the user has been connected");
     chl << ch;
     ch.usage = "user --kick <id|login>";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Disconnect the specified user.\n"
-                                       "If login is specified, all connections of this user will be closed");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Disconnect the specified user.\n"
+                                             "If login is specified, all connections of this user will be closed");
     chl << ch;
     setCommandHelp("user", chl);
     ch.usage = "start [address]";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Start the server.\n"
-                                       "If address is specified, the server will only listen on that address,\n"
-                                       "otherwise it will listen on available all addresses.");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
+                                             "If address is specified, the server will only listen on that address,\n"
+                                             "otherwise it will listen on available all addresses.");
     setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = QT_TRANSLATE_NOOP("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
     setCommandHelp("stop", ch);
     melapsedTimer.start();
 }
