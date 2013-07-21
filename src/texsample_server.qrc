@@ -11,5 +11,9 @@
         <file>templates/register/body_ru.txt</file>
         <file>templates/register/subject.txt</file>
         <file>templates/register/subject_ru.txt</file>
+        <file>templates/get_recovery_code/subject.txt</file>
+        <file>templates/get_recovery_code/subject_ru.txt</file>
+        <file>templates/recover_account/subject.txt</file>
+        <file>templates/recover_account/subject_ru.txt</file>
     </qresource>
 </RCC>

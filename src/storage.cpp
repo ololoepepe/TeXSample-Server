@@ -400,7 +400,11 @@ TOperationResult Storage::deleteSample(quint64 sampleId, const QString &reason)
         return TOperationResult(TMessage::SampleAlreadyDeletedError);
     if (!mdb->transaction())
         return TOperationResult(TMessage::InternalDatabaseError);
-    if (!mdb->update("samples", "state", 1, "deletion_reason", reason, BSqlWhere("id = :id", ":id", sampleId)))
+    QVariantMap bv;
+    bv.insert("state", 1);
+    bv.insert("deletion_reason", reason);
+    bv.insert("deletion_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
+    if (!mdb->update("samples", bv, BSqlWhere("id = :id", ":id", sampleId)))
     {
         mdb->rollback();
         return TOperationResult(TMessage::InternalQueryError);
@@ -593,13 +597,18 @@ TOperationResult Storage::getRecoveryCode(const QString &email, const QLocale &l
         mdb->rollback();
         return TOperationResult(TMessage::InternalQueryError);
     }
-    if (!mdb->commit())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    bApp->scheduleRecoveryCodesAutoTest(expDt);
     Global::StringMap replace;
     replace.insert("%code%", code);
     replace.insert("%username%", userLogin(userId));
-    Global::sendEmail(email, "get_recovery_code", locale, replace);
+    TOperationResult sr = Global::sendEmail(email, "get_recovery_code", locale, replace);
+    if (!sr)
+    {
+        mdb->rollback();
+        return sr;
+    }
+    if (!mdb->commit())
+        return TOperationResult(TMessage::InternalDatabaseError);
+    bApp->scheduleRecoveryCodesAutoTest(expDt);
     return TOperationResult(true);
 }
 
@@ -633,9 +642,14 @@ TOperationResult Storage::recoverAccount(const QString &email, const QString &co
         mdb->rollback();
         return TOperationResult(TMessage::InternalQueryError);
     }
+    TOperationResult sr = Global::sendEmail(email, "recover_account", locale);
+    if (!sr)
+    {
+        mdb->rollback();
+        return sr;
+    }
     if (!mdb->commit())
         return TOperationResult(TMessage::InternalDatabaseError);
-    Global::sendEmail(email, "recover_account", locale);
     return TOperationResult(true);
 }
 
@@ -794,6 +808,7 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
     QVariantMap m;
     m.insert("email", info.email());
     m.insert("login", info.login());
+    if (!info.password().isEmpty())
     m.insert("password", info.password());
     m.insert("access_level", (int) info.accessLevel());
     m.insert("real_name", info.realName());

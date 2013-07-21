@@ -41,7 +41,7 @@
 2 - log to file only
 3 and more - log to console and file
 The default is 2</source>
-        <translation>Режим ведение логов. Возможные значения:
+        <translation type="unfinished">Режим ведения логов. Возможные значения:
 0 или меньше - не вести логов
 1 - вести лог только в консоли
 2 - вести лог только в файле
@@ -124,8 +124,8 @@ otherwise it will listen on available all addresses.</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="567"/>
-        <location filename="../src/connection.cpp" line="591"/>
+        <location filename="../src/connection.cpp" line="572"/>
+        <location filename="../src/connection.cpp" line="596"/>
         <source>Success!</source>
         <translation>Удачно!</translation>
     </message>
@@ -133,88 +133,88 @@ otherwise it will listen on available all addresses.</source>
 <context>
     <name>Global</name>
     <message>
-        <location filename="../src/global.cpp" line="60"/>
+        <location filename="../src/global.cpp" line="62"/>
         <source>E-mail already initialized</source>
         <translation>Эл. почта уже инициализирована</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="63"/>
+        <location filename="../src/global.cpp" line="65"/>
         <source>Initializing e-mail...</source>
         <translation>Инициализация эл. почты...</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="67"/>
+        <location filename="../src/global.cpp" line="69"/>
         <source>Enter e-mail server address:</source>
         <translation>Введите адрес сервера элю почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="69"/>
+        <location filename="../src/global.cpp" line="71"/>
         <source>Invalid address</source>
         <translation>Недействительный адрес</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="73"/>
+        <location filename="../src/global.cpp" line="75"/>
         <source>Enter e-mail server port (default 25):</source>
         <translation>Введите порт сервера эл. почты (по умолчанию 25):</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="76"/>
+        <location filename="../src/global.cpp" line="78"/>
         <source>Invalid port</source>
         <translation>Недействительный порт</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="79"/>
+        <location filename="../src/global.cpp" line="81"/>
         <source>Enter local host name or empty string:</source>
         <translation>Введите имя локального хоста или пустую строку:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="82"/>
+        <location filename="../src/global.cpp" line="84"/>
         <source>Enter SSL mode [true|false] (default false):</source>
         <translation>Введите режим SSL [true|false] (по умолчанию false):</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="85"/>
+        <location filename="../src/global.cpp" line="87"/>
         <source>Invalid value</source>
         <translation>Некорректное значение</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="89"/>
+        <location filename="../src/global.cpp" line="91"/>
         <source>Enter e-mail login:</source>
         <translation>Введите логин от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="91"/>
+        <location filename="../src/global.cpp" line="93"/>
         <source>Invalid login</source>
         <translation>Недействительный логин</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="93"/>
-        <location filename="../src/global.cpp" line="108"/>
+        <location filename="../src/global.cpp" line="95"/>
+        <location filename="../src/global.cpp" line="110"/>
         <source>Enter e-mail password:</source>
         <translation>Введите пароль от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="95"/>
+        <location filename="../src/global.cpp" line="97"/>
         <source>Invalid password</source>
         <translation>Недействительный пароль</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="102"/>
+        <location filename="../src/global.cpp" line="104"/>
         <source>Done!</source>
         <translation>Готово!</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="114"/>
+        <location filename="../src/global.cpp" line="116"/>
         <source>Printing password is unsecure! Do tou want to continue?</source>
         <translation>Вывод пароля небезопасен! Хотите продолжить?</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="117"/>
+        <location filename="../src/global.cpp" line="119"/>
         <source>Value for</source>
         <translation>Значение для</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="123"/>
+        <location filename="../src/global.cpp" line="125"/>
         <source>Enter logging mode:</source>
         <translation>Введите режим ведения логов:</translation>
     </message>

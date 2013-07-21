@@ -72,6 +72,11 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(replySent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    installRequestHandler(Texsample::RegisterRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
+    installRequestHandler(Texsample::GetRecoveryCodeRequest,
+                          (InternalHandler) &Connection::handleGetRecoveryCodeRequest);
+    installRequestHandler(Texsample::RecoverAccountRequest,
+                          (InternalHandler) &Connection::handleRecoverAccountRequest);
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);

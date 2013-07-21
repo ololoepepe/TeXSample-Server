@@ -4,6 +4,8 @@
 class TOperationResult;
 class TMessage;
 
+class BSettingsNode;
+
 class QLocale;
 class QVariant;
 
@@ -46,9 +48,9 @@ public:
 bool readOnly();
 bool noMail();
 bool initMail(QString *errs = 0);
-bool setMailPassword(const QVariant &v = QVariant());
-bool showMailPassword(const QVariant &);
-bool setLoggingMode(const QVariant &v = QVariant());
+bool setMailPassword(const BSettingsNode *n, const QVariant &v = QVariant());
+bool showMailPassword(const BSettingsNode *n, const QVariant &);
+bool setLoggingMode(const BSettingsNode *n, const QVariant &v = QVariant());
 void resetLoggingMode();
 QString mailPassword();
 TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,

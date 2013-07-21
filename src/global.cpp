@@ -1,3 +1,5 @@
+class BSettingsNode;
+
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
@@ -103,13 +105,13 @@ bool initMail(QString *errs)
     return true;
 }
 
-bool setMailPassword(const QVariant &v)
+bool setMailPassword(const BSettingsNode *, const QVariant &v)
 {
     mmailPassword = !v.isNull() ? v.toString() : bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
     return !mmailPassword.isEmpty();
 }
 
-bool showMailPassword(const QVariant &)
+bool showMailPassword(const BSettingsNode *, const QVariant &)
 {
     if (!QVariant(bReadLine(translate("Global", "Printing password is unsecure! Do tou want to continue?") +
                             " [yes|No] ")).toBool())
@@ -118,7 +120,7 @@ bool showMailPassword(const QVariant &)
     return true;
 }
 
-bool setLoggingMode(const QVariant &v)
+bool setLoggingMode(const BSettingsNode *, const QVariant &v)
 {
     QString s = !v.isNull() ? v.toString() : bReadLine(translate("Global", "Enter logging mode:") + " ");
     if (s.isEmpty())
