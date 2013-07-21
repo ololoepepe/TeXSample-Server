@@ -8,6 +8,7 @@ class TCompilationResult;
 class TProject;
 class TProjectFile;
 class TMessage;
+class TService;
 
 class BSqlDatabase;
 
@@ -19,6 +20,7 @@ class QDateTime;
 #include <TSampleInfoList>
 #include <TInviteInfoList>
 #include <TIdList>
+#include <TServiceList>
 
 #include <QString>
 #include <QCoreApplication>
@@ -34,6 +36,16 @@ class Storage
 {
     Q_DECLARE_TR_FUNCTIONS(Storage)
 public:
+    enum SampleState
+    {
+        NormalState = 0,
+        DeletedState
+    };
+    enum Service
+    {
+        TexsampleService
+    };
+public:
     static bool initStorage(QString *errs = 0);
     static bool copyTexsample(const QString &path, const QString &codecName = "UTF-8");
     static bool removeTexsample(const QString &path);
@@ -44,7 +56,7 @@ public:
     TOperationResult addUser(const TUserInfo &info, const QLocale &locale);
     TOperationResult registerUser(TUserInfo info, const QLocale &locale, const QString &inviteCode);
     TOperationResult editUser(const TUserInfo &info);
-    TOperationResult updateUser(TUserInfo info);
+    TOperationResult updateUser(const TUserInfo info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
     TCompilationResult addSample(quint64 userId, TProject project, const TSampleInfo &info);
@@ -64,12 +76,15 @@ public:
     quint64 userIdByEmail(const QString &email);
     quint64 senderId(quint64 sampleId);
     QString userLogin(quint64 userId);
+    TAccessLevel userAccessLevel(quint64 userId);
+    TServiceList userServices(quint64 userId);
+    bool userHasAccessTo(quint64 userId, const TService service);
     TSampleInfo::Type sampleType(quint64 sampleId);
     QString sampleFileName(quint64 sampleId);
     int sampleState(quint64 sampleId);
     QDateTime sampleCreationDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
     QDateTime sampleUpdateDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
-    TAccessLevel userAccessLevel(quint64 userId);
+
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
     bool testInvites();

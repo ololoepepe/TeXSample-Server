@@ -2,6 +2,9 @@
 CREATE TABLE IF NOT EXISTS access_levels (
   level             INTEGER UNIQUE NOT NULL
 );
+CREATE TABLE IF NOT EXISTS services (
+  id                INTEGER UNIQUE NOT NULL
+);
 CREATE TABLE IF NOT EXISTS sample_types (
   type              INTEGER UNIQUE NOT NULL
 );
@@ -21,6 +24,10 @@ CREATE TABLE IF NOT EXISTS users (
   real_name         TEXT,
   creation_dt       INTEGER NOT NULL,
   update_dt         INTEGER NOT NULL
+);
+CREATE TABLE IF NOT EXISTS user_services (
+  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 CREATE TABLE IF NOT EXISTS samples (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -55,15 +62,15 @@ CREATE TABLE IF NOT EXISTS recovery_codes (
 );
 
 /*Filling auxiliary tables*/
-INSERT OR IGNORE INTO access_levels (level) VALUES (0);
-INSERT OR IGNORE INTO access_levels (level) VALUES (10);
-INSERT OR IGNORE INTO access_levels (level) VALUES (100);
-INSERT OR IGNORE INTO access_levels (level) VALUES (1000);
-INSERT OR IGNORE INTO access_levels (level) VALUES (10000);
+INSERT OR IGNORE INTO access_levels (level) VALUES (0);     --NoLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (10);    --UserLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (100);   --ModeratorLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (1000);  --AdminLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (10000); --RootLevel
 
-INSERT OR IGNORE INTO sample_types (type) VALUES (0);
-INSERT OR IGNORE INTO sample_types (type) VALUES (10);
-INSERT OR IGNORE INTO sample_types (type) VALUES (100);
+INSERT OR IGNORE INTO sample_types (type) VALUES (0);       --Unverified
+INSERT OR IGNORE INTO sample_types (type) VALUES (10);      --Approved
+INSERT OR IGNORE INTO sample_types (type) VALUES (100);     --Rejected
 
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (0);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (1);
@@ -167,5 +174,8 @@ INSERT OR IGNORE INTO sample_ratings (rating) VALUES (98);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (99);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (100);
 
-INSERT OR IGNORE INTO sample_states (state) VALUES (0);
-INSERT OR IGNORE INTO sample_states (state) VALUES (1);
+INSERT OR IGNORE INTO sample_states (state) VALUES (0);     --NormalState
+INSERT OR IGNORE INTO sample_states (state) VALUES (1);     --DeletedState
+
+INSERT OR IGNORE INTO services (id) VALUES (0);             --NoService
+INSERT OR IGNORE INTO services (id) VALUES (1);             --TexsampleService

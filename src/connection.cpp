@@ -281,6 +281,9 @@ bool Connection::handleAddUserRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (maccessLevel < TAccessLevel::RootLevel && info.accessLevel() >= TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    foreach (const TService &s, info.services())
+        if (!mstorage->userHasAccessTo(muserId, s))
+            return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->addUser(info, mlocale));
 }
 
@@ -291,6 +294,8 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
     log("Edit user request: " + info.idString());
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
+    if (info.id() == muserId)
+        return sendReply(op, TMessage::CantEditSelfError);
     if (maccessLevel < TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
     TAccessLevel ualvl = mstorage->userAccessLevel(info.id());
@@ -298,8 +303,9 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (maccessLevel < TAccessLevel::RootLevel && ualvl >= TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    if (info.id() == muserId && info.accessLevel() < maccessLevel)
-        return sendReply(op, TMessage::CantDowngradeSelfError);
+    foreach (const TService &s, info.services())
+        if (!mstorage->userHasAccessTo(muserId, s))
+            return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->editUser(info));
 }
 
@@ -314,7 +320,7 @@ bool Connection::handleUpdateAccountRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotOwnAccountError);
     if (maccessLevel < TAccessLevel::UserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->editUser(info));
+    return sendReply(op, mstorage->updateUser(info));
 }
 
 bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
@@ -351,6 +357,8 @@ bool Connection::handleAddSampleRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->addSample(muserId, project, info));
 }
 
@@ -363,6 +371,8 @@ bool Connection::handleEditSampleRequest(BNetworkOperation *op)
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->editSample(info, project));
 }
@@ -382,6 +392,8 @@ bool Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotOwnSampleError);
     if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
         return sendReply(op, TMessage::NotModifiableSampleError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->editSample(info, project));
 }
 
@@ -403,6 +415,8 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
         else if (mstorage->sampleType(id) == TSampleInfo::Approved)
             return sendReply(op, TMessage::NotModifiableSampleError);
     }
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     return sendReply(op, mstorage->deleteSample(id, reason));
 }
 
@@ -414,6 +428,8 @@ bool Connection::handleGetSamplesListRequest(BNetworkOperation *op)
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     TSampleInfoList newSamples;
     TIdList deletedSamples;
@@ -439,6 +455,8 @@ bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TProject project;
     bool cacheOk = false;
     TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
@@ -462,6 +480,8 @@ bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     TProjectFile file;
     bool cacheOk = false;
@@ -487,6 +507,8 @@ bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TInviteInfoList invites;
     TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, invites);
     if (!r)
@@ -503,6 +525,8 @@ bool Connection::handleGetInvitesListRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TInviteInfoList invites;
     TOperationResult r = mstorage->getInvitesList(muserId, invites);
     if (!r)
@@ -518,6 +542,8 @@ bool Connection::handleCompileProjectRequest(BNetworkOperation *op)
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     Global::CompileParameters p;
     QVariantMap in = op->variantData().toMap();

@@ -12,6 +12,8 @@
 #include <TCompilationResult>
 #include <TProject>
 #include <TMessage>
+#include <TService>
+#include <TServiceList>
 
 #include <BSmtpSender>
 #include <BEmail>
@@ -114,6 +116,7 @@ bool Storage::initStorage(QString *errs)
         info.setEmail(mail);
         info.setPassword(pwd);
         info.setAccessLevel(TAccessLevel::RootLevel);
+        info.setServices(TServiceList::allServices());
         TOperationResult r = s.addUser(info, BCoreApplication::locale());
         if (!r)
             return bRet(errs, r.messageString(), false);
@@ -179,6 +182,9 @@ TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale, co
         return TOperationResult(TMessage::InternalStorageError);
     info.setContext(TUserInfo::AddContext);
     info.setAccessLevel(TAccessLevel::UserLevel);
+    TServiceList list;
+    list << TService::TexsampleService;
+    info.setServices(list);
     return registerUser(info, locale, inviteCode);
 }
 
@@ -193,7 +199,7 @@ TOperationResult Storage::editUser(const TUserInfo &info)
     return editUserInternal(info);
 }
 
-TOperationResult Storage::updateUser(TUserInfo info)
+TOperationResult Storage::updateUser(const TUserInfo info)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -225,6 +231,7 @@ TOperationResult Storage::getUserInfo(quint64 userId, TUserInfo &info, QDateTime
     info.setId(userId);
     info.setLogin(r.value("login").toString());
     info.setAccessLevel(r.value("access_level").toInt());
+    info.setServices(userServices(userId));
     info.setRealName(r.value("real_name").toString());
     info.setAvatar(avatar);
     info.setCreationDateTime(QDateTime::fromMSecsSinceEpoch(r.value("creation_dt").toULongLong()));
@@ -241,7 +248,7 @@ TOperationResult Storage::getShortUserInfo(quint64 userId, TUserInfo &info)
     BSqlResult r = mdb->select("users", QStringList() << "login" << "real_name", BSqlWhere("id = :id", ":id", userId));
     if (!r)
         return TOperationResult(TMessage::InternalQueryError);
-    info.setContext(TUserInfo::ShortInfoContext);
+    info.setContext(TUserInfo::BriefInfoContext);
     info.setId(userId);
     info.setLogin(r.value("login").toString());
     info.setRealName(r.value("real_name").toString());
@@ -701,6 +708,39 @@ QString Storage::userLogin(quint64 userId)
     return mdb->select("users", "login", w).value("login").toString();
 }
 
+TAccessLevel Storage::userAccessLevel(quint64 userId)
+{
+    if (!userId || !isValid())
+        return 0;
+    BSqlWhere w("id = :id", ":id", userId);
+    return mdb->select("users", "access_level", w).value("access_level").toInt();
+}
+
+TServiceList Storage::userServices(quint64 userId)
+{
+    if (!userId || !isValid())
+        return TServiceList();
+    if (userAccessLevel(userId) >= TAccessLevel::RootLevel)
+        return TServiceList::allServices();
+    BSqlResult r = mdb->select("user_services", "service_id", BSqlWhere("user_id = :user_id", ":user_id", userId));
+    if (!r)
+        return TServiceList();
+    QList<int> list;
+    foreach (const QVariantMap &m, r.values())
+        list << m.value("service_id").toInt();
+    return TServiceList::serviceListFromIntList(list);
+}
+
+bool Storage::userHasAccessTo(quint64 userId, const TService service)
+{
+    if (!userId || !isValid())
+        return false;
+    if (userAccessLevel(userId) >= TAccessLevel::RootLevel)
+        return true;
+    BSqlWhere w("user_id = :user_id", ":user_id", userId);
+    return mdb->select("user_services", "service_id", w).value("service_id").toInt() == service;
+}
+
 TSampleInfo::Type Storage::sampleType(quint64 sampleId)
 {
     if (!sampleId || !isValid())
@@ -741,14 +781,6 @@ QDateTime Storage::sampleUpdateDateTime(quint64 sampleId, Qt::TimeSpec spec)
     BSqlWhere w("id = :id", ":id", sampleId);
     qint64 msecs = mdb->select("samples", "update_dt", w).value("update_dt").toULongLong();
     return QDateTime::fromMSecsSinceEpoch(msecs).toTimeSpec(spec);
-}
-
-TAccessLevel Storage::userAccessLevel(quint64 userId)
-{
-    if (!userId || !isValid())
-        return 0;
-    BSqlWhere w("id = :id", ":id", userId);
-    return mdb->select("users", "access_level", w).value("access_level").toInt();
 }
 
 quint64 Storage::inviteId(const QString &inviteCode)
@@ -823,6 +855,14 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
         return TOperationResult(TMessage::InternalQueryError);
     }
     quint64 userId = qr.lastInsertId().toULongLong();
+    foreach (const TService &s, info.services())
+    {
+        if (!mdb->insert("user_services", "user_id", userId, "service_id", (int) s))
+        {
+            mdb->rollback();
+            return TOperationResult(TMessage::InternalQueryError);
+        }
+    }
     if(!saveUserAvatar(userId, info.avatar()))
         return TOperationResult(TMessage::InternalFileSystemError);
     if (!mdb->commit())
@@ -848,7 +888,7 @@ TOperationResult Storage::editUserInternal(const TUserInfo &info)
         return TOperationResult(TMessage::InternalDatabaseError);
     QVariantMap m;
     m.insert("real_name", info.realName());
-    if (info.isValid(TUserInfo::EditContext))
+    if (info.context() == TUserInfo::EditContext)
         m.insert("access_level", (int) info.accessLevel());
     else
         m.insert("password", info.password());
@@ -857,6 +897,22 @@ TOperationResult Storage::editUserInternal(const TUserInfo &info)
     {
         mdb->rollback();
         return TOperationResult(TMessage::InternalQueryError);
+    }
+    if (info.context() == TUserInfo::EditContext)
+    {
+        if (!mdb->deleteFrom("user_services", BSqlWhere("user_id = :user_id", ":user_id", info.id())))
+        {
+            mdb->rollback();
+            return TOperationResult(TMessage::InternalQueryError);
+        }
+        foreach (const TService &s, info.services())
+        {
+            if (!mdb->insert("user_services", "user_id", info.id(), "service_id", (int) s))
+            {
+                mdb->rollback();
+                return TOperationResult(TMessage::InternalQueryError);
+            }
+        }
     }
     QByteArray avatarOld = loadUserAvatar(info.id()); //Backing up previous avatar
     if(!saveUserAvatar(info.id(), info.avatar()))

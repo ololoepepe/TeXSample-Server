@@ -124,8 +124,8 @@ otherwise it will listen on available all addresses.</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="572"/>
-        <location filename="../src/connection.cpp" line="596"/>
+        <location filename="../src/connection.cpp" line="598"/>
+        <location filename="../src/connection.cpp" line="622"/>
         <source>Success!</source>
         <translation>Удачно!</translation>
     </message>
@@ -222,78 +222,78 @@ otherwise it will listen on available all addresses.</source>
 <context>
     <name>Storage</name>
     <message>
-        <location filename="../src/storage.cpp" line="57"/>
+        <location filename="../src/storage.cpp" line="59"/>
         <source>Storage already initialized</source>
         <translation>Хранилище уже инициализировано</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="60"/>
+        <location filename="../src/storage.cpp" line="62"/>
         <source>Initializing storage...</source>
         <translation>Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="64"/>
+        <location filename="../src/storage.cpp" line="66"/>
         <source>Failed to load texsample.sty</source>
         <translation>Не удалось загрузить texsample.sty</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="68"/>
+        <location filename="../src/storage.cpp" line="70"/>
         <source>Failed to load texsample.tex</source>
         <translation>Не удалось загрузить texsample.tex</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="76"/>
+        <location filename="../src/storage.cpp" line="78"/>
         <source>Failed to load database schema</source>
         <translation>Не удалось загрузить схему базы данных</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="89"/>
+        <location filename="../src/storage.cpp" line="91"/>
         <source>Can&apos;t create tables in read-only mode</source>
         <translation>Нельзя создать таблицы в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="94"/>
+        <location filename="../src/storage.cpp" line="96"/>
         <source>Can&apos;t create users in read-only mode</source>
         <translation>Нельзя создать пользователя в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="96"/>
+        <location filename="../src/storage.cpp" line="98"/>
         <source>Database initialization failed</source>
         <translation>Инициализация базы данных не удалась</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="99"/>
+        <location filename="../src/storage.cpp" line="101"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="101"/>
+        <location filename="../src/storage.cpp" line="103"/>
         <source>Failed to test invite codes</source>
         <translation>Не удалось проверить инвайт-коды</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="103"/>
+        <location filename="../src/storage.cpp" line="105"/>
         <source>Failed to test recovery codes</source>
         <translation>Не удалось проверить коды восстановления</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="106"/>
+        <location filename="../src/storage.cpp" line="108"/>
         <source>Enter root e-mail:</source>
         <translation>Введите электронную почту для root:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="108"/>
-        <location filename="../src/storage.cpp" line="111"/>
+        <location filename="../src/storage.cpp" line="110"/>
+        <location filename="../src/storage.cpp" line="113"/>
         <source>Operation aborted</source>
         <translation>Операция прервана</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="124"/>
+        <location filename="../src/storage.cpp" line="127"/>
         <source>Done!</source>
         <translation>Готово!</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="109"/>
+        <location filename="../src/storage.cpp" line="111"/>
         <source>Enter root password:</source>
         <translation>Введите пароль для root:</translation>
     </message>
