@@ -223,7 +223,7 @@ TCompilationResult compileProject(const CompileParameters &p)
     QString tmpfn = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
     QString baseName = QFileInfo(fn).baseName();
     TCompilationResult r;
-    QString command = !p.compiledProject ? "pdflatex" : p.param.compilerString();
+    QString command = !p.compiledProject ? "pdflatex" : p.param.compilerCommand();
     QStringList args = QStringList() << "-interaction=nonstopmode";
     if (!p.compiledProject)
     {
@@ -257,7 +257,7 @@ TCompilationResult compileProject(const CompileParameters &p)
         }
         if (!mcode)
         {
-            code = BeQt::execProcess(p.path, p.param.compilerString(), args, 5 * BeQt::Second, 5 * BeQt::Minute, &log);
+            code = BeQt::execProcess(p.path, p.param.compilerCommand(), args, 5 * BeQt::Second, 5 * BeQt::Minute, &log);
             r.setSuccess(!code);
             r.setExitCode(code);
             r.setLog(log);

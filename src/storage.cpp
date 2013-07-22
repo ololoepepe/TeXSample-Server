@@ -170,22 +170,18 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale)
     return addUserInternal(info, locale);
 }
 
-TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale, const QString &inviteCode)
+TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
     if (!info.isValid(TUserInfo::RegisterContext))
         return TOperationResult(TMessage::InvalidUserInfoError);
-    if (BeQt::uuidFromText(inviteCode).isNull())
-        return TOperationResult(TMessage::InvalidCodeError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
     info.setContext(TUserInfo::AddContext);
     info.setAccessLevel(TAccessLevel::UserLevel);
-    TServiceList list;
-    list << TService::TexsampleService;
-    info.setServices(list);
-    return registerUser(info, locale, inviteCode);
+    info.setServices(newUserServices(info.inviteCode()));
+    return addUserInternal(info, locale);
 }
 
 TOperationResult Storage::editUser(const TUserInfo &info)
@@ -511,12 +507,12 @@ TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &d
     return TOperationResult(true);
 }
 
-TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expiresDT, quint8 count,
-                                          TInviteInfoList &invites)
+TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,
+                                          const TServiceList &services, TInviteInfoList &invites)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
-    if (!userId || !expiresDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
+    if (!userId || !expirationDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
         return TOperationResult(TMessage::InvalidDataError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
@@ -525,10 +521,10 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
     invites.clear();
     QVariantMap m;
     m.insert("creator_id", userId);
-    m.insert("expiration_dt", expiresDT.toUTC().toMSecsSinceEpoch());
+    m.insert("expiration_dt", expirationDT.toUTC().toMSecsSinceEpoch());
     TInviteInfo info;
     info.setCreatorId(userId);
-    info.setExpirationDateTime(expiresDT.toUTC());
+    info.setExpirationDateTime(expirationDT.toUTC());
     quint8 i = 0;
     while (i < count)
     {
@@ -542,8 +538,18 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
             mdb->rollback();
             return TOperationResult(TMessage::InternalQueryError);
         }
-        info.setId(r.lastInsertId().toULongLong());
+        quint64 id = r.lastInsertId().toULongLong();
+        foreach (const TService &s, services)
+        {
+            if (!mdb->insert("new_user_services", "invite_id", id, "service_id", (int) s))
+            {
+                mdb->rollback();
+                return TOperationResult(TMessage::InternalQueryError);
+            }
+        }
+        info.setId(id);
         info.setCode(uuid);
+        info.setServices(services);
         info.setCreationDateTime(createdDT);
         invites << info;
         ++i;
@@ -570,6 +576,7 @@ TOperationResult Storage::getInvitesList(quint64 userId, TInviteInfoList &invite
         info.setId(m.value("id").toULongLong());
         info.setCode(m.value("code").toString());
         info.setCreatorId(userId);
+        info.setServices(newUserServices(info.id()));
         info.setExpirationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("expiration_dt").toULongLong()));
         info.setCreationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("creation_dt").toULongLong()));
         invites << info;
@@ -731,6 +738,27 @@ TServiceList Storage::userServices(quint64 userId)
     return TServiceList::serviceListFromIntList(list);
 }
 
+TServiceList Storage::newUserServices(quint64 inviteId)
+{
+    if (!inviteId || !isValid())
+        return TServiceList();
+    BSqlResult r = mdb->select("new_user_services", "service_id", BSqlWhere("invite_id = :id", ":id", inviteId));
+    if (!r)
+        return TServiceList();
+    QList<int> list;
+    foreach (const QVariantMap &m, r.values())
+        list << m.value("service_id").toInt();
+    return TServiceList::serviceListFromIntList(list);
+}
+
+TServiceList Storage::newUserServices(const QString &inviteCode)
+{
+    if (BeQt::uuidFromText(inviteCode).isNull() || !isValid())
+        return TServiceList();
+    BSqlWhere w("code = :code", ":code", inviteCode);
+    return newUserServices(mdb->select("invite_codes", "id", w).value("id").toULongLong());
+}
+
 bool Storage::userHasAccessTo(quint64 userId, const TService service)
 {
     if (!userId || !isValid())
@@ -824,7 +852,7 @@ QString Storage::rootDir()
 
 /*============================== Private methods ===========================*/
 
-TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale, const QString &inviteCode)
+TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -847,7 +875,7 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
     m.insert("creation_dt", msecs);
     m.insert("update_dt", msecs);
     BSqlResult qr = mdb->insert("users", m);
-    QUuid uuid = BeQt::uuidFromText(inviteCode);
+    QUuid uuid = BeQt::uuidFromText(info.inviteCode());
     BSqlWhere w("code = :code", ":code", BeQt::pureUuidText(uuid));
     if (!qr || (!uuid.isNull() && !mdb->deleteFrom("invite_codes", w)))
     {

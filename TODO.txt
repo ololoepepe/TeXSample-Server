@@ -8,4 +8,4 @@
 
 === MAJOR ===
 
-
+[done] Implement assigning services priveleges to invite codes

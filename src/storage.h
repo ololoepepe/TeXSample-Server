@@ -54,7 +54,7 @@ public:
     ~Storage();
 public:
     TOperationResult addUser(const TUserInfo &info, const QLocale &locale);
-    TOperationResult registerUser(TUserInfo info, const QLocale &locale, const QString &inviteCode);
+    TOperationResult registerUser(TUserInfo info, const QLocale &locale);
     TOperationResult editUser(const TUserInfo &info);
     TOperationResult updateUser(const TUserInfo info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
@@ -66,7 +66,7 @@ public:
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT);
     TOperationResult generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,
-                                     TInviteInfoList &invites);
+                                     const TServiceList &services, TInviteInfoList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfoList &invites);
     TOperationResult getRecoveryCode(const QString &email, const QLocale &locale);
     TOperationResult recoverAccount(const QString &email, const QString &code, const QByteArray &password,
@@ -78,6 +78,8 @@ public:
     QString userLogin(quint64 userId);
     TAccessLevel userAccessLevel(quint64 userId);
     TServiceList userServices(quint64 userId);
+    TServiceList newUserServices(quint64 inviteId);
+    TServiceList newUserServices(const QString &inviteCode);
     bool userHasAccessTo(quint64 userId, const TService service);
     TSampleInfo::Type sampleType(quint64 sampleId);
     QString sampleFileName(quint64 sampleId);
@@ -92,8 +94,7 @@ public:
 private:
     static QString rootDir();
 private:
-    TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale,
-                                     const QString &inviteCode = QString());
+    TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale);
     TOperationResult editUserInternal(const TUserInfo &info);
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;

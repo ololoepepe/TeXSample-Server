@@ -124,8 +124,8 @@ otherwise it will listen on available all addresses.</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="598"/>
-        <location filename="../src/connection.cpp" line="622"/>
+        <location filename="../src/connection.cpp" line="599"/>
+        <location filename="../src/connection.cpp" line="623"/>
         <source>Success!</source>
         <translation>Удачно!</translation>
     </message>

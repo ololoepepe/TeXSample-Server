@@ -193,12 +193,12 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
-    QString code = in.value("invite").toString();
+    //QString code = in.value("invite").toString();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     QLocale l = in.value("locale").toLocale();
     QString prefix = "<" + info.login() + "> ";
     log(prefix + "Register request");
-    bool b = sendReply(op, mstorage->registerUser(info, l, code), LocalAndRemote, prefix);
+    bool b = sendReply(op, mstorage->registerUser(info, l), LocalAndRemote, prefix);
     op->waitForFinished();
     close();
     return b;
@@ -502,6 +502,7 @@ bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QDateTime expiresDT = in.value("expiration_dt").toDateTime().toUTC();
     quint8 count = in.value("count").toUInt();
+    TServiceList services = in.value("services").value<TServiceList>();
     log("Generate invites request (" + QString::number(count) + ")");
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
@@ -510,7 +511,7 @@ bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
     if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     TInviteInfoList invites;
-    TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, invites);
+    TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, services, invites);
     if (!r)
         return sendReply(op, r);
     QVariantMap out;

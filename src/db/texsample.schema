@@ -11,7 +11,7 @@ CREATE TABLE IF NOT EXISTS sample_types (
 CREATE TABLE IF NOT EXISTS sample_ratings (
   rating            INTEGER UNIQUE NOT NULL
 );
-CREATE TABLE IF NOT EXISTS sample_states (
+CREATE TABLE IF NOT EXISTS states (
   state             INTEGER UNIQUE NOT NULL
 );
 /*Main tables*/
@@ -22,11 +22,13 @@ CREATE TABLE IF NOT EXISTS users (
   password          BLOB NOT NULL,
   access_level      INTEGER NOT NULL REFERENCES access_levels(level) ON DELETE RESTRICT ON UPDATE RESTRICT,
   real_name         TEXT,
+  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
   creation_dt       INTEGER NOT NULL,
-  update_dt         INTEGER NOT NULL
+  update_dt         INTEGER NOT NULL,
+  deletion_dt       INTEGER
 );
 CREATE TABLE IF NOT EXISTS user_services (
-  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
   service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 CREATE TABLE IF NOT EXISTS samples (
@@ -40,11 +42,15 @@ CREATE TABLE IF NOT EXISTS samples (
   comment           TEXT,
   admin_remark      TEXT,
   rating            INTEGER NOT NULL DEFAULT 0 REFERENCES sample_ratings(rating) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  state             INTEGER NOT NULL DEFAULT 0 REFERENCES sample_states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
   deletion_reason   TEXT,
   creation_dt       INTEGER NOT NULL,
   update_dt         INTEGER NOT NULL,
   deletion_dt       INTEGER
+);
+CREATE TABLE IF NOT EXISTS new_user_services (
+  invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 CREATE TABLE IF NOT EXISTS invite_codes (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
@@ -174,8 +180,8 @@ INSERT OR IGNORE INTO sample_ratings (rating) VALUES (98);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (99);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (100);
 
-INSERT OR IGNORE INTO sample_states (state) VALUES (0);     --NormalState
-INSERT OR IGNORE INTO sample_states (state) VALUES (1);     --DeletedState
+INSERT OR IGNORE INTO states (state) VALUES (0);            --NormalState
+INSERT OR IGNORE INTO states (state) VALUES (1);            --DeletedState
 
 INSERT OR IGNORE INTO services (id) VALUES (0);             --NoService
 INSERT OR IGNORE INTO services (id) VALUES (1);             --TexsampleService
