@@ -6,7 +6,7 @@ Homepage: https://github.com/TeXSample-Team/TeXSample-Server
 
 Author: TeXSample Team
 
-License: GNU LGPL (see COPYING.txt)
+License: GNU GPLv3 (see COPYING.txt)
 
 TeXSample Server is a server application for the TeXSample service.
 
