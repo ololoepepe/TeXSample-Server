@@ -2,7 +2,7 @@
 #include "global.h"
 #include "storage.h"
 #include "terminaliohandler.h"
-#include "translator.h"
+#include "server.h"
 
 #include <TAccessLevel>
 #include <TUserInfo>
@@ -14,6 +14,7 @@
 #include <TCompiledProject>
 #include <TCompilationResult>
 #include <TInviteInfo>
+#include <TMessage>
 
 #include <BNetworkConnection>
 #include <BNetworkServer>
@@ -52,17 +53,18 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     BNetworkConnection(server, socket)
 {
     mstorage = new Storage;
+    muserId = 0;
+    msubscribed = false;
     if (!mstorage->isValid())
     {
-        QString msg = Global::string(Global::StorageError);
+        QString msg = tr("Invalid storage instance");
         logLocal(msg);
         logRemote(msg);
         close();
+        return;
     }
-    setCriticalBufferSize(BeQt::Kilobyte);
+    setCriticalBufferSize(2 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
-    muserId = 0;
-    msubscribed = false;
     mtimer.setInterval(5 * BeQt::Minute);
     connect(&mtimer, SIGNAL(timeout()), this, SLOT(keepAlive()));
     connect(this, SIGNAL(requestSent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
@@ -70,6 +72,11 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(replySent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    installRequestHandler(Texsample::RegisterRequest, (InternalHandler) &Connection::handleRegisterRequest);
+    installRequestHandler(Texsample::GetRecoveryCodeRequest,
+                          (InternalHandler) &Connection::handleGetRecoveryCodeRequest);
+    installRequestHandler(Texsample::RecoverAccountRequest,
+                          (InternalHandler) &Connection::handleRecoverAccountRequest);
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
@@ -92,9 +99,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler(Texsample::CompileProjectRequest,
                           (InternalHandler) &Connection::handleCompileProjectRequest);
     installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
-    installRequestHandler(Texsample::ExecuteCommandRequest,
-                          (InternalHandler) &Connection::handleExecuteCommandRequest);
-    installRequestHandler("change_locale", (InternalHandler) &Connection::handleChangeLocale);
+    installRequestHandler(Texsample::ChangeLocaleRequest, (InternalHandler) &Connection::handleChangeLocale);
     QTimer::singleShot(15 * BeQt::Second, this, SLOT(testAuthorization()));
     mconnectedAt = QDateTime::currentDateTimeUtc();
     muptimeTimer.start();
@@ -114,16 +119,11 @@ void Connection::sendLogRequest(const QString &text, BLogger::Level lvl)
     QMetaObject::invokeMethod(this, "sendLogRequestInternal", ct, Q_ARG(QString, text), Q_ARG(int, lvl));
 }
 
-void Connection::sendWriteRequest(const QString &text)
+void Connection::sendMessageRequest(const TMessage &msg)
 {
     Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection :
                                                                      Qt::BlockingQueuedConnection;
-    QMetaObject::invokeMethod(this, "sendWriteRequestInternal", ct, Q_ARG(QString, text));
-}
-
-QString Connection::translate(const char *context, const char *sourceText, const char *disambiguation, int n)
-{
-    return mtranslator.translate(context, sourceText, disambiguation, n);
+    QMetaObject::invokeMethod(this, "sendMessageRequestInternal", ct, Q_ARG(int, msg));
 }
 
 QString Connection::login() const
@@ -143,13 +143,8 @@ QString Connection::infoString(const QString &format) const
         return "";
     QString f = format;
     if (f.isEmpty())
-    {
-        if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
-            f = "[%u] [%p] %i\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q";
-        else
-            f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
-    }
-    f.replace("%l", mtranslator.locale().name());
+        f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+    f.replace("%l", mlocale.name());
     QString s = mclientInfo.toString(f);
     s.replace("%d", QString::number(muserId));
     s.replace("%u", mlogin);
@@ -184,294 +179,381 @@ void Connection::log(const QString &text, BLogger::Level lvl)
 
 void Connection::logLocal(const QString &text, BLogger::Level lvl)
 {
-    QString msg = (muserId ? ("[" + mlogin + "] ") : QString()) + text;
-    BNetworkConnection::log(msg, lvl);
+    BNetworkConnection::log((muserId ? ("[" + mlogin + "] ") : QString()) + text, lvl);
 }
 
 void Connection::logRemote(const QString &text, BLogger::Level lvl)
 {
     QString msg = (muserId ? ("[" + mlogin + "] ") : QString()) + text;
-    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
+    Server::sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
 }
 
 /*============================== Private methods ===========================*/
 
-void Connection::handleAuthorizeRequest(BNetworkOperation *op)
+bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
-    if (muserId)
-        return Global::sendReply(op, TOperationResult(true));
+    QVariantMap in = op->variantData().toMap();
+    TUserInfo info = in.value("user_info").value<TUserInfo>();
+    QLocale l = in.value("locale").toLocale();
+    QString prefix = "<" + info.login() + "> ";
+    log(prefix + "Register request");
+    bool b = sendReply(op, mstorage->registerUser(info, l), LocalAndRemote, prefix);
+    op->waitForFinished();
+    close();
+    return b;
+}
+
+bool Connection::handleGetRecoveryCodeRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    QLocale l = in.value("locale").toLocale();
+    QString prefix = "<" + email + "> ";
+    log(prefix + "Get recovery code request");
+    bool b = sendReply(op, mstorage->getRecoveryCode(email, l), LocalAndRemote, prefix);
+    op->waitForFinished();
+    close();
+    return b;
+}
+
+bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    QString code = in.value("recovery_code").toString();
+    QByteArray password = in.value("password").toByteArray();
+    QLocale l = in.value("locale").toLocale();
+    QString prefix = "<" + email + "> ";
+    log(prefix + "Recover account request");
+    bool b = sendReply(op, mstorage->recoverAccount(email, code, password, l), LocalAndRemote, prefix);
+    op->waitForFinished();
+    close();
+    return b;
+}
+
+bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
+{
     QVariantMap in = op->variantData().toMap();
     QString login = in.value("login").toString();
     QByteArray password = in.value("password").toByteArray();
-    log("Authorize request: " + login);
-    if (login.isEmpty() || password.isEmpty())
-        return Global::sendReply(op, Global::result(Global::InvalidParameters, &mtranslator));
+    TClientInfo info = in.value("client_info").value<TClientInfo>();
+    QString prefix = "<" + login + "> ";
+    log(prefix + "Authorize request");
+    if (muserId)
+        return sendReply(op, TMessage::AlreadyAuthorizedMessage, true, LocalAndRemote, prefix);
+    if (login.isEmpty())
+        return sendReply(op, TMessage::InvalidLoginError, LocalAndRemote, prefix);
+    if (password.isEmpty())
+        return sendReply(op, TMessage::InvalidPasswordError, LocalAndRemote, prefix);
     quint64 id = mstorage->userId(login, password);
     if (!id)
-        return Global::sendReply(op, Global::result(Global::NoSuchUser, &mtranslator));
+        return sendReply(op, TMessage::NoSuchUserError, LocalAndRemote, prefix);
+    if (!info.isValid())
+        log(prefix + "Warning: invalid client info");
     mlogin = login;
-    mclientInfo = in.value("client_info").value<TClientInfo>();
+    mclientInfo = info;
+    mlocale = mclientInfo.locale();
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
     if (maccessLevel >= TAccessLevel::AdminLevel)
         msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
-    QString f = "Authorized\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
-    if (TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") >= 0)
-    {
-        f += "%l\nClient: %c";
-        mtranslator.setLocale(mclientInfo.locale());
-        mstorage->setTranslator(&mtranslator);
-    }
-    else
-    {
-        f += "Unknown\nClient: Unknown";
-    }
-    f += "\nClient version: %v\nTeXSample version: %t\nBeQt version: %b\nQt version: %q";
-    log(infoString(f));
+    QString f = "Client info:\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
+    f += "%l\nClient: %c\nClient version: %v\nTeXSample version: %t\nBeQt version: %b\nQt version: %q";
+    if (info.isValid())
+        log(infoString(f));
     QVariantMap out;
     out.insert("user_id", id);
     out.insert("access_level", maccessLevel);
-    Global::sendReply(op, out, TOperationResult(true));
     restartTimer();
+    return sendReply(op, out);
 }
 
-void Connection::handleAddUserRequest(BNetworkOperation *op)
+bool Connection::handleAddUserRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log("Add user request: " + info.login());
-    if (!info.isValid(TUserInfo::AddContext))
-        return Global::sendReply(op, Global::result(Global::InvalidParameters, &mtranslator));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
-    Global::sendReply(op, mstorage->addUser(info, &mtranslator));
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (maccessLevel < TAccessLevel::RootLevel && info.accessLevel() >= TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    foreach (const TService &s, info.services())
+        if (!mstorage->userHasAccessTo(muserId, s))
+            return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->addUser(info, mlocale));
 }
 
-void Connection::handleEditUserRequest(BNetworkOperation *op)
+bool Connection::handleEditUserRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log("Edit user request: " + info.idString());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (info.id() == muserId)
+        return sendReply(op, TMessage::CantEditSelfError);
     if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
-    if (maccessLevel >= TAccessLevel::AdminLevel)
-        info.setAccessLevel(maccessLevel);
-    Global::sendReply(op, mstorage->editUser(info));
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TAccessLevel ualvl = mstorage->userAccessLevel(info.id());
+    if (ualvl >= TAccessLevel::RootLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (maccessLevel < TAccessLevel::RootLevel && ualvl >= TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    foreach (const TService &s, info.services())
+        if (!mstorage->userHasAccessTo(muserId, s))
+            return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->editUser(info));
 }
 
-void Connection::handleUpdateAccountRequest(BNetworkOperation *op)
+bool Connection::handleUpdateAccountRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     log("Update account request");
-    if (!info.isValid(TUserInfo::UpdateContext))
-        return Global::sendReply(op, Global::result(Global::InvalidParameters, &mtranslator));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
     if (info.id() != muserId)
-        return Global::sendReply(op, Global::result(Global::NotYourAccount, &mtranslator));
-    info.setContext(TUserInfo::EditContext);
-    info.setAccessLevel(maccessLevel);
-    Global::sendReply(op, mstorage->editUser(info));
+        return sendReply(op, TMessage::NotOwnAccountError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->updateUser(info));
 }
 
-void Connection::handleGetUserInfoRequest(BNetworkOperation *op)
+bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("user_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log("Get user info request: " + QString::number(id));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TUserInfo info;
     bool cacheOk = false;
     TOperationResult r = mstorage->getUserInfo(id, info, updateDT, cacheOk);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (cacheOk)
         out.insert("cache_ok", true);
     else
         out.insert("user_info", info);
-    Global::sendReply(op, out, r);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleAddSampleRequest(BNetworkOperation *op)
+bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TProject project = in.value("project").value<TProject>();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    log("Add sample request");
-    Global::sendReply(op, "compilation_result", mstorage->addSample(muserId, project, info));
+    log("Add sample request: " + info.title());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->addSample(muserId, project, info));
 }
 
-void Connection::handleEditSampleRequest(BNetworkOperation *op)
+bool Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
     log("Edit sample request: " + info.idString());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
-    Global::sendReply(op, "compilation_result", mstorage->editSample(info, project));
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->editSample(info, project));
 }
 
-void Connection::handleUpdateSampleRequest(BNetworkOperation *op)
+bool Connection::handleUpdateSampleRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     TProject project = in.value("project").value<TProject>();
     log("Update sample request: " + info.idString());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
     quint64 sId = mstorage->senderId(info.id());
     if (sId != muserId)
-        return Global::sendReply(op, Global::result(Global::NotYourSample, &mtranslator));
+        return sendReply(op, TMessage::NotOwnSampleError);
     if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
-        return Global::sendReply(op, Global::result(Global::NotModifiableSample, &mtranslator));
-    Global::sendReply(op, "compilation_result", mstorage->editSample(info, project));
+        return sendReply(op, TMessage::NotModifiableSampleError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->editSample(info, project));
 }
 
-void Connection::handleDeleteSampleRequest(BNetworkOperation *op)
+bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QString reason = in.value("reason").toString();
-    log("Delete sample request: " + QString::number(id));
+    log("Delete sample request: " + QString::number(id) + (!reason.isEmpty() ? (" (" + reason + ")") : QString()));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
     quint64 sId = mstorage->senderId(id);
-    if (sId != muserId && maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotYourSample, &mtranslator));
-    Global::sendReply(op, mstorage->deleteSample(id, reason));
+    if (maccessLevel < TAccessLevel::AdminLevel)
+    {
+        if (sId != muserId)
+            return sendReply(op, TMessage::NotEnoughRightsError);
+        else if (mstorage->sampleType(id) == TSampleInfo::Approved)
+            return sendReply(op, TMessage::NotModifiableSampleError);
+    }
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->deleteSample(id, reason));
 }
 
-void Connection::handleGetSamplesListRequest(BNetworkOperation *op)
+bool Connection::handleGetSamplesListRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log("Get samples list request");
-    TSampleInfo::SamplesList newSamples;
-    Texsample::IdList deletedSamples;
-    bool oldHack = TClientInfo::compareVersions(mclientInfo.texsampleVersion(), "0.2.0") < 0;
-    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT, oldHack);
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TSampleInfoList newSamples;
+    TIdList deletedSamples;
+    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (!newSamples.isEmpty())
-        out.insert("new_sample_infos", QVariant::fromValue(newSamples));
+        out.insert("new_sample_infos", newSamples);
     if (!deletedSamples.isEmpty())
-        out.insert("deleted_sample_infos", QVariant::fromValue(deletedSamples));
-    Global::sendReply(op, out, r);
+        out.insert("deleted_sample_infos", deletedSamples);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
+bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log("Get sample source request: " + QString::number(id));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TProject project;
     bool cacheOk = false;
     TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (cacheOk)
         out.insert("cache_ok", true);
     else
         out.insert("project", project);
-    Global::sendReply(op, out, r);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
+bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("sample_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     log("Get sample preview request: " + QString::number(id));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     TProjectFile file;
     bool cacheOk = false;
     TOperationResult r = mstorage->getSamplePreview(id, file, updateDT, cacheOk);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (cacheOk)
         out.insert("cache_ok", true);
     else
         out.insert("project_file", file);
-    Global::sendReply(op, out, r);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
+bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
     QVariantMap in = op->variantData().toMap();
     QDateTime expiresDT = in.value("expiration_dt").toDateTime().toUTC();
     quint8 count = in.value("count").toUInt();
+    TServiceList services = in.value("services").value<TServiceList>();
     log("Generate invites request (" + QString::number(count) + ")");
-    TInviteInfo::InvitesList invites;
-    TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, invites);
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TInviteInfoList invites;
+    TOperationResult r = mstorage->generateInvites(muserId, expiresDT, count, services, invites);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
-    out.insert("invite_infos", QVariant::fromValue(invites));
-    Global::sendReply(op, out, r);
+    out.insert("invite_infos", invites);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleGetInvitesListRequest(BNetworkOperation *op)
+bool Connection::handleGetInvitesListRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
     log("Get invites list request");
-    TInviteInfo::InvitesList invites;
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TInviteInfoList invites;
     TOperationResult r = mstorage->getInvitesList(muserId, invites);
     if (!r)
-        Global::sendReply(op, r);
+        return sendReply(op, r);
     QVariantMap out;
-    out.insert("invite_infos", QVariant::fromValue(invites));
-    Global::sendReply(op, out, r);
+    out.insert("invite_infos", invites);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleCompileProjectRequest(BNetworkOperation *op)
+bool Connection::handleCompileProjectRequest(BNetworkOperation *op)
 {
+    log("Compile request");
     if (!muserId)
-        return Global::sendReply(op, "compilation_result",
-                                 Global::compilationResult(Global::NotAuthorized, &mtranslator));
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
     Global::CompileParameters p;
     QVariantMap in = op->variantData().toMap();
     p.project = in.value("project").value<TProject>();
     p.param = in.value("parameters").value<TCompilerParameters>();
-    log("Compile request");
     p.path = QDir::tempPath() + "/texsample-server/compiler/" + BeQt::pureUuidText(uniqueId());
     p.compiledProject = new TCompiledProject;
     p.makeindexResult = p.param.makeindexEnabled() ? new TCompilationResult : 0;
     p.dvipsResult = p.param.dvipsEnabled() ? new TCompilationResult : 0;
-    TCompilationResult r = Global::compileProject(p, &mtranslator);
+    TCompilationResult r = Global::compileProject(p);
     QVariantMap out;
     if (p.makeindexResult)
         out.insert("makeindex_result", *p.makeindexResult);
@@ -479,45 +561,116 @@ void Connection::handleCompileProjectRequest(BNetworkOperation *op)
         out.insert("dvips_result", *p.dvipsResult);
     if (r)
         out.insert("compiled_project", *p.compiledProject);
-    Global::sendReply(op, out, "compilation_result", r);
+    return sendReply(op, out, r);
 }
 
-void Connection::handleSubscribeRequest(BNetworkOperation *op)
+bool Connection::handleSubscribeRequest(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
-    if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
-    msubscribed = op->variantData().toMap().value("subscription").toBool();
+    bool b = op->variantData().toMap().value("subscription").toBool();
     log("Subscribe resuest: " + QString(msubscribed ? "true" : "false"));
-    Global::sendReply(op, TOperationResult(true));
-}
-
-void Connection::handleExecuteCommandRequest(BNetworkOperation *op)
-{
     if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
+        return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::AdminLevel)
-        return Global::sendReply(op, Global::result(Global::NotEnoughRights, &mtranslator));
-    QVariantMap in = op->variantData().toMap();
-    QString command = in.value("command").toString();
-    QStringList args = in.value("arguments").toStringList();
-    logLocal("Execute command request: " + command + (!args.isEmpty() ? " " : "") + args.join(" "));
-    if (command.isEmpty())
-        return Global::sendReply(op, Global::result(Global::InvalidParameters, &mtranslator));
-    TerminalIOHandler::executeCommand(command, args, this);
-    Global::sendReply(op, TOperationResult(true));
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    msubscribed = b;
+    return sendReply(op);
 }
 
-void Connection::handleChangeLocale(BNetworkOperation *op)
+bool Connection::handleChangeLocale(BNetworkOperation *op)
 {
-    if (!muserId)
-        return Global::sendReply(op, Global::result(Global::NotAuthorized, &mtranslator));
     QVariantMap in = op->variantData().toMap();
-    QLocale l = in.value("locale").toLocale();
+    QLocale l= in.value("locale").toLocale();
     logLocal("Change locale request: " + l.name());
-    mtranslator.setLocale(l);
-    Global::sendReply(op, TOperationResult(true));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    mlocale = l;
+    sendReply(op, TOperationResult(true));
+    return true;
+}
+
+bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt,
+                           const QString &prefix)
+{
+    out.insert("operation_result", r);
+    op->reply(out);
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    switch (lt)
+    {
+    case LocalAndRemote:
+        log(s);
+        break;
+    case LocalOnly:
+        logLocal(s);
+        break;
+    case RemoteOnly:
+        logRemote(s);
+        break;
+    case NoTarget:
+    default:
+        break;
+    }
+    return r;
+}
+
+bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt,
+                           const QString &prefix)
+{
+    out.insert("compilation_result", r);
+    op->reply(out);
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    switch (lt)
+    {
+    case LocalAndRemote:
+        log(s);
+        break;
+    case LocalOnly:
+        logLocal(s);
+        break;
+    case RemoteOnly:
+        logRemote(s);
+        break;
+    case NoTarget:
+    default:
+        break;
+    }
+    return r;
+}
+
+bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, int msg, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, out, TOperationResult(msg), lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, const TOperationResult &r, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, QVariantMap(), r, lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, const TCompilationResult &r, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, QVariantMap(), r, lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, int msg, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, TOperationResult(msg), lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, int msg, bool success, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, TOperationResult(success, msg), lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, out, TOperationResult(true), lt, prefix);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, LogTarget lt, const QString &prefix)
+{
+    return sendReply(op, QVariantMap(), TOperationResult(true), lt, prefix);
 }
 
 /*============================== Private slots =============================*/
@@ -549,7 +702,7 @@ void Connection::keepAlive()
         logLocal(s);
     else if (l > 1)
         log(s);
-    BNetworkOperation *op = sendRequest(NoopRequest);
+    BNetworkOperation *op = sendRequest(operation(NoopOperation));
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b)
     {
@@ -566,16 +719,20 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
     if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
         return;
     QVariantMap out;
-    out.insert("log_text", text);
+    out.insert("text", text);
     out.insert("level", lvl);
-    sendRequest(Texsample::LogRequest, out);
+    BNetworkOperation *op = sendRequest(Texsample::LogRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
 }
 
-void Connection::sendWriteRequestInternal(const QString &text)
+void Connection::sendMessageRequestInternal(int msg)
 {
-    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+    if (!muserId || !msubscribed || msg < 0 || !isConnected())
         return;
     QVariantMap out;
-    out.insert("text", text);
-    sendRequest(Texsample::WriteRequest, out);
+    out.insert("message", TMessage(msg));
+    BNetworkOperation *op = sendRequest(Texsample::MessageRequest, out);
+    op->waitForFinished();
+    op->deleteLater();
 }

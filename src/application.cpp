@@ -1,5 +1,7 @@
 #include "application.h"
 #include "storage.h"
+#include "server.h"
+#include "connection.h"
 
 #include <TInviteInfo>
 
@@ -14,17 +16,26 @@
 ================================ Application =================================
 ============================================================================*/
 
+/*============================== Static public methods =====================*/
+
+Server *Application::server()
+{
+    return bApp ? bApp->mserver : 0;
+}
+
 /*============================== Public constructors =======================*/
 
 Application::Application() :
     BCoreApplication()
 {
     mstorage = 0;
+    mserver = new Server(this);
 }
 
 Application::~Application()
 {
     delete mstorage;
+    delete mserver;
 }
 
 /*============================== Public methods ============================*/
@@ -42,13 +53,13 @@ void Application::scheduleInvitesAutoTest(const TInviteInfo &info)
     QTimer::singleShot(msecs, this, SLOT(invitesTestTimeout()));
 }
 
-void Application::scheduleRecoveryCodesAutoTest(const QDateTime &expiresDT)
+void Application::scheduleRecoveryCodesAutoTest(const QDateTime &expirationDT)
 {
     static QMutex mutex;
     QMutexLocker locker(&mutex);
     if (!mstorage)
         mstorage = new Storage;
-    int msecs = expiresDT.toMSecsSinceEpoch() - QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
+    int msecs = expirationDT.toMSecsSinceEpoch() - QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
     msecs *= 1.1;
     QTimer::singleShot(msecs, this, SLOT(recoveryCodesTestTimeout()));
 }

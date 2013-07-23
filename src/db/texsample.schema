@@ -1,49 +1,187 @@
-CREATE TABLE IF NOT EXISTS users(
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  email         TEXT UNIQUE NOT NULL DEFAULT 'user@mail.com',
-  login         TEXT UNIQUE NOT NULL DEFAULT 'user',
-  password      BLOB NOT NULL DEFAULT 'password',
-  access_level  INTEGER NOT NULL DEFAULT 0,
-  real_name     TEXT,
-  created_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  modified_dt   INTEGER NOT NULL DEFAULT 9999999999999
+/*Auxiliary tables*/
+CREATE TABLE IF NOT EXISTS access_levels (
+  level             INTEGER UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS services (
+  id                INTEGER UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sample_types (
+  type              INTEGER UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS sample_ratings (
+  rating            INTEGER UNIQUE NOT NULL
+);
+CREATE TABLE IF NOT EXISTS states (
+  state             INTEGER UNIQUE NOT NULL
+);
+/*Main tables*/
+CREATE TABLE IF NOT EXISTS users (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  email             TEXT UNIQUE NOT NULL,
+  login             TEXT UNIQUE NOT NULL,
+  password          BLOB NOT NULL,
+  access_level      INTEGER NOT NULL REFERENCES access_levels(level) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  real_name         TEXT,
+  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  creation_dt       INTEGER NOT NULL,
+  update_dt         INTEGER NOT NULL,
+  deletion_dt       INTEGER
+);
+CREATE TABLE IF NOT EXISTS user_services (
+  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
 CREATE TABLE IF NOT EXISTS samples (
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  sender_id     INTEGER NOT NULL DEFAULT 0,
-  title         TEXT NOT NULL DEFAULT 'Sample',
-  file_name     TEXT NOT NULL DEFAULT 'sample.tex',
-  authors       TEXT,
-  type          INTEGER NOT NULL DEFAULT 0,
-  tags          TEXT,
-  comment       TEXT,
-  admin_remark  TEXT,
-  rating        INTEGER NOT NULL DEFAULT 0,
-  created_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  modified_dt   INTEGER NOT NULL DEFAULT 9999999999999,
-  FOREIGN KEY(sender_id) REFERENCES users(id)
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  title             TEXT NOT NULL,
+  file_name         TEXT NOT NULL,
+  authors           BLOB,
+  type              INTEGER NOT NULL DEFAULT 0 REFERENCES sample_types(type) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  tags              BLOB,
+  comment           TEXT,
+  admin_remark      TEXT,
+  rating            INTEGER NOT NULL DEFAULT 0 REFERENCES sample_ratings(rating) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  deletion_reason   TEXT,
+  creation_dt       INTEGER NOT NULL,
+  update_dt         INTEGER NOT NULL,
+  deletion_dt       INTEGER
 );
-CREATE TABLE IF NOT EXISTS deleted_samples(
-  id            INTEGER UNIQUE,
-  sender_id     INTEGER NOT NULL DEFAULT 0,
-  reason        TEXT,
-  created_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  deleted_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  FOREIGN KEY(sender_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS new_user_services (
+  invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
-CREATE TABLE IF NOT EXISTS invites(
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  uuid          TEXT UNIQUE NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000',
-  creator_id    INTEGER NOT NULL DEFAULT 0,
-  created_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  expires_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  FOREIGN KEY(creator_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS invite_codes (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  code              TEXT UNIQUE NOT NULL,
+  creator_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  creation_dt       INTEGER NOT NULL,
+  expiration_dt     INTEGER NOT NULL
 );
-CREATE TABLE IF NOT EXISTS recovery_codes(
-  id            INTEGER PRIMARY KEY AUTOINCREMENT,
-  uuid          TEXT UNIQUE NOT NULL DEFAULT '00000000-0000-0000-0000-000000000000',
-  user_id       INTEGER NOT NULL DEFAULT 0,
-  created_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  expires_dt    INTEGER NOT NULL DEFAULT 9999999999999,
-  FOREIGN KEY(user_id) REFERENCES users(id)
+CREATE TABLE IF NOT EXISTS recovery_codes (
+  id                INTEGER PRIMARY KEY AUTOINCREMENT,
+  code              TEXT UNIQUE NOT NULL,
+  requester_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
+  creation_dt       INTEGER NOT NULL,
+  expiration_dt     INTEGER NOT NULL
 );
+
+/*Filling auxiliary tables*/
+INSERT OR IGNORE INTO access_levels (level) VALUES (0);     --NoLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (10);    --UserLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (100);   --ModeratorLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (1000);  --AdminLevel
+INSERT OR IGNORE INTO access_levels (level) VALUES (10000); --RootLevel
+
+INSERT OR IGNORE INTO sample_types (type) VALUES (0);       --Unverified
+INSERT OR IGNORE INTO sample_types (type) VALUES (10);      --Approved
+INSERT OR IGNORE INTO sample_types (type) VALUES (100);     --Rejected
+
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (0);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (1);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (2);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (3);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (4);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (5);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (6);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (7);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (8);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (9);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (10);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (11);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (12);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (13);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (14);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (15);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (16);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (17);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (18);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (19);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (20);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (21);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (22);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (23);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (24);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (25);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (26);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (27);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (28);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (29);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (30);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (31);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (32);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (33);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (34);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (35);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (36);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (37);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (38);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (39);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (40);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (41);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (42);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (43);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (44);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (45);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (46);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (47);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (48);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (49);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (50);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (51);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (52);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (53);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (54);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (55);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (56);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (57);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (58);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (59);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (60);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (61);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (62);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (63);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (64);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (65);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (66);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (67);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (68);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (69);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (70);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (71);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (72);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (73);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (74);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (75);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (76);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (77);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (78);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (79);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (80);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (81);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (82);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (83);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (84);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (85);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (86);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (87);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (88);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (89);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (90);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (91);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (92);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (93);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (94);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (95);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (96);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (97);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (98);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (99);
+INSERT OR IGNORE INTO sample_ratings (rating) VALUES (100);
+
+INSERT OR IGNORE INTO states (state) VALUES (0);            --NormalState
+INSERT OR IGNORE INTO states (state) VALUES (1);            --DeletedState
+
+INSERT OR IGNORE INTO services (id) VALUES (0);             --NoService
+INSERT OR IGNORE INTO services (id) VALUES (1);             --TexsampleService

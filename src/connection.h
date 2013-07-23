@@ -4,6 +4,8 @@
 class Storage;
 
 class TOperationResult;
+class TMessage;
+class TCompilationResult;
 
 class BNetworkServer;
 class BGenericSocket;
@@ -12,8 +14,6 @@ class BNetworkOperation;
 class QSqlDatabase;
 class QUuid;
 class QByteArray;
-
-#include "translator.h"
 
 #include <TClientInfo>
 #include <TAccessLevel>
@@ -30,6 +30,7 @@ class QByteArray;
 #include <QTimer>
 #include <QElapsedTimer>
 #include <QDateTime>
+#include <QLocale>
 
 /*============================================================================
 ================================ Connection ==================================
@@ -43,8 +44,7 @@ public:
     ~Connection();
 public:
     void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
-    void sendWriteRequest(const QString &text);
-    QString translate(const char *context, const char *sourceText, const char *disambiguation = 0, int n = -1);
+    void sendMessageRequest(const TMessage &msg);
     QString login() const;
     TClientInfo clientInfo() const;
     QString infoString(const QString &format = "") const;
@@ -58,37 +58,63 @@ protected:
     void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logRemote(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
-    void handleAuthorizeRequest(BNetworkOperation *op);
-    void handleAddUserRequest(BNetworkOperation *op);
-    void handleEditUserRequest(BNetworkOperation *op);
-    void handleUpdateAccountRequest(BNetworkOperation *op);
-    void handleGetUserInfoRequest(BNetworkOperation *op);
-    void handleAddSampleRequest(BNetworkOperation *op);
-    void handleEditSampleRequest(BNetworkOperation *op);
-    void handleUpdateSampleRequest(BNetworkOperation *op);
-    void handleDeleteSampleRequest(BNetworkOperation *op);
-    void handleGetSamplesListRequest(BNetworkOperation *op);
-    void handleGetSampleSourceRequest(BNetworkOperation *op);
-    void handleGetSamplePreviewRequest(BNetworkOperation *op);
-    void handleGenerateInvitesRequest(BNetworkOperation *op);
-    void handleGetInvitesListRequest(BNetworkOperation *op);
-    void handleCompileProjectRequest(BNetworkOperation *op);
-    void handleSubscribeRequest(BNetworkOperation *op);
-    void handleExecuteCommandRequest(BNetworkOperation *op);
-    void handleChangeLocale(BNetworkOperation *op);
+    enum LogTarget
+    {
+        NoTarget = 0,
+        LocalOnly,
+        RemoteOnly,
+        LocalAndRemote
+    };
+private:
+    bool handleRegisterRequest(BNetworkOperation *op);
+    bool handleGetRecoveryCodeRequest(BNetworkOperation *op);
+    bool handleRecoverAccountRequest(BNetworkOperation *op);
+    bool handleAuthorizeRequest(BNetworkOperation *op);
+    bool handleAddUserRequest(BNetworkOperation *op);
+    bool handleEditUserRequest(BNetworkOperation *op);
+    bool handleUpdateAccountRequest(BNetworkOperation *op);
+    bool handleGetUserInfoRequest(BNetworkOperation *op);
+    bool handleAddSampleRequest(BNetworkOperation *op);
+    bool handleEditSampleRequest(BNetworkOperation *op);
+    bool handleUpdateSampleRequest(BNetworkOperation *op);
+    bool handleDeleteSampleRequest(BNetworkOperation *op);
+    bool handleGetSamplesListRequest(BNetworkOperation *op);
+    bool handleGetSampleSourceRequest(BNetworkOperation *op);
+    bool handleGetSamplePreviewRequest(BNetworkOperation *op);
+    bool handleGenerateInvitesRequest(BNetworkOperation *op);
+    bool handleGetInvitesListRequest(BNetworkOperation *op);
+    bool handleCompileProjectRequest(BNetworkOperation *op);
+    bool handleSubscribeRequest(BNetworkOperation *op);
+    bool handleChangeLocale(BNetworkOperation *op);
+    bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, int msg, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, const TOperationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, const TCompilationResult &r, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, int msg, LogTarget lt = LocalAndRemote, const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, int msg, bool success, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, QVariantMap out, LogTarget lt = LocalAndRemote,
+                   const QString &prefix = QString());
+    bool sendReply(BNetworkOperation *op, LogTarget lt = LocalAndRemote, const QString &prefix = QString());
 private slots:
     void testAuthorization();
     void restartTimer(BNetworkOperation *op = 0);
     void keepAlive();
     void sendLogRequestInternal(const QString &text, int lvl);
-    void sendWriteRequestInternal(const QString &text);
+    void sendMessageRequestInternal(int msg);
 private:
     Storage *mstorage;
-    Translator mtranslator;
     QString mlogin;
     quint64 muserId;
     TAccessLevel maccessLevel;
     TClientInfo mclientInfo;
+    QLocale mlocale;
     bool msubscribed;
     QTimer mtimer;
     QElapsedTimer muptimeTimer;

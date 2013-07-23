@@ -33,8 +33,7 @@ SOURCES += \
     main.cpp \
     server.cpp \
     storage.cpp \
-    terminaliohandler.cpp \
-    translator.cpp
+    terminaliohandler.cpp
 
 HEADERS += \
     application.h \
@@ -42,8 +41,7 @@ HEADERS += \
     global.h \
     server.h \
     storage.h \
-    terminaliohandler.h \
-    translator.h
+    terminaliohandler.h
 
 
 TRANSLATIONS += \

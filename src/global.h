@@ -1,58 +1,26 @@
 #ifndef GLOBAL_H
 #define GLOBAL_H
 
-class Storage;
-class Translator;
-
 class TOperationResult;
+class TMessage;
+
+class BSettingsNode;
+
+class QLocale;
+class QVariant;
 
 #include <TProject>
-#include <TCompiledProject>
 #include <TCompilerParameters>
 #include <TCompilationResult>
-
-#include <BNetworkOperation>
-#include <BNetworkConnection>
-#include <BTranslator>
+#include <TCompiledProject>
 
 #include <QString>
-#include <QStringList>
-#include <QVariantMap>
-
-#define DECLARE_TRANSLATE_FUNCTION \
-static QString translate(const char *context, const char *sourceText, BTranslator *translator) \
-{ \
-    return translate(context, sourceText, translator); \
-} \
-static QString translate(const char *context, const char *sourceText, const char *disambiguation, \
-                         BTranslator *translator) \
-{ \
-    return translator ? translator->translate(context, sourceText, disambiguation) : \
-                        QCoreApplication::translate(context, sourceText, disambiguation); \
-}
+#include <QMap>
 
 namespace Global
 {
 
-enum Message
-{
-    StorageError = 0,
-    DatabaseError,
-    QueryError,
-    FileSystemError,
-    InvalidParameters,
-    NotAuthorized,
-    NotEnoughRights,
-    NotYourAccount,
-    NotYourSample,
-    NotModifiableSample,
-    NoSuchUser,
-    NoSuchSample,
-    LoginOrEmailOccupied,
-    InvalidInvite,
-    ReadOnly,
-    NOMESSAGE
-};
+typedef QMap<QString, QString> StringMap;
 
 struct CompileParameters
 {
@@ -78,40 +46,16 @@ public:
 };
 
 bool readOnly();
-
-QString string(Message msg, Translator *t = 0);
-
-TOperationResult result(Message msg, Translator *t = 0);
-
-TCompilationResult compilationResult(Message msg, Translator *t = 0);
-
-TCompilationResult compileProject(const CompileParameters &p, Translator *t = 0);
-
-TOperationResult sendEmail(const QString &receiver, const QString &subject, const QString &body, Translator *t = 0);
-
-template<typename T> void sendReply(BNetworkOperation *op, QVariantMap out, const QString &key, const T &t)
-{
-    if (!op || !op->connection() || key.isEmpty())
-        return;
-    out.insert(key, t);
-    op->connection()->sendReply(op, out);
-}
-
-template<typename T> void sendReply(BNetworkOperation *op, const QString &key, const T &t)
-{
-    QVariantMap out;
-    sendReply(op, out, key, t);
-}
-
-template<typename T> void sendReply(BNetworkOperation *op, QVariantMap out, const T &t)
-{
-    sendReply(op, out, "operation_result", t);
-}
-
-template<typename T> void sendReply(BNetworkOperation *op, const T &t)
-{
-    sendReply(op, "operation_result", t);
-}
+bool noMail();
+bool initMail(QString *errs = 0);
+bool setMailPassword(const BSettingsNode *n, const QVariant &v = QVariant());
+bool showMailPassword(const BSettingsNode *n, const QVariant &);
+bool setLoggingMode(const BSettingsNode *n, const QVariant &v = QVariant());
+void resetLoggingMode();
+QString mailPassword();
+TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
+                           const StringMap &replace = StringMap());
+TCompilationResult compileProject(const CompileParameters &p);
 
 }
 

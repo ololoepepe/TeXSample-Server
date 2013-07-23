@@ -3,7 +3,6 @@
 #include "connection.h"
 #include "storage.h"
 #include "global.h"
-#include "translator.h"
 
 #include <TeXSample>
 #include <TOperationResult>
@@ -19,6 +18,8 @@
 #include <BLogger>
 #include <BCoreApplication>
 #include <BSpamNotifier>
+#include <BSettingsNode>
+#include <BTranslation>
 
 #include <QObject>
 #include <QString>
@@ -43,520 +44,14 @@
 #include <QDebug>
 
 /*============================================================================
-================================ SettingsItem ================================
-============================================================================*/
-
-class SettingsItem
-{
-public:
-    explicit SettingsItem();
-    explicit SettingsItem(const QString &key, QVariant::Type t = QVariant::String);
-    SettingsItem(const SettingsItem &other);
-public:
-    void setKey(const QString &key);
-    void setType(const QVariant::Type t);
-    void setProperty(const QString &name, const QVariant &value = QVariant());
-    void addChildItem(const SettingsItem &item);
-    void addChildItem(const QString &key, QVariant::Type t = QVariant::String);
-    void removeChildItem(const QString &key);
-    QString key() const;
-    QVariant::Type type() const;
-    QVariant property(const QString &name) const;
-    QList<SettingsItem> childItems() const;
-    SettingsItem testPath(const QString &path, const QChar &separator = '.') const;
-public:
-    SettingsItem &operator =(const SettingsItem &other);
-    bool operator ==(const SettingsItem &other) const;
-private:
-    QString mkey;
-    QVariant::Type mtype;
-    QVariantMap mproperties;
-    QList<SettingsItem> mchildren;
-};
-
-/*============================================================================
-================================ TranslateFunctor ============================
-============================================================================*/
-
-class TranslateFunctor
-{
-public:
-    explicit TranslateFunctor(Connection *c = 0);
-public:
-    void setConnection(Connection *c);
-public:
-    QString operator()(const char *context, const char *sourceText, const char *disambiguation = 0, int n = -1);
-private:
-    Connection *mconnection;
-};
-
-/*============================================================================
-================================ RegistrationConnection ======================
-============================================================================*/
-
-class RegistrationConnection : public BNetworkConnection
-{
-public:
-    explicit RegistrationConnection(BNetworkServer *server, BGenericSocket *socket);
-    ~RegistrationConnection();
-protected:
-    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
-private:
-    void handleRegisterRequest(BNetworkOperation *op);
-private:
-    Storage *mstorage;
-};
-
-/*============================================================================
-================================ RecoveryConnection ==========================
-============================================================================*/
-
-class RecoveryConnection : public BNetworkConnection
-{
-public:
-    explicit RecoveryConnection(BNetworkServer *server, BGenericSocket *socket);
-    ~RecoveryConnection();
-protected:
-    void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
-private:
-    void handleGetRecoveryCode(BNetworkOperation *op);
-    void handleRecoverAccount(BNetworkOperation *op);
-private:
-    Storage *mstorage;
-};
-
-/*============================================================================
-================================ RegistrationServer ==========================
-============================================================================*/
-
-class RegistrationServer : public BNetworkServer
-{
-public:
-    explicit RegistrationServer(QObject *parent = 0);
-protected:
-    BNetworkConnection *createConnection(BGenericSocket *socket);
-};
-
-/*============================================================================
-================================ RecoveryServer ==============================
-============================================================================*/
-
-class RecoveryServer : public BNetworkServer
-{
-public:
-    explicit RecoveryServer(QObject *parent = 0);
-protected:
-    BNetworkConnection *createConnection(BGenericSocket *socket);
-};
-
-/*============================================================================
-================================ SettingsItem ================================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-SettingsItem::SettingsItem()
-{
-    mtype = QVariant::Invalid;
-}
-
-SettingsItem::SettingsItem(const QString &key, QVariant::Type t)
-{
-    mkey = key;
-    mtype = t;
-}
-
-SettingsItem::SettingsItem(const SettingsItem &other)
-{
-    *this = other;
-}
-
-/*============================== Public methods ============================*/
-
-void SettingsItem::setKey(const QString &key)
-{
-    mkey = key;
-}
-
-void SettingsItem::setType(const QVariant::Type t)
-{
-    mtype = t;
-}
-
-void SettingsItem::setProperty(const QString &name, const QVariant &value)
-{
-    if (name.isEmpty())
-        return;
-    if (value.isValid())
-        mproperties[name] = value;
-    else
-        mproperties.remove(name);
-}
-
-void SettingsItem::addChildItem(const SettingsItem &item)
-{
-    if (item.key().isEmpty() || QVariant::Invalid == item.type() || mchildren.contains(item))
-        return;
-    mchildren << item;
-}
-
-void SettingsItem::addChildItem(const QString &key, QVariant::Type t)
-{
-    addChildItem(SettingsItem(key, t));
-}
-
-void SettingsItem::removeChildItem(const QString &key)
-{
-    if (key.isEmpty())
-        return;
-    mchildren.removeAll(SettingsItem(key));
-}
-
-QString SettingsItem::key() const
-{
-    return mkey;
-}
-
-QVariant::Type SettingsItem::type() const
-{
-    return mtype;
-}
-
-QVariant SettingsItem::property(const QString &name) const
-{
-    return mproperties.value(name);
-}
-
-QList<SettingsItem> SettingsItem::childItems() const
-{
-    return mchildren;
-}
-
-SettingsItem SettingsItem::testPath(const QString &path, const QChar &separator) const
-{
-    if (path.isEmpty())
-        return SettingsItem();
-    if (mkey.isEmpty())
-    {
-        foreach (const SettingsItem &i, mchildren)
-        {
-            SettingsItem si = i.testPath(path, separator);
-            if (QVariant::Invalid != si.type())
-                return si;
-        }
-    }
-    else
-    {
-        QStringList sl = path.split(!separator.isNull() ? separator : QChar('.'));
-        if (sl.takeFirst() != mkey)
-            return SettingsItem();
-        QString spath = sl.join(QString(separator));
-        if (spath.isEmpty())
-            return *this;
-        foreach (const SettingsItem &i, mchildren)
-        {
-            SettingsItem si = i.testPath(spath, separator);
-            if (QVariant::Invalid != si.type())
-                return si;
-        }
-    }
-    return SettingsItem();
-}
-
-/*============================== Public operators ==========================*/
-
-SettingsItem &SettingsItem::operator =(const SettingsItem &other)
-{
-    mkey = other.mkey;
-    mtype = other.mtype;
-    mproperties = other.mproperties;
-    mchildren = other.mchildren;
-    return *this;
-}
-
-bool SettingsItem::operator ==(const SettingsItem &other) const
-{
-    return mkey == other.mkey; //TODO
-}
-
-/*============================================================================
-================================ TranslateFunctor ============================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-TranslateFunctor::TranslateFunctor(Connection *c)
-{
-    mconnection = c;
-}
-
-/*============================== Public methods ============================*/
-
-void TranslateFunctor::setConnection(Connection *c)
-{
-    mconnection = c;
-}
-
-/*============================== Protected operators =======================*/
-
-QString TranslateFunctor::operator ()(const char *context, const char *sourceText, const char *disambiguation, int n)
-{
-    return mconnection ? mconnection->translate(context, sourceText, disambiguation, n) :
-                         BeQt::translate(context, sourceText, disambiguation, n);
-}
-
-/*============================================================================
-================================ RegistrationConnection ======================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-RegistrationConnection::RegistrationConnection(BNetworkServer *server, BGenericSocket *socket) :
-    BNetworkConnection(server, socket)
-{
-    mstorage = new Storage;
-    if (!mstorage->isValid())
-    {
-        log(Global::string(Global::StorageError));
-        close();
-    }
-    setCriticalBufferSize(2 * BeQt::Megabyte);
-    setCloseOnCriticalBufferSize(true);
-    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    installRequestHandler(Texsample::RegisterRequest,
-                          (InternalHandler) &RegistrationConnection::handleRegisterRequest);
-    QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
-}
-
-RegistrationConnection::~RegistrationConnection()
-{
-    delete mstorage;
-}
-
-/*============================== Protected methods =========================*/
-
-void RegistrationConnection::log(const QString &text, BLogger::Level lvl)
-{
-    BNetworkConnection::log(text, lvl);
-    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
-}
-
-/*============================== Private methods ===========================*/
-
-void RegistrationConnection::handleRegisterRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QUuid invite = BeQt::uuidFromText(in.value("invite").toString());
-    TUserInfo info = in.value("user_info").value<TUserInfo>();
-    Translator t(in.value("client_info").value<TClientInfo>().locale());
-    log("Register request: " + info.login());
-    if (invite.isNull() || !info.isValid(TUserInfo::RegisterContext))
-    {
-        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
-        op->waitForFinished();
-        return close();
-    }
-    info.setContext(TUserInfo::AddContext);
-    info.setAccessLevel(TAccessLevel::UserLevel);
-    quint64 id = mstorage->inviteId(invite);
-    if (!id)
-    {
-        Global::sendReply(op, Global::result(Global::InvalidInvite, &t));
-        op->waitForFinished();
-        return close();
-    }
-    Global::sendReply(op, mstorage->addUser(info, &t, invite));
-    op->waitForFinished();
-    close();
-}
-
-/*============================================================================
-================================ RecoveryConnection ==========================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-RecoveryConnection::RecoveryConnection(BNetworkServer *server, BGenericSocket *socket) :
-    BNetworkConnection(server, socket)
-{
-    mstorage = new Storage;
-    if (!mstorage->isValid())
-    {
-        log(Global::string(Global::StorageError));
-        close();
-    }
-    setCriticalBufferSize(BeQt::Megabyte + 500 * BeQt::Kilobyte);
-    setCloseOnCriticalBufferSize(true);
-    socket->tcpSocket()->setSocketOption(QTcpSocket::KeepAliveOption, 1);
-    installRequestHandler(Texsample::GetRecoveryCodeRequest,
-                          (InternalHandler) &RecoveryConnection::handleGetRecoveryCode);
-    installRequestHandler(Texsample::RecoverAccountRequest,
-                          (InternalHandler) &RecoveryConnection::handleRecoverAccount);
-    QTimer::singleShot(BeQt::Minute, this, SLOT(close()));
-}
-
-RecoveryConnection::~RecoveryConnection()
-{
-    delete mstorage;
-}
-
-/*============================== Protected methods =========================*/
-
-void RecoveryConnection::log(const QString &text, BLogger::Level lvl)
-{
-    BNetworkConnection::log(text, lvl);
-    TerminalIOHandler::sendLogRequest("[" + peerAddress() + "] " + text, lvl);
-}
-
-/*============================== Private methods ===========================*/
-
-void RecoveryConnection::handleGetRecoveryCode(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QString email = in.value("email").toString();
-    Translator t(in.value("client_info").value<TClientInfo>().locale());
-    if (email.isEmpty())
-    {
-        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
-        op->waitForFinished();
-        return close();
-    }
-    Global::sendReply(op, mstorage->getRecoveryCode(email, t));
-    op->waitForFinished();
-}
-
-void RecoveryConnection::handleRecoverAccount(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QString email = in.value("email").toString();
-    QUuid code = BeQt::uuidFromText(in.value("recovery_code").toString());
-    QByteArray password = in.value("password").toByteArray();
-    Translator t(in.value("client_info").value<TClientInfo>().locale());
-    if (email.isEmpty() || code.isNull() || password.isEmpty())
-    {
-        Global::sendReply(op, Global::result(Global::InvalidParameters, &t));
-        op->waitForFinished();
-        return close();
-    }
-    Global::sendReply(op, mstorage->recoverAccount(email, code, password, t));
-    op->waitForFinished();
-    close();
-}
-
-/*============================================================================
-================================ RegistrationServer ==========================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-RegistrationServer::RegistrationServer(QObject *parent) :
-    BNetworkServer(BGenericServer::TcpServer, parent)
-{
-    spamNotifier()->setCheckInterval(BeQt::Second);
-    spamNotifier()->setEventLimit(5);
-    spamNotifier()->setEnabled(true);
-}
-
-/*============================== Protected methods =========================*/
-
-BNetworkConnection *RegistrationServer::createConnection(BGenericSocket *socket)
-{
-    return new RegistrationConnection(this, socket);
-}
-
-/*============================================================================
-================================ RecoveryServer ==============================
-============================================================================*/
-
-/*============================== Public constructors =======================*/
-
-RecoveryServer::RecoveryServer(QObject *parent) :
-    BNetworkServer(BGenericServer::TcpServer, parent)
-{
-    spamNotifier()->setCheckInterval(BeQt::Second);
-    spamNotifier()->setEventLimit(5);
-    spamNotifier()->setEnabled(true);
-}
-
-/*============================== Protected methods =========================*/
-
-BNetworkConnection *RecoveryServer::createConnection(BGenericSocket *socket)
-{
-    return new RecoveryConnection(this, socket);
-}
-
-/*============================================================================
 ================================ TerminalIOHandler ===========================
 ============================================================================*/
 
 /*============================== Static public methods =====================*/
 
-void TerminalIOHandler::write(const QString &text, Connection *c)
-{
-    BTerminalIOHandler::write(text);
-    if (c)
-        c->sendWriteRequest(text);
-}
-
-void TerminalIOHandler::writeLine(const QString &text, Connection *c)
-{
-    write(text + "\n", c);
-}
-
-void TerminalIOHandler::writeLine(Connection *c)
-{
-    writeLine(QString(), c);
-}
-
-void TerminalIOHandler::sendLogRequest(const QString &text, BLogger::Level lvl)
-{
-    Server *s = TerminalIOHandler::server();
-    if (!s)
-        return;
-    s->lock();
-    foreach (BNetworkConnection *c, s->connections())
-    {
-        Connection *cc = static_cast<Connection *>(c);
-        cc->sendLogRequest(text, lvl);
-    }
-    s->unlock();
-}
-
-void TerminalIOHandler::executeCommand(const QString &cmd, const QStringList &args, Connection *c)
-{
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    TerminalIOHandler *inst = instance();
-    if (!inst)
-        return;
-    if (cmd == "quit" || cmd == "exit")
-        BeQt::handleQuit(cmd, args);
-    else if (cmd == "user")
-        inst->handleUserImplementation(cmd, args, c);
-    else if (cmd == "uptime")
-        inst->handleUptimeImplementation(cmd, args, c);
-    else if (cmd == "set")
-        inst->handleSetImplementation(cmd, args, c);
-    else if (cmd == "start")
-        inst->handleStartImplementation(cmd, args, c);
-    else if (cmd == "stop")
-        inst->handleStopImplementation(cmd, args, c);
-}
-
 TerminalIOHandler *TerminalIOHandler::instance()
 {
     return static_cast<TerminalIOHandler *>(BTerminalIOHandler::instance());
-}
-
-Server *TerminalIOHandler::server()
-{
-    TerminalIOHandler *inst = instance();
-    return inst ? inst->mserver : 0;
-}
-
-QString TerminalIOHandler::mailPassword()
-{
-    return mmailPassword;
 }
 
 /*============================== Public constructors =======================*/
@@ -564,17 +59,82 @@ QString TerminalIOHandler::mailPassword()
 TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     BTerminalIOHandler(parent)
 {
-    mserver = new Server(this);
-    mregistrationServer = new RegistrationServer(this);
-    mrecoveryServer = new RecoveryServer(this);
-    installHandler("quit", &BeQt::handleQuit);
-    installHandler("exit", &BeQt::handleQuit);
+    installHandler(QuitCommand);
+    installHandler(SetCommand);
+    installHandler(HelpCommand);
     installHandler("user", (InternalHandler) &TerminalIOHandler::handleUser);
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
-    installHandler("set", (InternalHandler) &TerminalIOHandler::handleSet);
     installHandler("start", (InternalHandler) &TerminalIOHandler::handleStart);
     installHandler("stop", (InternalHandler) &TerminalIOHandler::handleStop);
-    installHandler("help", (InternalHandler) &TerminalIOHandler::handleHelp);
+    BSettingsNode *root = new BSettingsNode;
+      BSettingsNode *n = new BSettingsNode("Mail", root);
+        BSettingsNode *nn = new BSettingsNode("server_address", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "E-mail server address used for e-mail delivery"));
+        nn = new BSettingsNode(QVariant::UInt, "server_port", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port"));
+        nn = new BSettingsNode("local_host_name", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Name of local host passed to the e-mail server"));
+        nn = new BSettingsNode("ssl_required", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Determines wether the e-mail server requires SSL connection"));
+        nn = new BSettingsNode("login", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode",
+                                                     "Identifier used to log into the e-mail server"));
+        nn = new BSettingsNode("password", n);
+          nn->setUserSetFunction(&Global::setMailPassword);
+          nn->setUserShowFunction(&Global::showMailPassword);
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server"));
+      createBeQtSettingsNode(root);
+      n = new BSettingsNode("Log", root);
+        nn = new BSettingsNode("mode", n);
+          nn->setUserSetFunction(&Global::setLoggingMode);
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Logging mode. Possible values:\n"
+                                                     "0 or less - don't log\n"
+                                                     "1 - log to console only\n"
+                                                     "2 - log to file only\n"
+                                                     "3 and more - log to console and file\n"
+                                                     "The default is 2"));
+        nn = new BSettingsNode("noop", n);
+          nn->setDescription(BTranslation::translate("BSettingsNode", "Logging the \"keep alive\" operations. "
+                                                     "Possible values:\n"
+                                                     "0 or less - don't log\n"
+                                                     "1 - log locally\n"
+                                                     "2 and more - log loaclly and remotely\n"
+                                                     "The default is 0"));
+    setRootSettingsNode(root);
+    setHelpDescription(BTranslation::translate("BTerminalIOHandler", "This is TeXSample Server.\n"
+                                               "Enter \"help --all\" to see full Help"));
+    CommandHelpList chl;
+    CommandHelp ch;
+    ch.usage = "uptime";
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+                                             "Show for how long the application has been running");
+    setCommandHelp("uptime", ch);
+    ch.usage = "user [--list]";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show connected user count or list them all");
+    chl << ch;
+    ch.usage = "user --connected-at|--info|--uptime <id|login>";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about the user.\n"
+                                             "The user may be specified by id or by login. Options:\n"
+                                             "  --connected-at - time when the user connected\n"
+                                             "  --info - detailed user information\n"
+                                             "  --uptime - for how long the user has been connected");
+    chl << ch;
+    ch.usage = "user --kick <id|login>";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Disconnect the specified user.\n"
+                                             "If login is specified, all connections of this user will be closed");
+    chl << ch;
+    setCommandHelp("user", chl);
+    ch.usage = "start [address]";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
+                                             "If address is specified, the server will only listen on that address,\n"
+                                             "otherwise it will listen on available all addresses.");
+    setCommandHelp("start", ch);
+    ch.usage = "stop";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
+    setCommandHelp("stop", ch);
     melapsedTimer.start();
 }
 
@@ -585,14 +145,15 @@ TerminalIOHandler::~TerminalIOHandler()
 
 /*============================== Protected methods =========================*/
 
-void TerminalIOHandler::handleCommand(const QString &, const QStringList &)
+bool TerminalIOHandler::handleCommand(const QString &, const QStringList &)
 {
-    writeLine(tr("Unknown command. Enter \"help\" to see the list of available commands"));
+    writeLine(tr("Unknown command. Enter \"help --commands\" to see the list of available commands"));
+    return false;
 }
 
 /*============================== Static private methods ====================*/
 
-QString TerminalIOHandler::msecsToString(qint64 msecs, Connection *c)
+QString TerminalIOHandler::msecsToString(qint64 msecs)
 {
     QString days = QString::number(msecs / (24 * BeQt::Hour));
     msecs %= (24 * BeQt::Hour);
@@ -604,9 +165,7 @@ QString TerminalIOHandler::msecsToString(qint64 msecs, Connection *c)
     msecs %= BeQt::Minute;
     QString seconds = QString::number(msecs / BeQt::Second);
     seconds.prepend(QString().fill('0', 2 - seconds.length()));
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    return days + " " + translate("TerminalIOHandler", "days") + " " + hours + ":" + minutes + ":" + seconds;
+    return days + " " + tr("days") + " " + hours + ":" + minutes + ":" + seconds;
 }
 
 QString TerminalIOHandler::userPrefix(Connection *user)
@@ -629,80 +188,35 @@ void TerminalIOHandler::writeHelpLine(const QString &command, const QString &des
 
 /*============================== Private methods ===========================*/
 
-void TerminalIOHandler::handleUser(const QString &cmd, const QStringList &args)
+bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
 {
-    handleUserImplementation(cmd, args);
-}
-
-void TerminalIOHandler::handleUptime(const QString &cmd, const QStringList &args)
-{
-    handleUptimeImplementation(cmd, args);
-}
-
-void TerminalIOHandler::handleSet(const QString &cmd, const QStringList &args)
-{
-    handleSetImplementation(cmd, args);
-}
-
-void TerminalIOHandler::handleStart(const QString &cmd, const QStringList &args)
-{
-    handleStartImplementation(cmd, args);
-}
-
-void TerminalIOHandler::handleStop(const QString &cmd, const QStringList &args)
-{
-    handleStopImplementation(cmd, args);
-}
-
-void TerminalIOHandler::handleHelp(const QString &, const QStringList &)
-{
-    writeLine(tr("The following commands are available:", "help"));
-    writeHelpLine("help", tr("Show this Help", "help"));
-    writeHelpLine("quit, exit", tr("Quit the application", "help"));
-    writeHelpLine("uptime", tr("Show for how long the application has been running", "help"));
-    writeHelpLine("user [--list], user [--connected-at|--info|--kick|--uptime] <id|login>",
-                  tr("Show information about the user(s) connected", "help"));
-    writeHelpLine("set <key> [value]", tr("Set configuration variable", "help"));
-    writeHelpLine("start", tr("Start the main server and the auxiliary servers", "help"));
-    writeHelpLine("stop", tr("Stop the main server and the auxiliary servers", "help"));
-}
-
-void TerminalIOHandler::handleUserImplementation(const QString &, const QStringList &args, Connection *c)
-{
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
     if (args.isEmpty())
     {
-        writeLine(translate("TerminalIOHandler", "Connected user count:") + " "
-                  + QString::number(mserver->currentConnectionCount()), c);
+        writeLine(tr("Connected user count:") + " " + QString::number(sServer->currentConnectionCount()));
     }
     else if (args.first() == "--list")
     {
-        int sz = mserver->currentConnectionCount();
+        int sz = sServer->currentConnectionCount();
         if (sz)
-            writeLine(translate("TerminalIOHandler", "Listing connected users") + " (" + QString::number(sz) + "):", c);
+            writeLine(tr("Listing connected users") + " (" + QString::number(sz) + "):");
         else
-            writeLine(translate("TerminalIOHandler", "There are no connected users"), c);
-        mserver->lock();
-        foreach (BNetworkConnection *cc, mserver->connections())
+            writeLine(tr("There are no connected users"));
+        sServer->lock();
+        foreach (BNetworkConnection *c, sServer->connections())
         {
-            Connection *ccc = static_cast<Connection *>(cc);
-            writeLine("[" + ccc->login() + "] [" + ccc->peerAddress() + "] " + ccc->uniqueId().toString(), c);
+            Connection *cc = static_cast<Connection *>(c);
+            writeLine("[" + cc->login() + "] [" + cc->peerAddress() + "] " + cc->uniqueId().toString());
         }
-        mserver->unlock();
+        sServer->unlock();
     }
-    else
+    else if (args.size() == 2)
     {
-        if (args.size() < 2)
-            return writeLine(translate("TerminalIOHandler", "Invalid parameters"));
         QList<Connection *> users;
         QUuid uuid = BeQt::uuidFromText(args.at(1));
-        mserver->lock();
+        sServer->lock();
         if (uuid.isNull())
         {
-            foreach (BNetworkConnection *c, mserver->connections())
+            foreach (BNetworkConnection *c, sServer->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->login() == args.at(1))
@@ -711,7 +225,7 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
         }
         else
         {
-            foreach (BNetworkConnection *c, mserver->connections())
+            foreach (BNetworkConnection *c, sServer->connections())
             {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->uniqueId() == uuid)
@@ -723,138 +237,66 @@ void TerminalIOHandler::handleUserImplementation(const QString &, const QStringL
         }
         if (args.first() == "--kick")
         {
-            foreach (Connection *cc, users)
-                QMetaObject::invokeMethod(cc, "abort", Qt::QueuedConnection);
+            foreach (Connection *c, users)
+                QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
         }
         else if (args.first() == "--info")
         {
-            foreach (Connection *cc, users)
-                writeLine(cc->infoString(), c);
+            foreach (Connection *c, users)
+                writeLine(c->infoString());
         }
         else if (args.first() == "--uptime")
         {
-            foreach (Connection *cc, users)
-                writeLine(translate("TerminalIOHandler", "Uptime of") + " " + userPrefix(cc) + " "
-                          + msecsToString(cc->uptime(), c), c);
+            foreach (Connection *c, users)
+                writeLine(tr("Uptime of") + " " + userPrefix(c) + " " + msecsToString(c->uptime()));
         }
         else if (args.first() == "--connected-at")
         {
-            foreach (Connection *cc, users)
-                writeLine(translate("TerminalIOHandler", "Connection time of") + " " + userPrefix(cc) + " "
-                          + cc->connectedAt().toString(bLogger->dateTimeFormat()), c);
+            foreach (Connection *c, users)
+                writeLine(tr("Connection time of") + " " + userPrefix(c) + " "
+                          + c->connectedAt().toString(bLogger->dateTimeFormat()));
         }
-        mserver->unlock();
-    }
-}
-
-void TerminalIOHandler::handleUptimeImplementation(const QString &, const QStringList &, Connection *c)
-{
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    writeLine(translate("TerminalIOHandler", "Uptime:") + " " + msecsToString(melapsedTimer.elapsed(), c), c);
-}
-
-void TerminalIOHandler::handleSetImplementation(const QString &, const QStringList &args, Connection *c)
-{
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    init_once(SettingsItem, Settings, SettingsItem())
-    {
-        SettingsItem mail("Mail");
-          mail.addChildItem("server_address");
-          mail.addChildItem("server_port", QVariant::UInt);
-          mail.addChildItem("local_host_name");
-          mail.addChildItem("login");
-          SettingsItem i("password");
-            i.setProperty("mail_password", true);
-          mail.addChildItem(i);
-          mail.addChildItem("ssl_required", QVariant::Bool);
-        Settings.addChildItem(mail);
-        SettingsItem beqt("BeQt");
-          i.setKey("Core");
-          i.addChildItem("locale", QVariant::Locale);
-          beqt.addChildItem(i);
-        Settings.addChildItem(beqt);
-        SettingsItem l("Log");
-          l.addChildItem("noop", QVariant::Int);
-        Settings.addChildItem(l);
-    }
-    if (args.size() < 1 || args.size() > 2)
-        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
-    if (args.size() == 1 && c)
-        return writeLine(translate("TerminalIOHandler", "Invalid parameters"), c);
-    QString path = args.first();
-    SettingsItem si = Settings.testPath(path);
-    if (QVariant::Invalid == si.type())
-        return writeLine(translate("TerminalIOHandler", "No such option"), c);
-    path.replace('.', '/');
-    if (si.property("mail_password").toBool() && args.size() == 1)
-    {
-        setStdinEchoEnabled(false);
-        mmailPassword = readLine(translate("TerminalIOHandler", "Enter e-mail password:") + " ");
-        setStdinEchoEnabled(true);
-        writeLine(c);
+        sServer->unlock();
     }
     else
     {
-        QVariant v;
-        if (args.size() == 2)
-            v = args.last();
-        else
-            v = readLine(translate("TerminalIOHandler", "Enter value for") + " \"" + path.split("/").last() + "\": ");
-        switch (si.type())
-        {
-        case QVariant::Locale:
-            v = QLocale(v.toString());
-            break;
-        default:
-            if (!v.convert(si.type()))
-                return writeLine(translate("TerminalIOHandler", "Invalid value"), c);
-            break;
-        }
-        bSettings->setValue(path, v);
+        writeLine(tr("Invalid parameters"));
+        return false;
     }
-    writeLine(translate("TerminalIOHandler", "OK"), c);
+    return true;
 }
 
-void TerminalIOHandler::handleStartImplementation(const QString &, const QStringList &args, Connection *c)
+bool TerminalIOHandler::handleUptime(const QString &, const QStringList &)
 {
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    if (mserver->isListening())
-        return writeLine(translate("TerminalIOHandler", "The server is already running"), c);
-    QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
-    if (!mserver->listen(addr, Texsample::MainPort) || !mregistrationServer->listen(addr, Texsample::RegistrationPort)
-            || !mrecoveryServer->listen(addr, Texsample::RecoveryPort))
+    writeLine(tr("Uptime:") + " " + msecsToString(melapsedTimer.elapsed()));
+    return true;
+}
+
+bool TerminalIOHandler::handleStart(const QString &, const QStringList &args)
+{
+    if (sServer->isListening())
     {
-        mserver->close();
-        mregistrationServer->close();
-        mrecoveryServer->close();
-        return writeLine(translate("TerminalIOHandler", "Failed to start server"), c);
+        writeLine(tr("The server is already running"));
+        return false;
     }
-    writeLine(translate("TerminalIOHandler", "OK"), c);
+    QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
+    if (!sServer->listen(addr, Texsample::MainPort))
+    {
+        writeLine(tr("Failed to start server"));
+        return false;
+    }
+    writeLine(tr("OK"));
+    return true;
 }
 
-void TerminalIOHandler::handleStopImplementation(const QString &, const QStringList &, Connection *c)
+bool TerminalIOHandler::handleStop(const QString &, const QStringList &)
 {
-    static QMutex mutex;
-    QMutexLocker locker(&mutex);
-    static TranslateFunctor translate;
-    translate.setConnection(c);
-    if (!mserver->isListening())
-        return writeLine(translate("TerminalIOHandler", "The server is not running"), c);
-    mserver->close();
-    mregistrationServer->close();
-    mrecoveryServer->close();
-    writeLine(translate("TerminalIOHandler", "OK"), c);
+    if (!sServer->isListening())
+    {
+        writeLine(tr("The server is not running"));
+        return false;
+    }
+    sServer->close();
+    writeLine(tr("OK"));
+    return false;
 }
-
-/*============================== Private variables =========================*/
-
-QString TerminalIOHandler::mmailPassword;
