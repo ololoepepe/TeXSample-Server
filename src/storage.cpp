@@ -91,7 +91,8 @@ bool Storage::initStorage(QString *errs)
                 return bRet(errs, tr("Can't create tables in read-only mode"), false);
         }
     }
-    bool users = !db.select("users", "id", BSqlWhere("login = :login", ":login", QString("root"))).values().isEmpty();
+    BSqlWhere w("access_level = :access_level", ":access_level", TAccessLevel::RootLevel);
+    bool users = !db.select("users", "id", w).values().isEmpty();
     if (Global::readOnly() && !users)
         return bRet(errs, tr("Can't create users in read-only mode"), false);
     if (!Global::readOnly() && !db.initializeFromSchema(list))
@@ -105,6 +106,9 @@ bool Storage::initStorage(QString *errs)
         return bRet(errs, tr("Failed to test recovery codes"), false);
     if (!users)
     {
+        QString login = bReadLine(tr("Enter root login:") + " ");
+        if (login.isEmpty())
+            return bRet(errs, tr("Operation aborted"), false);
         QString mail = bReadLine(tr("Enter root e-mail:") + " ");
         if (mail.isEmpty())
             return bRet(errs, tr("Operation aborted"), false);
@@ -112,7 +116,7 @@ bool Storage::initStorage(QString *errs)
         if (pwd.isEmpty())
             return bRet(errs, tr("Operation aborted"), false);
         TUserInfo info(TUserInfo::AddContext);
-        info.setLogin("root");
+        info.setLogin(login);
         info.setEmail(mail);
         info.setPassword(pwd);
         info.setAccessLevel(TAccessLevel::RootLevel);

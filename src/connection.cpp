@@ -72,7 +72,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(replySent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
-    installRequestHandler(Texsample::RegisterRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
+    installRequestHandler(Texsample::RegisterRequest, (InternalHandler) &Connection::handleRegisterRequest);
     installRequestHandler(Texsample::GetRecoveryCodeRequest,
                           (InternalHandler) &Connection::handleGetRecoveryCodeRequest);
     installRequestHandler(Texsample::RecoverAccountRequest,
@@ -193,7 +193,6 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
-    //QString code = in.value("invite").toString();
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     QLocale l = in.value("locale").toLocale();
     QString prefix = "<" + info.login() + "> ";
