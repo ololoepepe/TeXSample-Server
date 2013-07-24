@@ -66,10 +66,8 @@ The default is 0</source>
     <name>BTerminalIOHandler</name>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="107"/>
-        <source>This is TeXSample Server.
-Enter &quot;help --all&quot; to see full Help</source>
-        <translation>Это TeXSample Server.
-Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
+        <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
+        <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="112"/>
@@ -83,32 +81,24 @@ Enter &quot;help --all&quot; to see full Help</source>
     </message>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="119"/>
-        <source>Show information about the user.
-The user may be specified by id or by login. Options:
+        <source>Show information about the user. The user may be specified by id or by login. Options:
   --connected-at - time when the user connected
   --info - detailed user information
   --uptime - for how long the user has been connected</source>
-        <translation>Показать информацию о пользователе.
-Пользователь может быть указан при помощи идентификатора или логина. Опции:
+        <translation>Показать информацию о пользователе. Пользователь может быть указан при помощи идентификатора или логина. Опции:
   --connected-at - момент времени, когда пользователь подключился
   --info - подробная информация о пользователе
   --uptime - как долго пользователь был подключен</translation>
     </message>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="126"/>
-        <source>Disconnect the specified user.
-If login is specified, all connections of this user will be closed</source>
-        <translation>Отключить указанного пользователя.
-Если указан логин, то все соединения данного пользователя будут закрыты</translation>
+        <source>Disconnect the specified user. If login is specified, all connections of this user will be closed</source>
+        <translation>Отключить указанного пользователя. Если указан логин, то все соединения данного пользователя будут закрыты</translation>
     </message>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="131"/>
-        <source>Start the server.
-If address is specified, the server will only listen on that address,
-otherwise it will listen on available all addresses.</source>
-        <translation>Запустить сервер.
-Если указан адрес, то сервер будет принимать соединения только по этому адресу,
-иначе он будет принимать соединения по всем доступным адресам.</translation>
+        <source>Start the server. If address is specified, the server will only listen on that address, otherwise it will listen on available all addresses.</source>
+        <translation>Запустить сервер. Если указан адрес, то сервер будет принимать соединения только по этому адресу, иначе он будет принимать соединения по всем доступным адресам.</translation>
     </message>
     <message>
         <location filename="../src/terminaliohandler.cpp" line="136"/>
@@ -278,13 +268,23 @@ otherwise it will listen on available all addresses.</source>
     </message>
     <message>
         <location filename="../src/storage.cpp" line="109"/>
-        <source>Enter root login:</source>
-        <translation>Введите логин для root:</translation>
+        <source>Enter superuser login:</source>
+        <translation>Введите логин суперпользователя:</translation>
     </message>
     <message>
         <location filename="../src/storage.cpp" line="112"/>
-        <source>Enter root e-mail:</source>
-        <translation>Введите электронную почту для root:</translation>
+        <source>Enter superuser e-mail:</source>
+        <translation>Введите электронную почту суперпользователя:</translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="115"/>
+        <source>Enter superuser password:</source>
+        <translation>Введите пароль сперпользователя:</translation>
+    </message>
+    <message>
+        <location filename="../src/storage.cpp" line="124"/>
+        <source>Creating superuser account...</source>
+        <translation>Создание аккаунта суперпользователя...</translation>
     </message>
     <message>
         <location filename="../src/storage.cpp" line="111"/>
@@ -294,14 +294,9 @@ otherwise it will listen on available all addresses.</source>
         <translation>Операция прервана</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="131"/>
+        <location filename="../src/storage.cpp" line="132"/>
         <source>Done!</source>
         <translation>Готово!</translation>
-    </message>
-    <message>
-        <location filename="../src/storage.cpp" line="115"/>
-        <source>Enter root password:</source>
-        <translation>Введите пароль для root:</translation>
     </message>
 </context>
 <context>
@@ -376,12 +371,12 @@ otherwise it will listen on available all addresses.</source>
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="52"/>
+        <location filename="../src/main.cpp" line="56"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="55"/>
+        <location filename="../src/main.cpp" line="54"/>
         <source>read-only mode</source>
         <translation>режим только для чтения</translation>
     </message>

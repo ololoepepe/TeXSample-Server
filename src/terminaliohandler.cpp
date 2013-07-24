@@ -104,7 +104,7 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
                                                      "2 and more - log loaclly and remotely\n"
                                                      "The default is 0"));
     setRootSettingsNode(root);
-    setHelpDescription(BTranslation::translate("BTerminalIOHandler", "This is TeXSample Server.\n"
+    setHelpDescription(BTranslation::translate("BTerminalIOHandler", "This is TeXSample Server. "
                                                "Enter \"help --all\" to see full Help"));
     CommandHelpList chl;
     CommandHelp ch;
@@ -116,20 +116,20 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     ch.description = BTranslation::translate("BTerminalIOHandler", "Show connected user count or list them all");
     chl << ch;
     ch.usage = "user --connected-at|--info|--uptime <id|login>";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about the user.\n"
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about the user. "
                                              "The user may be specified by id or by login. Options:\n"
                                              "  --connected-at - time when the user connected\n"
                                              "  --info - detailed user information\n"
                                              "  --uptime - for how long the user has been connected");
     chl << ch;
     ch.usage = "user --kick <id|login>";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Disconnect the specified user.\n"
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Disconnect the specified user. "
                                              "If login is specified, all connections of this user will be closed");
     chl << ch;
     setCommandHelp("user", chl);
     ch.usage = "start [address]";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
-                                             "If address is specified, the server will only listen on that address,\n"
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server. "
+                                             "If address is specified, the server will only listen on that address, "
                                              "otherwise it will listen on available all addresses.");
     setCommandHelp("start", ch);
     ch.usage = "stop";

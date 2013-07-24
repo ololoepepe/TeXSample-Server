@@ -6,7 +6,7 @@ class BSettingsNode;
 
 #include <TCompilationResult>
 #include <TCompilerParameters>
-#include <TProject>
+#include <TTexProject>
 #include <TCompiledProject>
 #include <TMessage>
 #include <TOperationResult>

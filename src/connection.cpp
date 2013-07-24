@@ -9,7 +9,7 @@
 #include <TSampleInfo>
 #include <TeXSample>
 #include <TOperationResult>
-#include <TProject>
+#include <TTexProject>
 #include <TCompilerParameters>
 #include <TCompiledProject>
 #include <TCompilationResult>
@@ -278,7 +278,7 @@ bool Connection::handleAddUserRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    if (maccessLevel < TAccessLevel::RootLevel && info.accessLevel() >= TAccessLevel::AdminLevel)
+    if (maccessLevel < TAccessLevel::SuperuserLevel && info.accessLevel() >= TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
     foreach (const TService &s, info.services())
         if (!mstorage->userHasAccessTo(muserId, s))
@@ -298,9 +298,9 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
     if (maccessLevel < TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
     TAccessLevel ualvl = mstorage->userAccessLevel(info.id());
-    if (ualvl >= TAccessLevel::RootLevel)
+    if (ualvl >= TAccessLevel::SuperuserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    if (maccessLevel < TAccessLevel::RootLevel && ualvl >= TAccessLevel::AdminLevel)
+    if (maccessLevel < TAccessLevel::SuperuserLevel && ualvl >= TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
     foreach (const TService &s, info.services())
         if (!mstorage->userHasAccessTo(muserId, s))
@@ -349,7 +349,7 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
-    TProject project = in.value("project").value<TProject>();
+    TTexProject project = in.value("project").value<TTexProject>();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
     log("Add sample request: " + info.title());
     if (!muserId)
@@ -365,7 +365,7 @@ bool Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    TProject project = in.value("project").value<TProject>();
+    TTexProject project = in.value("project").value<TTexProject>();
     log("Edit sample request: " + info.idString());
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
@@ -380,7 +380,7 @@ bool Connection::handleUpdateSampleRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    TProject project = in.value("project").value<TProject>();
+    TTexProject project = in.value("project").value<TTexProject>();
     log("Update sample request: " + info.idString());
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
@@ -456,7 +456,7 @@ bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (!mstorage->userHasAccessTo(muserId, TService::TexsampleService))
         return sendReply(op, TMessage::NotEnoughRightsError);
-    TProject project;
+    TTexProject project;
     bool cacheOk = false;
     TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
     if (!r)
@@ -547,7 +547,7 @@ bool Connection::handleCompileProjectRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     Global::CompileParameters p;
     QVariantMap in = op->variantData().toMap();
-    p.project = in.value("project").value<TProject>();
+    p.project = in.value("project").value<TTexProject>();
     p.param = in.value("parameters").value<TCompilerParameters>();
     p.path = QDir::tempPath() + "/texsample-server/compiler/" + BeQt::pureUuidText(uniqueId());
     p.compiledProject = new TCompiledProject;

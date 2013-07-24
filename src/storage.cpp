@@ -10,7 +10,7 @@
 #include <TeXSample>
 #include <TInviteInfo>
 #include <TCompilationResult>
-#include <TProject>
+#include <TTexProject>
 #include <TMessage>
 #include <TService>
 #include <TServiceList>
@@ -91,7 +91,7 @@ bool Storage::initStorage(QString *errs)
                 return bRet(errs, tr("Can't create tables in read-only mode"), false);
         }
     }
-    BSqlWhere w("access_level = :access_level", ":access_level", TAccessLevel::RootLevel);
+    BSqlWhere w("access_level = :access_level", ":access_level", TAccessLevel::SuperuserLevel);
     bool users = !db.select("users", "id", w).values().isEmpty();
     if (Global::readOnly() && !users)
         return bRet(errs, tr("Can't create users in read-only mode"), false);
@@ -106,21 +106,22 @@ bool Storage::initStorage(QString *errs)
         return bRet(errs, tr("Failed to test recovery codes"), false);
     if (!users)
     {
-        QString login = bReadLine(tr("Enter root login:") + " ");
+        QString login = bReadLine(tr("Enter superuser login:") + " ");
         if (login.isEmpty())
             return bRet(errs, tr("Operation aborted"), false);
-        QString mail = bReadLine(tr("Enter root e-mail:") + " ");
+        QString mail = bReadLine(tr("Enter superuser e-mail:") + " ");
         if (mail.isEmpty())
             return bRet(errs, tr("Operation aborted"), false);
-        QString pwd = bReadLineSecure(tr("Enter root password:") + " ");
+        QString pwd = bReadLineSecure(tr("Enter superuser password:") + " ");
         if (pwd.isEmpty())
             return bRet(errs, tr("Operation aborted"), false);
         TUserInfo info(TUserInfo::AddContext);
         info.setLogin(login);
         info.setEmail(mail);
         info.setPassword(pwd);
-        info.setAccessLevel(TAccessLevel::RootLevel);
+        info.setAccessLevel(TAccessLevel::SuperuserLevel);
         info.setServices(TServiceList::allServices());
+        bWriteLine(tr("Creating superuser account..."));
         TOperationResult r = s.addUser(info, BCoreApplication::locale());
         if (!r)
             return bRet(errs, r.messageString(), false);
@@ -255,7 +256,7 @@ TOperationResult Storage::getShortUserInfo(quint64 userId, TUserInfo &info)
     return TOperationResult(true);
 }
 
-TCompilationResult Storage::addSample(quint64 userId, TProject project, const TSampleInfo &info)
+TCompilationResult Storage::addSample(quint64 userId, TTexProject project, const TSampleInfo &info)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -309,7 +310,7 @@ TCompilationResult Storage::addSample(quint64 userId, TProject project, const TS
     return cr;
 }
 
-TCompilationResult Storage::editSample(const TSampleInfo &info, TProject project)
+TCompilationResult Storage::editSample(const TSampleInfo &info, TTexProject project)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -422,7 +423,7 @@ TOperationResult Storage::deleteSample(quint64 sampleId, const QString &reason)
     return TOperationResult(true);
 }
 
-TOperationResult Storage::getSampleSource(quint64 sampleId, TProject &project, QDateTime &updateDT, bool &cacheOk)
+TOperationResult Storage::getSampleSource(quint64 sampleId, TTexProject &project, QDateTime &updateDT, bool &cacheOk)
 {
     if (!sampleId)
         return TOperationResult(TMessage::InvalidSampleIdError);
@@ -496,7 +497,7 @@ TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &d
         info.setTitle(m.value("title").toString());
         info.setFileName(m.value("file_name").toString());
         info.setType(m.value("type").toInt());
-        info.setProjectSize(TProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
+        info.setProjectSize(TTexProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
                                            "UTF-8"));
         info.setTags(BeQt::deserialize(m.value("tags").toByteArray()).toStringList());
         info.setRating(m.value("rating").toUInt());
@@ -731,7 +732,7 @@ TServiceList Storage::userServices(quint64 userId)
 {
     if (!userId || !isValid())
         return TServiceList();
-    if (userAccessLevel(userId) >= TAccessLevel::RootLevel)
+    if (userAccessLevel(userId) >= TAccessLevel::SuperuserLevel)
         return TServiceList::allServices();
     BSqlResult r = mdb->select("user_services", "service_id", BSqlWhere("user_id = :user_id", ":user_id", userId));
     if (!r)
@@ -767,7 +768,7 @@ bool Storage::userHasAccessTo(quint64 userId, const TService service)
 {
     if (!userId || !isValid())
         return false;
-    if (userAccessLevel(userId) >= TAccessLevel::RootLevel)
+    if (userAccessLevel(userId) >= TAccessLevel::SuperuserLevel)
         return true;
     BSqlWhere w("user_id = :user_id", ":user_id", userId);
     return mdb->select("user_services", "service_id", w).value("service_id").toInt() == service;

@@ -10,3 +10,5 @@
 
 [done] Implement assigning services priveleges to invite codes
 [done] Use GPL
+* Replace root with superuser
+* Improve commands description

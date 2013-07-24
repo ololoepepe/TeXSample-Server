@@ -5,7 +5,7 @@ class TUserInfo;
 class TOperationResult;
 class TAccessLevel;
 class TCompilationResult;
-class TProject;
+class TTexProject;
 class TProjectFile;
 class TMessage;
 class TService;
@@ -59,10 +59,10 @@ public:
     TOperationResult updateUser(const TUserInfo info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
-    TCompilationResult addSample(quint64 userId, TProject project, const TSampleInfo &info);
-    TCompilationResult editSample(const TSampleInfo &info, TProject project);
+    TCompilationResult addSample(quint64 userId, TTexProject project, const TSampleInfo &info);
+    TCompilationResult editSample(const TSampleInfo &info, TTexProject project);
     TOperationResult deleteSample(quint64 sampleId, const QString &reason);
-    TOperationResult getSampleSource(quint64 sampleId, TProject &project, QDateTime &updateDT, bool &cacheOk);
+    TOperationResult getSampleSource(quint64 sampleId, TTexProject &project, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT);
     TOperationResult generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,

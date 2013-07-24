@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
         Application::installTranslator(new BTranslator("beqt"));
         Application::installTranslator(new BTranslator("texsample"));
         Application::installTranslator(new BTranslator("texsample-server"));
-        QString msg = translate("main", "This is") + " " + QCoreApplication::applicationName() +
-                " v" + QCoreApplication::applicationVersion();
+        QString msg = QCoreApplication::applicationName() + " v" + QCoreApplication::applicationVersion();
         if (Global::readOnly())
             msg += " (" + translate("main", "read-only mode") + ")";
-        bWriteLine(msg);
+        BTerminalIOHandler::setTerminalTitle(msg);
+        bWriteLine(translate("main", "This is") + " " + msg);
         BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
         Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
         Global::resetLoggingMode();
