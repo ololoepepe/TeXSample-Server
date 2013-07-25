@@ -164,7 +164,7 @@ Storage::~Storage()
 
 /*============================== Public methods ============================*/
 
-TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale)
+TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -172,7 +172,7 @@ TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale)
         return TOperationResult(TMessage::InvalidDataError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
-    return addUserInternal(info, locale);
+    return addUserInternal(info, locale, clabGroups);
 }
 
 TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale)
@@ -189,7 +189,7 @@ TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale)
     return addUserInternal(info, locale);
 }
 
-TOperationResult Storage::editUser(const TUserInfo &info)
+TOperationResult Storage::editUser(const TUserInfo &info, bool editClab, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -197,7 +197,7 @@ TOperationResult Storage::editUser(const TUserInfo &info)
         return TOperationResult(TMessage::InvalidDataError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
-    return editUserInternal(info);
+    return editUserInternal(info, editClab, clabGroups);
 }
 
 TOperationResult Storage::updateUser(const TUserInfo info)
@@ -513,7 +513,8 @@ TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &d
 }
 
 TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,
-                                          const TServiceList &services, TInviteInfoList &invites)
+                                          const TServiceList &services, const QStringList &clabGroups,
+                                          TInviteInfoList &invites)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -547,6 +548,14 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
         foreach (const TService &s, services)
         {
             if (!mdb->insert("new_user_services", "invite_id", id, "service_id", (int) s))
+            {
+                mdb->rollback();
+                return TOperationResult(TMessage::InternalQueryError);
+            }
+        }
+        foreach (const QString &gr, clabGroups)
+        {
+            if (!mdb->insert("new_user_clab_groups", "invite_id", id, "group_name", gr))
             {
                 mdb->rollback();
                 return TOperationResult(TMessage::InternalQueryError);
@@ -669,6 +678,46 @@ TOperationResult Storage::recoverAccount(const QString &email, const QString &co
     }
     if (!mdb->commit())
         return TOperationResult(TMessage::InternalDatabaseError);
+    return TOperationResult(true);
+}
+
+TOperationResult Storage::editClabGroups(const QStringList &newGroups, const QStringList &deletedGroups)
+{
+    if (!isValid())
+        return TOperationResult(TMessage::InternalStorageError);
+    if (!mdb->transaction())
+        return TOperationResult(TMessage::InternalDatabaseError);
+    foreach (const QString &gr, deletedGroups)
+    {
+        if (!mdb->deleteFrom("clab_groups", BSqlWhere("name = :name", ":name", gr)))
+        {
+            mdb->rollback();
+            return TOperationResult(TMessage::InternalQueryError);
+        }
+    }
+    foreach (const QString &gr, newGroups)
+    {
+        if (!mdb->insert("clab_groups", "name", gr))
+        {
+            mdb->rollback();
+            return TOperationResult(TMessage::InternalQueryError);
+        }
+    }
+    if (!mdb->commit())
+        return TOperationResult(TMessage::InternalDatabaseError);
+    return TOperationResult(true);
+}
+
+TOperationResult Storage::getClabGroupsList(QStringList &groups)
+{
+    if (!isValid())
+        return TOperationResult(TMessage::InternalStorageError);
+    BSqlResult r = mdb->select("clab_groups", "name");
+    if (!r)
+        return TOperationResult(TMessage::InternalQueryError);
+    groups.clear();
+    foreach (const QVariantMap &m, r.values())
+        groups << m.value("name").toString();
     return TOperationResult(true);
 }
 
@@ -857,7 +906,7 @@ QString Storage::rootDir()
 
 /*============================== Private methods ===========================*/
 
-TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale)
+TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -896,6 +945,14 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
             return TOperationResult(TMessage::InternalQueryError);
         }
     }
+    foreach (const QString &gr, clabGroups)
+    {
+        if (!mdb->insert("user_clab_groups", "user_id", userId, "group_name", gr))
+        {
+            mdb->rollback();
+            return TOperationResult(TMessage::InternalQueryError);
+        }
+    }
     if(!saveUserAvatar(userId, info.avatar()))
         return TOperationResult(TMessage::InternalFileSystemError);
     if (!mdb->commit())
@@ -909,7 +966,7 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
     return TOperationResult(true);
 }
 
-TOperationResult Storage::editUserInternal(const TUserInfo &info)
+TOperationResult Storage::editUserInternal(const TUserInfo &info, bool editClab, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -944,6 +1001,22 @@ TOperationResult Storage::editUserInternal(const TUserInfo &info)
             {
                 mdb->rollback();
                 return TOperationResult(TMessage::InternalQueryError);
+            }
+        }
+        if (editClab)
+        {
+            if (!mdb->deleteFrom("user_clab_groups", BSqlWhere("user_id = :user_id", ":user_id", info.id())))
+            {
+                mdb->rollback();
+                return TOperationResult(TMessage::InternalQueryError);
+            }
+            foreach (const QString &gr, clabGroups)
+            {
+                if (!mdb->insert("user_clab_groups", "user_id", info.id(), "group_name", gr))
+                {
+                    mdb->rollback();
+                    return TOperationResult(TMessage::InternalQueryError);
+                }
             }
         }
     }

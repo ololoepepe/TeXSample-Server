@@ -17,6 +17,7 @@ class QByteArray;
 
 #include <TClientInfo>
 #include <TAccessLevel>
+#include <TServiceList>
 
 #include <BNetworkConnection>
 #include <BLogger>
@@ -74,6 +75,10 @@ private:
     bool handleEditUserRequest(BNetworkOperation *op);
     bool handleUpdateAccountRequest(BNetworkOperation *op);
     bool handleGetUserInfoRequest(BNetworkOperation *op);
+    bool handleGenerateInvitesRequest(BNetworkOperation *op);
+    bool handleGetInvitesListRequest(BNetworkOperation *op);
+    bool handleSubscribeRequest(BNetworkOperation *op);
+    bool handleChangeLocale(BNetworkOperation *op);
     bool handleAddSampleRequest(BNetworkOperation *op);
     bool handleEditSampleRequest(BNetworkOperation *op);
     bool handleUpdateSampleRequest(BNetworkOperation *op);
@@ -81,11 +86,9 @@ private:
     bool handleGetSamplesListRequest(BNetworkOperation *op);
     bool handleGetSampleSourceRequest(BNetworkOperation *op);
     bool handleGetSamplePreviewRequest(BNetworkOperation *op);
-    bool handleGenerateInvitesRequest(BNetworkOperation *op);
-    bool handleGetInvitesListRequest(BNetworkOperation *op);
     bool handleCompileProjectRequest(BNetworkOperation *op);
-    bool handleSubscribeRequest(BNetworkOperation *op);
-    bool handleChangeLocale(BNetworkOperation *op);
+    bool handleEditClabGroupsRequest(BNetworkOperation *op);
+    bool handleGetClabGroupsListRequest(BNetworkOperation *op);
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt = LocalAndRemote,
                    const QString &prefix = QString());
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt = LocalAndRemote,
@@ -113,6 +116,7 @@ private:
     QString mlogin;
     quint64 muserId;
     TAccessLevel maccessLevel;
+    TServiceList mservices;
     TClientInfo mclientInfo;
     QLocale mlocale;
     bool msubscribed;

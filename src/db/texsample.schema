@@ -43,6 +43,10 @@ CREATE TABLE IF NOT EXISTS new_user_services (
   invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
   service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
 );
+CREATE TABLE IF NOT EXISTS new_user_clab_groups (
+  invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
+  group_name        TEXT NOT NULL REFERENCES clab_groups(name) ON DELETE CASCADE ON UPDATE CASCADE
+);
 CREATE TABLE IF NOT EXISTS invite_codes (
   id                INTEGER PRIMARY KEY AUTOINCREMENT,
   code              TEXT UNIQUE NOT NULL,
@@ -79,6 +83,7 @@ CREATE TABLE IF NOT EXISTS samples (
 
 /*CLab*/
 CREATE TABLE IF NOT EXISTS user_clab_groups (
+  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
   group_name        TEXT NOT NULL REFERENCES clab_groups(name) ON DELETE CASCADE ON UPDATE CASCADE
 );
 

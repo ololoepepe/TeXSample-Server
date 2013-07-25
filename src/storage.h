@@ -27,6 +27,7 @@ class QDateTime;
 #include <QByteArray>
 #include <QUuid>
 #include <QVariantMap>
+#include <QStringList>
 
 /*============================================================================
 ================================ Storage =====================================
@@ -53,9 +54,11 @@ public:
     explicit Storage();
     ~Storage();
 public:
-    TOperationResult addUser(const TUserInfo &info, const QLocale &locale);
+    TOperationResult addUser(const TUserInfo &info, const QLocale &locale,
+                             const QStringList &clabGroups = QStringList());
     TOperationResult registerUser(TUserInfo info, const QLocale &locale);
-    TOperationResult editUser(const TUserInfo &info);
+    TOperationResult editUser(const TUserInfo &info, bool editClab = false,
+                              const QStringList &clabGroups = QStringList());
     TOperationResult updateUser(const TUserInfo info);
     TOperationResult getUserInfo(quint64 userId, TUserInfo &info, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getShortUserInfo(quint64 userId, TUserInfo &info);
@@ -66,11 +69,14 @@ public:
     TOperationResult getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk);
     TOperationResult getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT);
     TOperationResult generateInvites(quint64 userId, const QDateTime &expirationDT, quint8 count,
-                                     const TServiceList &services, TInviteInfoList &invites);
+                                     const TServiceList &services, const QStringList &clabGroups,
+                                     TInviteInfoList &invites);
     TOperationResult getInvitesList(quint64 userId, TInviteInfoList &invites);
     TOperationResult getRecoveryCode(const QString &email, const QLocale &locale);
     TOperationResult recoverAccount(const QString &email, const QString &code, const QByteArray &password,
                                     const QLocale &locale);
+    TOperationResult editClabGroups(const QStringList &newGroups, const QStringList &deletedGroups);
+    TOperationResult getClabGroupsList(QStringList &groups);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);
@@ -86,7 +92,6 @@ public:
     int sampleState(quint64 sampleId);
     QDateTime sampleCreationDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
     QDateTime sampleUpdateDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
-
     quint64 inviteId(const QString &inviteCode);
     bool isValid() const;
     bool testInvites();
@@ -94,8 +99,10 @@ public:
 private:
     static QString rootDir();
 private:
-    TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale);
-    TOperationResult editUserInternal(const TUserInfo &info);
+    TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale,
+                                     const QStringList &clabGroups = QStringList());
+    TOperationResult editUserInternal(const TUserInfo &info, bool editClab = false,
+                                      const QStringList &clabGroups = QStringList());
     bool saveUserAvatar(quint64 userId, const QByteArray &data) const;
     QByteArray loadUserAvatar(quint64 userId, bool *ok = 0) const;
 private:
