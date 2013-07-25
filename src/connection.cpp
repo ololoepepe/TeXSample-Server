@@ -104,6 +104,11 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleEditClabGroupsRequest);
     installRequestHandler(Texsample::GetClabGroupsListRequest,
                           (InternalHandler) &Connection::handleGetClabGroupsListRequest);
+    installRequestHandler(Texsample::AddLabRequest, (InternalHandler) &Connection::handleAddLabRequest);
+    installRequestHandler(Texsample::EditLabRequest, (InternalHandler) &Connection::handleEditLabRequest);
+    installRequestHandler(Texsample::DeleteLabRequest, (InternalHandler) &Connection::handleDeleteLabRequest);
+    installRequestHandler(Texsample::GetLabRequest, (InternalHandler) &Connection::handleGetLabRequest);
+    installRequestHandler(Texsample::GetLabsListRequest, (InternalHandler) &Connection::handleGetLabsListRequest);
     QTimer::singleShot(15 * BeQt::Second, this, SLOT(testAuthorization()));
     mconnectedAt = QDateTime::currentDateTimeUtc();
     muptimeTimer.start();
@@ -270,6 +275,7 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("user_id", id);
     out.insert("access_level", maccessLevel);
+    out.insert("services", mservices);
     restartTimer();
     return sendReply(op, out);
 }
@@ -312,8 +318,13 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (maccessLevel < TAccessLevel::SuperuserLevel && ualvl >= TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
+    //One can't add a service to which he has no acces to a user
     foreach (const TService &s, info.services())
         if (!mservices.contains(s))
+            return sendReply(op, TMessage::NotEnoughRightsError);
+    //One can't remove a service to which he has no acces form a user
+    foreach (const TService &s, mstorage->userServices(info.id()))
+        if (!mservices.contains(s) && !info.services().contains(s))
             return sendReply(op, TMessage::NotEnoughRightsError);
     if (editClab && !mservices.contains(TService::ClabService))
         return sendReply(op, TMessage::NotEnoughRightsError);
@@ -638,6 +649,31 @@ bool Connection::handleGetClabGroupsListRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("groups_list", groups);
     return sendReply(op, out, r);
+}
+
+bool Connection::handleAddLabRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleEditLabRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleGetLabRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleGetLabsListRequest(BNetworkOperation *op)
+{
+    //
 }
 
 bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt,
