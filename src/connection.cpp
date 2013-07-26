@@ -15,6 +15,9 @@
 #include <TCompilationResult>
 #include <TInviteInfo>
 #include <TMessage>
+#include <TLabProject>
+#include <TLabInfo>
+#include <TLabInfoList>
 
 #include <BNetworkConnection>
 #include <BNetworkServer>
@@ -350,10 +353,13 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("user_id").toULongLong();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    bool clabGroups = in.value("clab_groups").toBool();
     log("Get user info request: " + QString::number(id));
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (clabGroups && !mservices.contains(TService::ClabService))
         return sendReply(op, TMessage::NotEnoughRightsError);
     TUserInfo info;
     bool cacheOk = false;
@@ -363,9 +369,15 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
     QVariantMap out;
     out.insert("update_dt", updateDT);
     if (cacheOk)
+    {
         out.insert("cache_ok", true);
+    }
     else
+    {
         out.insert("user_info", info);
+        if (clabGroups)
+            out.insert("clab_groups", mstorage->userClabGroups(id));
+    }
     return sendReply(op, out, r);
 }
 
@@ -479,7 +491,7 @@ bool Connection::handleUpdateSampleRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    quint64 sId = mstorage->senderId(info.id());
+    quint64 sId = mstorage->sampleSenderId(info.id());
     if (sId != muserId)
         return sendReply(op, TMessage::NotOwnSampleError);
     if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
@@ -499,11 +511,11 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::UserLevel)
         return sendReply(op, TMessage::NotEnoughRightsError);
-    quint64 sId = mstorage->senderId(id);
+    quint64 sId = mstorage->sampleSenderId(id);
     if (maccessLevel < TAccessLevel::AdminLevel)
     {
         if (sId != muserId)
-            return sendReply(op, TMessage::NotEnoughRightsError);
+            return sendReply(op, TMessage::NotOwnSampleError);
         else if (mstorage->sampleType(id) == TSampleInfo::Approved)
             return sendReply(op, TMessage::NotModifiableSampleError);
     }
@@ -622,7 +634,7 @@ bool Connection::handleEditClabGroupsRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QStringList newGroups = in.value("new_groups").toStringList();
     QStringList deletedGroups = in.value("deleted_groups").toStringList();
-    log("Edit CLab groups list: " + QString::number(newGroups.size()) + " new, "
+    log("Edit CLab groups list request: " + QString::number(newGroups.size()) + " new, "
         + QString::number(deletedGroups.size()) + " deleted");
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
@@ -635,7 +647,7 @@ bool Connection::handleEditClabGroupsRequest(BNetworkOperation *op)
 
 bool Connection::handleGetClabGroupsListRequest(BNetworkOperation *op)
 {
-    log("Get CLab groups list");
+    log("Get CLab groups list request");
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
@@ -653,27 +665,108 @@ bool Connection::handleGetClabGroupsListRequest(BNetworkOperation *op)
 
 bool Connection::handleAddLabRequest(BNetworkOperation *op)
 {
-    //
+    QVariantMap in = op->variantData().toMap();
+    TLabInfo info = in.value("lab_info").value<TLabInfo>();
+    TLabProject webProject = in.value("web_project").value<TLabProject>();
+    TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
+    TLabProject macProject = in.value("mac_project").value<TLabProject>();
+    TLabProject winProject = in.value("win_project").value<TLabProject>();
+    QString url = in.value("lab_url").toString();
+    log("Add lab request: " + info.title());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->addLab(muserId, info, webProject, linuxProject, macProject, winProject, url));
 }
 
 bool Connection::handleEditLabRequest(BNetworkOperation *op)
 {
-    //
+    QVariantMap in = op->variantData().toMap();
+    TLabInfo info = in.value("lab_info").value<TLabInfo>();
+    TLabProject webProject = in.value("web_project").value<TLabProject>();
+    TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
+    TLabProject macProject = in.value("mac_project").value<TLabProject>();
+    TLabProject winProject = in.value("win_project").value<TLabProject>();
+    QString url = in.value("lab_url").toString();
+    log("Edit lab request: " + info.title());
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel && mstorage->labSenderId(info.id()) != muserId)
+        return sendReply(op, TMessage::NotOwnLabError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->editLab(info, webProject, linuxProject, macProject, winProject, url));
 }
 
 bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
 {
-    //
-}
-
-bool Connection::handleGetLabRequest(BNetworkOperation *op)
-{
-    //
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("lab_id").toULongLong();
+    QString reason = in.value("reason").toString();
+    log("Delete lab request: " + QString::number(id) + (!reason.isEmpty() ? (" (" + reason + ")") : QString()));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (maccessLevel < TAccessLevel::AdminLevel && mstorage->labSenderId(id) != muserId)
+        return sendReply(op, TMessage::NotOwnLabError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    return sendReply(op, mstorage->deleteLab(id, reason));
 }
 
 bool Connection::handleGetLabsListRequest(BNetworkOperation *op)
 {
-    //
+    QVariantMap in = op->variantData().toMap();
+    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
+    log("Get labs list request");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TLabInfoList newLabs;
+    TIdList deletedLabs;
+    TOperationResult r = mstorage->getLabsList(muserId, mclientInfo.osType(), newLabs, deletedLabs, updateDT);
+    if (!r)
+        return sendReply(op, r);
+    QVariantMap out;
+    out.insert("update_dt", updateDT);
+    if (!newLabs.isEmpty())
+        out.insert("new_lab_infos", newLabs);
+    if (!deletedLabs.isEmpty())
+        out.insert("deleted_lab_infos", deletedLabs);
+    return sendReply(op, out, r);
+}
+
+bool Connection::handleGetLabRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("lab_id").toULongLong();
+    log("Get lab request: " + QString::number(id));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TLabProject project;
+    QString url;
+    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, url);
+    if (!r)
+        return sendReply(op, r);
+    QVariantMap out;
+    if (project.isValid())
+        out.insert("project", project);
+    else
+        out.insert("url", url);
+    return sendReply(op, out, r);
 }
 
 bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt,

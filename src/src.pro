@@ -43,7 +43,6 @@ HEADERS += \
     storage.h \
     terminaliohandler.h
 
-
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts
 

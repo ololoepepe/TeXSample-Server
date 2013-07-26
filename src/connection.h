@@ -92,8 +92,8 @@ private:
     bool handleAddLabRequest(BNetworkOperation *op);
     bool handleEditLabRequest(BNetworkOperation *op);
     bool handleDeleteLabRequest(BNetworkOperation *op);
-    bool handleGetLabRequest(BNetworkOperation *op);
     bool handleGetLabsListRequest(BNetworkOperation *op);
+    bool handleGetLabRequest(BNetworkOperation *op);
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt = LocalAndRemote,
                    const QString &prefix = QString());
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt = LocalAndRemote,

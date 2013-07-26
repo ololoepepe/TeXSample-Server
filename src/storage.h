@@ -9,6 +9,8 @@ class TTexProject;
 class TProjectFile;
 class TMessage;
 class TService;
+class TLabInfoList;
+class TLabProject;
 
 class BSqlDatabase;
 
@@ -21,6 +23,9 @@ class QDateTime;
 #include <TInviteInfoList>
 #include <TIdList>
 #include <TServiceList>
+#include <TLabInfo>
+
+#include <BeQt>
 
 #include <QString>
 #include <QCoreApplication>
@@ -37,7 +42,7 @@ class Storage
 {
     Q_DECLARE_TR_FUNCTIONS(Storage)
 public:
-    enum SampleState
+    enum State
     {
         NormalState = 0,
         DeletedState
@@ -77,19 +82,33 @@ public:
                                     const QLocale &locale);
     TOperationResult editClabGroups(const QStringList &newGroups, const QStringList &deletedGroups);
     TOperationResult getClabGroupsList(QStringList &groups);
+    TOperationResult addLab(quint64 userId, const TLabInfo &info, const TLabProject &webProject,
+                            const TLabProject &linuxProject, const TLabProject &macProject,
+                            const TLabProject &winProject, const QString &url);
+    TOperationResult editLab(const TLabInfo &info, const TLabProject &webProject, const TLabProject &linuxProject,
+                             const TLabProject &macProject, const TLabProject &winProject, const QString &url);
+    TOperationResult deleteLab(quint64 labId, const QString &reason);
+    TOperationResult getLabsList(quint64 userId, BeQt::OSType osType, TLabInfoList &newLabs, TIdList &deletedLabs,
+                                 QDateTime &updateDT);
+    TOperationResult getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, QString &url);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);
-    quint64 senderId(quint64 sampleId);
+    quint64 sampleSenderId(quint64 sampleId);
+    quint64 labSenderId(quint64 labId);
     QString userLogin(quint64 userId);
     TAccessLevel userAccessLevel(quint64 userId);
     TServiceList userServices(quint64 userId);
     TServiceList newUserServices(quint64 inviteId);
     TServiceList newUserServices(const QString &inviteCode);
     bool userHasAccessTo(quint64 userId, const TService service);
+    QStringList userClabGroups(quint64 userId);
     TSampleInfo::Type sampleType(quint64 sampleId);
     QString sampleFileName(quint64 sampleId);
-    int sampleState(quint64 sampleId);
+    State sampleState(quint64 sampleId);
+    State labState(quint64 labId);
+    QStringList labGroups(quint64 labId);
+    TLabInfo::Type labType(quint64 labId);
     QDateTime sampleCreationDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
     QDateTime sampleUpdateDateTime(quint64 sampleId, Qt::TimeSpec spec = Qt::UTC);
     quint64 inviteId(const QString &inviteCode);
@@ -98,6 +117,7 @@ public:
     bool testRecoveryCodes();
 private:
     static QString rootDir();
+    static QString labSubdir(BeQt::OSType osType);
 private:
     TOperationResult addUserInternal(const TUserInfo &info, const QLocale &locale,
                                      const QStringList &clabGroups = QStringList());
