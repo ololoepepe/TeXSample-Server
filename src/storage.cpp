@@ -368,12 +368,6 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TTexProject proj
     {
         project.rootFile()->setFileName(info.fileName());
         project.removeRestrictedCommands();
-        if (!BDirTools::rmdir(spath))
-        {
-            mdb->rollback();
-            return TOperationResult(TMessage::InternalFileSystemError);
-        }
-        project.removeRestrictedCommands();
         Global::CompileParameters p;
         p.project = project;
         p.path = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
@@ -388,15 +382,10 @@ TCompilationResult Storage::editSample(const TSampleInfo &info, TTexProject proj
         {
             mdb->rollback();
             BDirTools::rmdir(bupath);
+            BDirTools::rmdir(p.path);
             return TOperationResult(TMessage::InternalFileSystemError);
         }
-        if (!BDirTools::rmdir(spath))
-        {
-            mdb->rollback();
-            BDirTools::rmdir(bupath);
-            return TOperationResult(TMessage::InternalFileSystemError);
-        }
-        if (!BDirTools::moveDir(p.path, spath))
+        if (!BDirTools::rmdir(spath) || !BDirTools::moveDir(p.path, spath))
         {
             mdb->rollback();
             BDirTools::rmdir(p.path);
@@ -1416,7 +1405,7 @@ TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &
     m.insert("email", info.email());
     m.insert("login", info.login());
     if (!info.password().isEmpty())
-    m.insert("password", info.password());
+        m.insert("password", info.password());
     m.insert("access_level", (int) info.accessLevel());
     m.insert("real_name", info.realName());
     m.insert("creation_dt", msecs);
@@ -1481,7 +1470,6 @@ TOperationResult Storage::editUserInternal(const TUserInfo &info, bool editClab,
     else
         m.insert("password", info.password());
     m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    //
     if (!mdb->update("users", m, BSqlWhere("id = :id", ":id", id)))
     {
         mdb->rollback();
@@ -1540,7 +1528,15 @@ bool Storage::saveUserAvatar(quint64 userId, const QByteArray &data) const
     QString path = rootDir() + "/users/" + QString::number(userId);
     if (!BDirTools::mkpath(path))
         return false;
-    return data.isEmpty() || BDirTools::writeFile(path + "/avatar.dat", data);
+    if (!data.isEmpty())
+    {
+        return BDirTools::writeFile(path + "/avatar.dat", data);
+    }
+    else
+    {
+        QFileInfo fi(path + "/avatar.dat");
+        return !fi.isFile() || QFile(fi.filePath()).remove();
+    }
 }
 
 QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const

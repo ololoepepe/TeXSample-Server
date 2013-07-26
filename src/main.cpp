@@ -33,7 +33,7 @@ int main(int argc, char *argv[])
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     QString home = QDir::home().dirName();
-    BApplicationServer s(QCoreApplication::applicationName() + home, 9930 + qHash(home) % 10);
+    BApplicationServer s(9930 + qHash(home) % 10, QCoreApplication::applicationName() + home);
     int ret = 0;
     if (Global::readOnly() || !s.testServer())
     {

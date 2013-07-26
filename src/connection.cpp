@@ -352,6 +352,7 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     quint64 id = in.value("user_id").toULongLong();
+    QString login = in.value("user_login").toString();
     QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
     bool clabGroups = in.value("clab_groups").toBool();
     log("Get user info request: " + QString::number(id));
@@ -361,6 +362,8 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (clabGroups && !mservices.contains(TService::ClabService))
         return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!id)
+        id = mstorage->userId(login);
     TUserInfo info;
     bool cacheOk = false;
     TOperationResult r = mstorage->getUserInfo(id, info, updateDT, cacheOk);

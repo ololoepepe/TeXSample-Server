@@ -114,8 +114,8 @@ The default is 0</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="777"/>
-        <location filename="../src/connection.cpp" line="801"/>
+        <location filename="../src/connection.cpp" line="780"/>
+        <location filename="../src/connection.cpp" line="804"/>
         <source>Success!</source>
         <translation>Удачно!</translation>
     </message>
