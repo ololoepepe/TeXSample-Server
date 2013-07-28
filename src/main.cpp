@@ -29,11 +29,11 @@ int main(int argc, char *argv[])
     tInit();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("2.0.0-pa1");
+    QCoreApplication::setApplicationVersion("2.0.0-a1");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     QString home = QDir::home().dirName();
-    BApplicationServer s(QCoreApplication::applicationName() + home, 9930 + qHash(home) % 10);
+    BApplicationServer s(9930 + qHash(home) % 10, QCoreApplication::applicationName() + home);
     int ret = 0;
     if (Global::readOnly() || !s.testServer())
     {
@@ -49,11 +49,11 @@ int main(int argc, char *argv[])
         Application::installTranslator(new BTranslator("beqt"));
         Application::installTranslator(new BTranslator("texsample"));
         Application::installTranslator(new BTranslator("texsample-server"));
-        QString msg = translate("main", "This is") + " " + QCoreApplication::applicationName() +
-                " v" + QCoreApplication::applicationVersion();
+        QString msg = QCoreApplication::applicationName() + " v" + QCoreApplication::applicationVersion();
         if (Global::readOnly())
             msg += " (" + translate("main", "read-only mode") + ")";
-        bWriteLine(msg);
+        BTerminalIOHandler::setTerminalTitle(msg);
+        bWriteLine(translate("main", "This is") + " " + msg);
         BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
         Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
         Global::resetLoggingMode();

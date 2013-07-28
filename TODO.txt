@@ -9,3 +9,6 @@
 === MAJOR ===
 
 [done] Implement assigning services priveleges to invite codes
+[done] Use GPL
+[done] Replace root with superuser
+[done] Improve commands description

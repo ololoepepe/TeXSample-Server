@@ -9,7 +9,7 @@ class BSettingsNode;
 class QLocale;
 class QVariant;
 
-#include <TProject>
+#include <TTexProject>
 #include <TCompilerParameters>
 #include <TCompilationResult>
 #include <TCompiledProject>
@@ -25,7 +25,7 @@ typedef QMap<QString, QString> StringMap;
 struct CompileParameters
 {
     QString path;
-    mutable TProject project;
+    mutable TTexProject project;
     TCompilerParameters param;
     mutable TCompiledProject *compiledProject;
     mutable TCompilationResult *makeindexResult;
