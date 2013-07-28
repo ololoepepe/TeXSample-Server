@@ -2,6 +2,9 @@
     * Use BeQt 3.0.0
     * Use TeXSample 1.0.0
     * Change the license to GNU GPLv3
+    * Add CLab service support
+    * Implement new features
+    * Improve/fix existing features
 
 === TeXSample Server 1.1.4 (15 July 2013) ===
     * Implement read-only mode

@@ -5,6 +5,7 @@ CONFIG += console release
 
 QT = core network sql
 BEQT = core network sql
+TSMP = core
 
 isEmpty(BEQT_PREFIX) {
     #TODO: Add MacOS support

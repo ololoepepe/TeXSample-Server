@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     tInit();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("2.0.0-pa1");
+    QCoreApplication::setApplicationVersion("2.0.0-a1");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     QString home = QDir::home().dirName();
