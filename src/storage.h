@@ -90,7 +90,7 @@ public:
     TOperationResult deleteLab(quint64 labId, const QString &reason);
     TOperationResult getLabsList(quint64 userId, BeQt::OSType osType, TLabInfoList &newLabs, TIdList &deletedLabs,
                                  QDateTime &updateDT);
-    TOperationResult getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, QString &url);
+    TOperationResult getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, TLabInfo::Type &t, QString &url);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);

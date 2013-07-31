@@ -233,3 +233,9 @@ INSERT OR IGNORE INTO sample_ratings (rating) VALUES (97);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (98);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (99);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (100);
+
+/*CLab*/
+INSERT OR IGNORE INTO lab_types (type) VALUES (0);          --NoType
+INSERT OR IGNORE INTO lab_types (type) VALUES (1);          --DesktopType
+INSERT OR IGNORE INTO lab_types (type) VALUES (2);          --WebType
+INSERT OR IGNORE INTO lab_types (type) VALUES (3);          --UrlType

@@ -761,10 +761,12 @@ bool Connection::handleGetLabRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     TLabProject project;
     QString url;
-    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, url);
+    TLabInfo::Type t;
+    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, t, url);
     if (!r)
         return sendReply(op, r);
     QVariantMap out;
+    out.insert("type", (int) t);
     if (project.isValid())
         out.insert("project", project);
     else
@@ -777,7 +779,7 @@ bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TOperat
 {
     out.insert("operation_result", r);
     op->reply(out);
-    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? QString("Success!") : r.messageStringNoTr());
     switch (lt)
     {
     case LocalAndRemote:
@@ -801,7 +803,7 @@ bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TCompil
 {
     out.insert("compilation_result", r);
     op->reply(out);
-    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? QString("Success!") : r.messageStringNoTr());
     switch (lt)
     {
     case LocalAndRemote:

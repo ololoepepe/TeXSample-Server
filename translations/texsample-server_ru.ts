@@ -113,12 +113,6 @@ The default is 0</source>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
-    <message>
-        <location filename="../src/connection.cpp" line="780"/>
-        <location filename="../src/connection.cpp" line="804"/>
-        <source>Success!</source>
-        <translation>Удачно!</translation>
-    </message>
 </context>
 <context>
     <name>Global</name>
@@ -158,53 +152,53 @@ The default is 0</source>
         <translation>Введите имя локального хоста или пустую строку:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="84"/>
+        <location filename="../src/global.cpp" line="86"/>
         <source>Enter SSL mode [true|false] (default false):</source>
         <translation>Введите режим SSL [true|false] (по умолчанию false):</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="87"/>
+        <location filename="../src/global.cpp" line="89"/>
         <source>Invalid value</source>
         <translation>Некорректное значение</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="91"/>
+        <location filename="../src/global.cpp" line="93"/>
         <source>Enter e-mail login:</source>
         <translation>Введите логин от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="93"/>
+        <location filename="../src/global.cpp" line="95"/>
         <source>Invalid login</source>
         <translation>Недействительный логин</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="95"/>
-        <location filename="../src/global.cpp" line="110"/>
+        <location filename="../src/global.cpp" line="97"/>
+        <location filename="../src/global.cpp" line="112"/>
         <source>Enter e-mail password:</source>
         <translation>Введите пароль от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="97"/>
+        <location filename="../src/global.cpp" line="99"/>
         <source>Invalid password</source>
         <translation>Недействительный пароль</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="104"/>
+        <location filename="../src/global.cpp" line="106"/>
         <source>Done!</source>
         <translation>Готово!</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="116"/>
+        <location filename="../src/global.cpp" line="118"/>
         <source>Printing password is unsecure! Do tou want to continue?</source>
         <translation>Вывод пароля небезопасен! Хотите продолжить?</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="119"/>
+        <location filename="../src/global.cpp" line="121"/>
         <source>Value for</source>
         <translation>Значение для</translation>
     </message>
     <message>
-        <location filename="../src/global.cpp" line="125"/>
+        <location filename="../src/global.cpp" line="127"/>
         <source>Enter logging mode:</source>
         <translation>Введите режим ведения логов:</translation>
     </message>

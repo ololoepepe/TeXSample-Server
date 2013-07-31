@@ -79,6 +79,8 @@ bool initMail(QString *errs)
     QString name;
     if (!bSettings->contains("Mail/local_host_name"))
         name = bReadLine(translate("Global", "Enter local host name or empty string:") + " ");
+    else
+        name = bSettings->value("Mail/local_host_name").toString();
     QString ssl;
     if (!bSettings->contains("Mail/ssl_required"))
         ssl = bReadLine(translate("Global", "Enter SSL mode [true|false] (default false):") + " ");

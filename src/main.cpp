@@ -54,7 +54,7 @@ int main(int argc, char *argv[])
             msg += " (" + translate("main", "read-only mode") + ")";
         BTerminalIOHandler::setTerminalTitle(msg);
         bWriteLine(translate("main", "This is") + " " + msg);
-        BDirTools::createUserLocations(QStringList() << "samples" << "users" << "logs");
+        BDirTools::createUserLocations(QStringList() << "samples" << "labs" << "users" << "logs");
         Application::logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
         Global::resetLoggingMode();
         QString logfn = Application::location(Application::DataPath, Application::UserResources) + "/logs/";
