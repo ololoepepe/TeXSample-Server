@@ -6,7 +6,12 @@ class RegistrationServer;
 class RecoveryServer;
 class Connection;
 
+class TOperationResult;
+
+class BTranslator;
+
 class QStringList;
+class QVariant;
 
 #include <BTerminalIOHandler>
 #include <BLogger>
@@ -28,6 +33,11 @@ public:
 public:
     explicit TerminalIOHandler(QObject *parent = 0);
     ~TerminalIOHandler();
+public:
+    TOperationResult startServer(const QString &address = QString());
+    TOperationResult stopServer();
+    qint64 uptime() const;
+    TOperationResult user(const QStringList &args, QString &text, BTranslator *t = 0);
 protected:
     bool handleCommand(const QString &command, const QStringList &arguments);
 private:

@@ -24,6 +24,7 @@
 #include <BGenericSocket>
 #include <BNetworkOperation>
 #include <BDirTools>
+#include <BTranslator>
 
 #include <QObject>
 #include <QByteArray>
@@ -103,6 +104,10 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleCompileProjectRequest);
     installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
     installRequestHandler(Texsample::ChangeLocaleRequest, (InternalHandler) &Connection::handleChangeLocale);
+    installRequestHandler(Texsample::StartServerRequest, (InternalHandler) &Connection::handleStartServerRequest);
+    installRequestHandler(Texsample::StopServerRequest, (InternalHandler) &Connection::handleStopServerRequest);
+    installRequestHandler(Texsample::UptimeRequest, (InternalHandler) &Connection::handleUptimeRequest);
+    installRequestHandler(Texsample::UserRequest, (InternalHandler) &Connection::handleUserRequest);
     installRequestHandler(Texsample::EditClabGroupsRequest,
                           (InternalHandler) &Connection::handleEditClabGroupsRequest);
     installRequestHandler(Texsample::GetClabGroupsListRequest,
@@ -443,15 +448,67 @@ bool Connection::handleSubscribeRequest(BNetworkOperation *op)
 bool Connection::handleChangeLocale(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
-    QLocale l= in.value("locale").toLocale();
+    QLocale l = in.value("locale").toLocale();
     logLocal("Change locale request: " + l.name());
     if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
     if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
     mlocale = l;
-    sendReply(op, TOperationResult(true));
-    return true;
+    return sendReply(op, TOperationResult(true), LocalOnly);
+}
+
+bool Connection::handleStartServerRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString addr = in.value("address").toString();
+    logLocal("Start server request: [" + addr + "]");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    return sendReply(op, TerminalIOHandler::instance()->startServer(addr), LocalOnly);
+}
+
+bool Connection::handleStopServerRequest(BNetworkOperation *op)
+{
+    logLocal("Stop server request");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    return sendReply(op, TerminalIOHandler::instance()->stopServer(), LocalOnly);
+}
+
+bool Connection::handleUptimeRequest(BNetworkOperation *op)
+{
+    logLocal("Uptime request");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    QVariantMap out;
+    out.insert("msecs", TerminalIOHandler::instance()->uptime());
+    return sendReply(op, out, LocalOnly);
+}
+
+bool Connection::handleUserRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QStringList args = in.value("arguments").toStringList();
+    logLocal("User request: " + args.join(" "));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    BTranslator t;
+    t.load(mlocale, "texsample-server");
+    QString text;
+    TOperationResult r = TerminalIOHandler::instance()->user(args, text, &t);
+    QVariantMap out;
+    if (r)
+        out.insert("text", text);
+    return sendReply(op, out, r, LocalOnly);
 }
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)

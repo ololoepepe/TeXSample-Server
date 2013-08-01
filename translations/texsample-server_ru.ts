@@ -4,37 +4,37 @@
 <context>
     <name>BSettingsNode</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="72"/>
+        <location filename="../src/terminaliohandler.cpp" line="74"/>
         <source>E-mail server address used for e-mail delivery</source>
         <translation>Адрес сервера эл. почты, используемый для доставки эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="75"/>
+        <location filename="../src/terminaliohandler.cpp" line="77"/>
         <source>E-mail server port</source>
         <translation>Порт сервера эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="77"/>
+        <location filename="../src/terminaliohandler.cpp" line="79"/>
         <source>Name of local host passed to the e-mail server</source>
         <translation>Имя локального хоста, передаваемое на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="80"/>
+        <location filename="../src/terminaliohandler.cpp" line="82"/>
         <source>Determines wether the e-mail server requires SSL connection</source>
         <translation>Определяет, требуется ли серверу эл. почты SSL-соединение</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="83"/>
+        <location filename="../src/terminaliohandler.cpp" line="85"/>
         <source>Identifier used to log into the e-mail server</source>
         <translation>Идентификатор, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="88"/>
+        <location filename="../src/terminaliohandler.cpp" line="90"/>
         <source>Password used to log into the e-mail server</source>
         <translation>Пароль, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="93"/>
+        <location filename="../src/terminaliohandler.cpp" line="95"/>
         <source>Logging mode. Possible values:
 0 or less - don&apos;t log
 1 - log to console only
@@ -49,7 +49,7 @@ The default is 2</source>
 Значение по умолчанию - 2</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="100"/>
+        <location filename="../src/terminaliohandler.cpp" line="102"/>
         <source>Logging the &quot;keep alive&quot; operations. Possible values:
 0 or less - don&apos;t log
 1 - log locally
@@ -65,22 +65,22 @@ The default is 0</source>
 <context>
     <name>BTerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="107"/>
+        <location filename="../src/terminaliohandler.cpp" line="109"/>
         <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
         <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="112"/>
+        <location filename="../src/terminaliohandler.cpp" line="114"/>
         <source>Show for how long the application has been running</source>
         <translation>Показать, как долго работает приложение</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="116"/>
+        <location filename="../src/terminaliohandler.cpp" line="118"/>
         <source>Show connected user count or list them all</source>
         <translation>Показать количество подключенных пользователей или перечислить их всех</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="119"/>
+        <location filename="../src/terminaliohandler.cpp" line="121"/>
         <source>Show information about the user. The user may be specified by id or by login. Options:
   --connected-at - time when the user connected
   --info - detailed user information
@@ -91,17 +91,17 @@ The default is 0</source>
   --uptime - как долго пользователь был подключен</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="126"/>
+        <location filename="../src/terminaliohandler.cpp" line="128"/>
         <source>Disconnect the specified user. If login is specified, all connections of this user will be closed</source>
         <translation>Отключить указанного пользователя. Если указан логин, то все соединения данного пользователя будут закрыты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="131"/>
+        <location filename="../src/terminaliohandler.cpp" line="133"/>
         <source>Start the server. If address is specified, the server will only listen on that address, otherwise it will listen on available all addresses.</source>
         <translation>Запустить сервер. Если указан адрес, то сервер будет принимать соединения только по этому адресу, иначе он будет принимать соединения по всем доступным адресам.</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="136"/>
+        <location filename="../src/terminaliohandler.cpp" line="138"/>
         <source>Stop the server. Users are NOT disconnected</source>
         <translation>Остановить сервер. Пользователи НЕ отключаются</translation>
     </message>
@@ -109,7 +109,7 @@ The default is 0</source>
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="63"/>
+        <location filename="../src/connection.cpp" line="64"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
@@ -296,70 +296,44 @@ The default is 0</source>
 <context>
     <name>TerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="168"/>
+        <location filename="../src/terminaliohandler.cpp" line="275"/>
         <source>days</source>
         <translation>дней</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="203"/>
+        <location filename="../src/terminaliohandler.cpp" line="187"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="195"/>
+        <location filename="../src/terminaliohandler.cpp" line="178"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="201"/>
+        <location filename="../src/terminaliohandler.cpp" line="185"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="251"/>
+        <location filename="../src/terminaliohandler.cpp" line="235"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="256"/>
+        <location filename="../src/terminaliohandler.cpp" line="241"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="271"/>
+        <location filename="../src/terminaliohandler.cpp" line="311"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="263"/>
-        <source>Invalid parameters</source>
-        <translation>Недействительные параметры</translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="288"/>
-        <location filename="../src/terminaliohandler.cpp" line="300"/>
-        <source>OK</source>
-        <translation>ОК</translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="279"/>
-        <source>The server is already running</source>
-        <translation>Сервер уже запущен</translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="150"/>
+        <location filename="../src/terminaliohandler.cpp" line="257"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="285"/>
-        <source>Failed to start server</source>
-        <translation>Не удалось запустить сервер</translation>
-    </message>
-    <message>
-        <location filename="../src/terminaliohandler.cpp" line="296"/>
-        <source>The server is not running</source>
-        <translation>Сервер не запущен</translation>
     </message>
 </context>
 <context>

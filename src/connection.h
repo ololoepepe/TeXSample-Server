@@ -79,6 +79,10 @@ private:
     bool handleGetInvitesListRequest(BNetworkOperation *op);
     bool handleSubscribeRequest(BNetworkOperation *op);
     bool handleChangeLocale(BNetworkOperation *op);
+    bool handleStartServerRequest(BNetworkOperation *op);
+    bool handleStopServerRequest(BNetworkOperation *op);
+    bool handleUptimeRequest(BNetworkOperation *op);
+    bool handleUserRequest(BNetworkOperation *op);
     bool handleAddSampleRequest(BNetworkOperation *op);
     bool handleEditSampleRequest(BNetworkOperation *op);
     bool handleUpdateSampleRequest(BNetworkOperation *op);

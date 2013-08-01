@@ -20,6 +20,8 @@
 #include <BSpamNotifier>
 #include <BSettingsNode>
 #include <BTranslation>
+#include <BTranslateFunctor>
+#include <BTranslator>
 
 #include <QObject>
 #include <QString>
@@ -143,6 +145,111 @@ TerminalIOHandler::~TerminalIOHandler()
     //
 }
 
+/*============================== Public methods ============================*/
+
+TOperationResult TerminalIOHandler::startServer(const QString &address)
+{
+    if (sServer->isListening())
+        return TOperationResult(TMessage::ServerAlreadyRunningMessage);
+    QString addr = (!address.isEmpty()) ? address : QString("0.0.0.0");
+    if (!sServer->listen(addr, Texsample::MainPort))
+        return TOperationResult(TMessage::FailedToStartServerError);
+    return TOperationResult(true, TMessage::OkMessage);
+}
+
+TOperationResult TerminalIOHandler::stopServer()
+{
+    if (!sServer->isListening())
+        return TOperationResult(TMessage::ServerIsNotRunningMessage);
+    sServer->close();
+    return TOperationResult(true, TMessage::OkMessage);
+}
+
+qint64 TerminalIOHandler::uptime() const
+{
+    return melapsedTimer.elapsed();
+}
+
+TOperationResult TerminalIOHandler::user(const QStringList &args, QString &text, BTranslator *t)
+{
+    BTranslateFunctor translate(t);
+    if (args.isEmpty())
+    {
+        text = translate("TerminalIOHandler", "Connected user count:") + " "
+                + QString::number(sServer->currentConnectionCount());
+    }
+    else if (args.first() == "--list")
+    {
+        int sz = sServer->currentConnectionCount();
+        if (sz)
+            text = translate("TerminalIOHandler", "Listing connected users") + " (" + QString::number(sz) + "):";
+        else
+            text = translate("TerminalIOHandler", "There are no connected users");
+        sServer->lock();
+        foreach (BNetworkConnection *c, sServer->connections())
+        {
+            Connection *cc = static_cast<Connection *>(c);
+            text = "[" + cc->login() + "] [" + cc->peerAddress() + "] " + cc->uniqueId().toString();
+        }
+        sServer->unlock();
+    }
+    else if (args.size() == 2)
+    {
+        QList<Connection *> users;
+        QUuid uuid = BeQt::uuidFromText(args.at(1));
+        sServer->lock();
+        if (uuid.isNull())
+        {
+            foreach (BNetworkConnection *c, sServer->connections())
+            {
+                Connection *cc = static_cast<Connection *>(c);
+                if (cc->login() == args.at(1))
+                    users << cc;
+            }
+        }
+        else
+        {
+            foreach (BNetworkConnection *c, sServer->connections())
+            {
+                Connection *cc = static_cast<Connection *>(c);
+                if (cc->uniqueId() == uuid)
+                {
+                    users << cc;
+                    break;
+                }
+            }
+        }
+        if (args.first() == "--kick")
+        {
+            foreach (Connection *c, users)
+                QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
+        }
+        else if (args.first() == "--info")
+        {
+            foreach (Connection *c, users)
+                text = c->infoString();
+        }
+        else if (args.first() == "--uptime")
+        {
+            foreach (Connection *c, users)
+                text = translate("TerminalIOHandler", "Uptime of") + " " + userPrefix(c) + " "
+                        + msecsToString(c->uptime());
+        }
+        else if (args.first() == "--connected-at")
+        {
+            foreach (Connection *c, users)
+                text = translate("TerminalIOHandler", "Connection time of") + " " + userPrefix(c) + " "
+                        + c->connectedAt().toString(bLogger->dateTimeFormat());
+        }
+        sServer->unlock();
+    }
+    else
+    {
+        return TOperationResult(TMessage::InvalidCommandArgumentsError);
+    }
+    return TOperationResult(true);
+}
+
 /*============================== Protected methods =========================*/
 
 bool TerminalIOHandler::handleCommand(const QString &, const QStringList &)
@@ -190,80 +297,13 @@ void TerminalIOHandler::writeHelpLine(const QString &command, const QString &des
 
 bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
 {
-    if (args.isEmpty())
-    {
-        writeLine(tr("Connected user count:") + " " + QString::number(sServer->currentConnectionCount()));
-    }
-    else if (args.first() == "--list")
-    {
-        int sz = sServer->currentConnectionCount();
-        if (sz)
-            writeLine(tr("Listing connected users") + " (" + QString::number(sz) + "):");
-        else
-            writeLine(tr("There are no connected users"));
-        sServer->lock();
-        foreach (BNetworkConnection *c, sServer->connections())
-        {
-            Connection *cc = static_cast<Connection *>(c);
-            writeLine("[" + cc->login() + "] [" + cc->peerAddress() + "] " + cc->uniqueId().toString());
-        }
-        sServer->unlock();
-    }
-    else if (args.size() == 2)
-    {
-        QList<Connection *> users;
-        QUuid uuid = BeQt::uuidFromText(args.at(1));
-        sServer->lock();
-        if (uuid.isNull())
-        {
-            foreach (BNetworkConnection *c, sServer->connections())
-            {
-                Connection *cc = static_cast<Connection *>(c);
-                if (cc->login() == args.at(1))
-                    users << cc;
-            }
-        }
-        else
-        {
-            foreach (BNetworkConnection *c, sServer->connections())
-            {
-                Connection *cc = static_cast<Connection *>(c);
-                if (cc->uniqueId() == uuid)
-                {
-                    users << cc;
-                    break;
-                }
-            }
-        }
-        if (args.first() == "--kick")
-        {
-            foreach (Connection *c, users)
-                QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
-        }
-        else if (args.first() == "--info")
-        {
-            foreach (Connection *c, users)
-                writeLine(c->infoString());
-        }
-        else if (args.first() == "--uptime")
-        {
-            foreach (Connection *c, users)
-                writeLine(tr("Uptime of") + " " + userPrefix(c) + " " + msecsToString(c->uptime()));
-        }
-        else if (args.first() == "--connected-at")
-        {
-            foreach (Connection *c, users)
-                writeLine(tr("Connection time of") + " " + userPrefix(c) + " "
-                          + c->connectedAt().toString(bLogger->dateTimeFormat()));
-        }
-        sServer->unlock();
-    }
+    QString text;
+    TOperationResult r = user(args, text, BCoreApplication::translator("texsample-server"));
+    if (r)
+        writeLine(text);
     else
-    {
-        writeLine(tr("Invalid parameters"));
-        return false;
-    }
-    return true;
+        writeLine(r.messageString());
+    return r;
 }
 
 bool TerminalIOHandler::handleUptime(const QString &, const QStringList &)
@@ -274,29 +314,14 @@ bool TerminalIOHandler::handleUptime(const QString &, const QStringList &)
 
 bool TerminalIOHandler::handleStart(const QString &, const QStringList &args)
 {
-    if (sServer->isListening())
-    {
-        writeLine(tr("The server is already running"));
-        return false;
-    }
-    QString addr = (args.size() >= 1) ? args.first() : QString("0.0.0.0");
-    if (!sServer->listen(addr, Texsample::MainPort))
-    {
-        writeLine(tr("Failed to start server"));
-        return false;
-    }
-    writeLine(tr("OK"));
-    return true;
+    TOperationResult r = startServer(!args.isEmpty() ? args.first() : QString());
+    writeLine(r.messageString());
+    return r;
 }
 
 bool TerminalIOHandler::handleStop(const QString &, const QStringList &)
 {
-    if (!sServer->isListening())
-    {
-        writeLine(tr("The server is not running"));
-        return false;
-    }
-    sServer->close();
-    writeLine(tr("OK"));
-    return false;
+    TOperationResult r = stopServer();
+    writeLine(r.messageString());
+    return r;
 }
