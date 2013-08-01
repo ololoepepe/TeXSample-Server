@@ -153,6 +153,26 @@ TClientInfo Connection::clientInfo() const
     return mclientInfo;
 }
 
+quint64 Connection::userId() const
+{
+    return muserId;
+}
+
+QLocale Connection::locale() const
+{
+    return mlocale;
+}
+
+TAccessLevel Connection::accessLevel() const
+{
+    return maccessLevel;
+}
+
+TServiceList Connection::services() const
+{
+    return mservices;
+}
+
 QString Connection::infoString(const QString &format) const
 {
     //%d - user id, "%u - login, %p - address, %i - id, %a - access level
@@ -167,7 +187,7 @@ QString Connection::infoString(const QString &format) const
     s.replace("%u", mlogin);
     s.replace("%p", peerAddress());
     s.replace("%i", BeQt::pureUuidText(uniqueId()));
-    s.replace("%a", QString::number(maccessLevel));
+    s.replace("%a", maccessLevel.toStringNoTr());
     return s;
 }
 
@@ -501,13 +521,11 @@ bool Connection::handleUserRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
     if (maccessLevel < TAccessLevel::AdminLevel)
         return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
-    BTranslator t;
-    t.load(mlocale, "texsample-server");
-    QString text;
-    TOperationResult r = TerminalIOHandler::instance()->user(args, text, &t);
+    QVariant result;
+    TOperationResult r = TerminalIOHandler::instance()->user(args, result);
     QVariantMap out;
     if (r)
-        out.insert("text", text);
+        out.insert("result", result);
     return sendReply(op, out, r, LocalOnly);
 }
 

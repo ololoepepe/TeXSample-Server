@@ -48,6 +48,10 @@ public:
     void sendMessageRequest(const TMessage &msg);
     QString login() const;
     TClientInfo clientInfo() const;
+    quint64 userId() const;
+    QLocale locale() const;
+    TAccessLevel accessLevel() const;
+    TServiceList services() const;
     QString infoString(const QString &format = "") const;
     //%d - user id, "%u - login, %p - address, %i - id
     //%a - access level

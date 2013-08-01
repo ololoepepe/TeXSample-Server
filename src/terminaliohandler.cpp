@@ -32,6 +32,7 @@
 #include <QMetaObject>
 #include <QElapsedTimer>
 #include <QVariantMap>
+#include <QVariantList>
 #include <QVariant>
 #include <QByteArray>
 #include <QCryptographicHash>
@@ -44,6 +45,10 @@
 #include <QMutexLocker>
 
 #include <QDebug>
+
+#if QT_VERSION < QT_VERSION_CHECK(5, 0, 0)
+Q_DECLARE_METATYPE(QUuid)
+#endif
 
 /*============================================================================
 ================================ TerminalIOHandler ===========================
@@ -170,28 +175,20 @@ qint64 TerminalIOHandler::uptime() const
     return melapsedTimer.elapsed();
 }
 
-TOperationResult TerminalIOHandler::user(const QStringList &args, QString &text, BTranslator *t)
+TOperationResult TerminalIOHandler::user(const QStringList &args, QVariant &result)
 {
-    BTranslateFunctor translate(t);
     if (args.isEmpty())
     {
-        text = translate("TerminalIOHandler", "Connected user count:") + " "
-                + QString::number(sServer->currentConnectionCount());
+        result = sServer->currentConnectionCount();
     }
     else if (args.first() == "--list")
     {
-        int sz = sServer->currentConnectionCount();
-        if (sz)
-            text = translate("TerminalIOHandler", "Listing connected users") + " (" + QString::number(sz) + "):";
-        else
-            text = translate("TerminalIOHandler", "There are no connected users");
+        QVariantList l;
         sServer->lock();
         foreach (BNetworkConnection *c, sServer->connections())
-        {
-            Connection *cc = static_cast<Connection *>(c);
-            text = "[" + cc->login() + "] [" + cc->peerAddress() + "] " + cc->uniqueId().toString();
-        }
+            l << packUserData(static_cast<Connection *>(c));
         sServer->unlock();
+        result = l;
     }
     else if (args.size() == 2)
     {
@@ -223,23 +220,45 @@ TOperationResult TerminalIOHandler::user(const QStringList &args, QString &text,
         {
             foreach (Connection *c, users)
                 QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
+            sServer->unlock();
+            return TOperationResult(true, TMessage::OkMessage);
         }
         else if (args.first() == "--info")
         {
+            QVariantList l;
             foreach (Connection *c, users)
-                text = c->infoString();
+            {
+                QVariantMap m = packUserData(c);
+                m.insert("client_info", c->clientInfo());
+                m.insert("user_id", c->userId());
+                m.insert("locale", c->locale());
+                m.insert("access_level", c->accessLevel());
+                m.insert("services", c->services());
+                l << m;
+            }
+            result = l;
         }
         else if (args.first() == "--uptime")
         {
+            QVariantList l;
             foreach (Connection *c, users)
-                text = translate("TerminalIOHandler", "Uptime of") + " " + userPrefix(c) + " "
-                        + msecsToString(c->uptime());
+            {
+                QVariantMap m = packUserData(c);
+                m.insert("uptime", c->uptime());
+                l << m;
+            }
+            result = l;
         }
         else if (args.first() == "--connected-at")
         {
+            QVariantList l;
             foreach (Connection *c, users)
-                text = translate("TerminalIOHandler", "Connection time of") + " " + userPrefix(c) + " "
-                        + c->connectedAt().toString(bLogger->dateTimeFormat());
+            {
+                QVariantMap m = packUserData(c);
+                m.insert("connection_dt", c->connectedAt(Qt::UTC));
+                l << m;
+            }
+            result = l;
         }
         sServer->unlock();
     }
@@ -275,11 +294,21 @@ QString TerminalIOHandler::msecsToString(qint64 msecs)
     return days + " " + tr("days") + " " + hours + ":" + minutes + ":" + seconds;
 }
 
-QString TerminalIOHandler::userPrefix(Connection *user)
+QVariantMap TerminalIOHandler::packUserData(Connection *user)
 {
     if (!user)
-        return "";
-    return "[" + user->login() + "] [" + user->peerAddress() + "] " + user->uniqueId().toString();
+        return QVariantMap();
+    QVariantMap m;
+    m.insert("login", user->login());
+    m.insert("address", user->peerAddress());
+    m.insert("unique_id", QVariant::fromValue(user->uniqueId()));
+    return m;
+}
+
+QString TerminalIOHandler::userPrefix(const QVariantMap &m)
+{
+    return "[" + m.value("login").toString() + "] [" + m.value("address").toString() + "] ["
+            + BeQt::pureUuidText(m.value("unique_id").value<QUuid>()) + "]";
 }
 
 void TerminalIOHandler::writeHelpLine(const QString &command, const QString &description)
@@ -297,12 +326,68 @@ void TerminalIOHandler::writeHelpLine(const QString &command, const QString &des
 
 bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
 {
-    QString text;
-    TOperationResult r = user(args, text, BCoreApplication::translator("texsample-server"));
+    QVariant result;
+    TOperationResult r = user(args, result);
     if (r)
-        writeLine(text);
+    {
+        if (args.isEmpty())
+        {
+            writeLine(tr("Connected user count:") + " " + QString::number(result.toInt()));
+        }
+        else if (args.first() == "--list")
+        {
+            QVariantList l = result.toList();
+            int sz = l.size();
+            if (sz)
+                writeLine(tr("Listing connected users") + " (" + QString::number(sz) + "):");
+            else
+                writeLine(tr("There are no connected users"));
+            foreach (const QVariant &v, l)
+                writeLine(userPrefix(v.toMap()));
+        }
+        else if (args.size() == 2)
+        {
+            if (args.first() == "--kick")
+            {
+                writeLine(r.messageString());
+            }
+            else if (args.first() == "--info")
+            {
+                foreach (const QVariant &v, result.toList())
+                {
+                    QVariantMap m = v.toMap();
+                    QString f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+                    f.replace("%l", m.value("locale").toLocale().name());
+                    QString s = m.value("client_info").value<TClientInfo>().toString(f);
+                    s.replace("%d", QString::number(m.value("user_id").toULongLong()));
+                    s.replace("%u", m.value("login").toString());
+                    s.replace("%p", m.value("address").toString());
+                    s.replace("%i", BeQt::pureUuidText(m.value("unique_id").value<QUuid>()));
+                    s.replace("%a", m.value("access_level").value<TAccessLevel>().toStringNoTr());
+                    writeLine(s);
+                }
+            }
+            else if (args.first() == "--uptime")
+            {
+                foreach (const QVariant &v, result.toList())
+                    writeLine(tr("Uptime of") + " " + userPrefix(v.toMap()) + " "
+                              + msecsToString(v.toMap().value("uptime").toLongLong()));
+            }
+            else if (args.first() == "--connected-at")
+            {
+                foreach (const QVariant &v, result.toList())
+                {
+                    QDateTime dt = v.toMap().value("connection_dt").toDateTime().toLocalTime();
+                    writeLine(tr("Connection time of") + " " + userPrefix(v.toMap()) + " "
+                              + dt.toString(bLogger->dateTimeFormat()));
+                }
+            }
+        }
+    }
     else
+    {
         writeLine(r.messageString());
+    }
     return r;
 }
 

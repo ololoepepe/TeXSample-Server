@@ -8,8 +8,6 @@ class Connection;
 
 class TOperationResult;
 
-class BTranslator;
-
 class QStringList;
 class QVariant;
 
@@ -37,12 +35,13 @@ public:
     TOperationResult startServer(const QString &address = QString());
     TOperationResult stopServer();
     qint64 uptime() const;
-    TOperationResult user(const QStringList &args, QString &text, BTranslator *t = 0);
+    TOperationResult user(const QStringList &args, QVariant &result);
 protected:
     bool handleCommand(const QString &command, const QStringList &arguments);
 private:
     static QString msecsToString(qint64 msecs);
-    static QString userPrefix(Connection *user);
+    static QVariantMap packUserData(Connection *user);
+    static QString userPrefix(const QVariantMap &userData);
     static void writeHelpLine(const QString &command, const QString &description);
 private:
     bool handleUser(const QString &cmd, const QStringList &args);
