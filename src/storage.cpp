@@ -788,6 +788,12 @@ TOperationResult Storage::addLab(quint64 userId, const TLabInfo &info, const TLa
         }
     }
     QString path = rootDir() + "/labs/" + QString::number(qr.lastInsertId().toULongLong());
+    if (!BDirTools::mkpath(path))
+    {
+        mdb->rollback();
+        BDirTools::rmdir(path);
+        return TOperationResult(TMessage::InternalFileSystemError);
+    }
     if (webProject.isValid())
     {
         if (!webProject.save(path))
@@ -859,7 +865,7 @@ TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webPr
         m.insert("url", "");
         type = TLabInfo::WebType;
     }
-    else if (url.isEmpty())
+    else if (linuxProject.isValid() || macProject.isValid() || winProject.isValid())
     {
         m.insert("file_name_web", "");
         m.insert("file_name_linux", linuxProject.mainFileName());
@@ -868,7 +874,7 @@ TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webPr
         m.insert("url", "");
         type = TLabInfo::DesktopType;
     }
-    else
+    else if (!url.isEmpty())
     {
         m.insert("file_name_web", "");
         m.insert("file_name_linux", "");
@@ -902,19 +908,15 @@ TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webPr
         }
     }
     QString path = rootDir() + "/labs/" + QString::number(info.id());
-    if (QFileInfo(path).isDir() && !BDirTools::rmdir(path))
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalFileSystemError);
-    }
     QString bupath = QDir::tempPath() + "/texsample-server/backup/" + BeQt::pureUuidText(QUuid::createUuid());
-    if (!BDirTools::copyDir(path, bupath, true))
+    bool empty = BDirTools::entryList(path, QDir::NoDotAndDotDot).isEmpty();
+    if (!empty && !BDirTools::copyDir(path, bupath, true))
     {
         mdb->rollback();
         BDirTools::rmdir(bupath);
         return TOperationResult(TMessage::InternalFileSystemError);
     }
-    if (!BDirTools::rmdir(path))
+    if (!empty && !BDirTools::rmdir(path))
     {
         mdb->rollback();
         BDirTools::copyDir(bupath, path, true);
@@ -1032,7 +1034,8 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
     foreach (const QVariantMap &m, r1.values())
     {
         quint64 labId = m.value("id").toULongLong();
-        if (!BTextTools::intersects(labGroups(labId), groups))
+        QStringList lg = labGroups(labId);
+        if (!lg.isEmpty() && !BTextTools::intersects(lg, groups))
             continue;
         TLabInfo info;
         info.setId(labId);
@@ -1059,7 +1062,7 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
             default:
                 return TOperationResult(TMessage::InternalStorageError);
             }
-            if (QFileInfo(path).isDir())
+            if (!QFileInfo(path).isDir())
                 continue;
             info.setProjectSize(TLabProject::size(path));
         }
@@ -1076,14 +1079,16 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
     foreach (const QVariant &v, r2.values())
     {
         quint64 labId = v.toMap().value("id").toULongLong();
-        if (!BTextTools::intersects(labGroups(labId), groups))
+        QStringList lg = labGroups(labId);
+        if (!lg.isEmpty() && !BTextTools::intersects(lg, groups))
             continue;
         deletedLabs << labId;
     }
     return TOperationResult(true);
 }
 
-TOperationResult Storage::getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, QString &url)
+TOperationResult Storage::getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, TLabInfo::Type &t,
+                                 QString &url)
 {
     if (!labId)
         return TOperationResult(TMessage::InvalidLabIdError);
@@ -1091,12 +1096,12 @@ TOperationResult Storage::getLab(quint64 labId, BeQt::OSType osType, TLabProject
         return TOperationResult(TMessage::InvalidOSTypeError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
-    TLabInfo::Type type = labType(labId);
-    if (TLabInfo::NoType == type)
+    t = labType(labId);
+    if (TLabInfo::NoType == t)
         return TOperationResult(TMessage::InternalStorageError);
     project.clear();
     url.clear();
-    switch (type)
+    switch (t)
     {
     case TLabInfo::DesktopType:
     {
@@ -1310,7 +1315,7 @@ TLabInfo::Type Storage::labType(quint64 labId)
 {
     if (!labId || !isValid())
         return TLabInfo::NoType;
-    BSqlWhere w("lab_id = :lab_id", ":lab_id", labId);
+    BSqlWhere w("id = :id", ":id", labId);
     return static_cast<TLabInfo::Type>(mdb->select("labs", "type", w).value("type").toInt());
 }
 

@@ -24,6 +24,7 @@
 #include <BGenericSocket>
 #include <BNetworkOperation>
 #include <BDirTools>
+#include <BTranslator>
 
 #include <QObject>
 #include <QByteArray>
@@ -103,6 +104,10 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleCompileProjectRequest);
     installRequestHandler(Texsample::SubscribeRequest, (InternalHandler) &Connection::handleSubscribeRequest);
     installRequestHandler(Texsample::ChangeLocaleRequest, (InternalHandler) &Connection::handleChangeLocale);
+    installRequestHandler(Texsample::StartServerRequest, (InternalHandler) &Connection::handleStartServerRequest);
+    installRequestHandler(Texsample::StopServerRequest, (InternalHandler) &Connection::handleStopServerRequest);
+    installRequestHandler(Texsample::UptimeRequest, (InternalHandler) &Connection::handleUptimeRequest);
+    installRequestHandler(Texsample::UserRequest, (InternalHandler) &Connection::handleUserRequest);
     installRequestHandler(Texsample::EditClabGroupsRequest,
                           (InternalHandler) &Connection::handleEditClabGroupsRequest);
     installRequestHandler(Texsample::GetClabGroupsListRequest,
@@ -148,6 +153,26 @@ TClientInfo Connection::clientInfo() const
     return mclientInfo;
 }
 
+quint64 Connection::userId() const
+{
+    return muserId;
+}
+
+QLocale Connection::locale() const
+{
+    return mlocale;
+}
+
+TAccessLevel Connection::accessLevel() const
+{
+    return maccessLevel;
+}
+
+TServiceList Connection::services() const
+{
+    return mservices;
+}
+
 QString Connection::infoString(const QString &format) const
 {
     //%d - user id, "%u - login, %p - address, %i - id, %a - access level
@@ -155,14 +180,14 @@ QString Connection::infoString(const QString &format) const
         return "";
     QString f = format;
     if (f.isEmpty())
-        f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+        f = "[%u] [%p] [%i]\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
     f.replace("%l", mlocale.name());
     QString s = mclientInfo.toString(f);
     s.replace("%d", QString::number(muserId));
     s.replace("%u", mlogin);
     s.replace("%p", peerAddress());
     s.replace("%i", BeQt::pureUuidText(uniqueId()));
-    s.replace("%a", QString::number(maccessLevel));
+    s.replace("%a", maccessLevel.toStringNoTr());
     return s;
 }
 
@@ -268,8 +293,6 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
     mservices = mstorage->userServices(muserId);
-    if (maccessLevel >= TAccessLevel::AdminLevel)
-        msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     QString f = "Client info:\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
     f += "%l\nClient: %c\nClient version: %v\nTeXSample version: %t\nBeQt version: %b\nQt version: %q";
@@ -280,7 +303,10 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     out.insert("access_level", maccessLevel);
     out.insert("services", mservices);
     restartTimer();
-    return sendReply(op, out);
+    bool b = sendReply(op, out);
+    if (maccessLevel >= TAccessLevel::AdminLevel)
+        msubscribed = in.value("subscription").toBool();
+    return b;
 }
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -443,15 +469,65 @@ bool Connection::handleSubscribeRequest(BNetworkOperation *op)
 bool Connection::handleChangeLocale(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
-    QLocale l= in.value("locale").toLocale();
+    QLocale l = in.value("locale").toLocale();
     logLocal("Change locale request: " + l.name());
     if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
     if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
     mlocale = l;
-    sendReply(op, TOperationResult(true));
-    return true;
+    return sendReply(op, TOperationResult(true), LocalOnly);
+}
+
+bool Connection::handleStartServerRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString addr = in.value("address").toString();
+    logLocal("Start server request: [" + addr + "]");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    return sendReply(op, TerminalIOHandler::instance()->startServer(addr), LocalOnly);
+}
+
+bool Connection::handleStopServerRequest(BNetworkOperation *op)
+{
+    logLocal("Stop server request");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    return sendReply(op, TerminalIOHandler::instance()->stopServer(), LocalOnly);
+}
+
+bool Connection::handleUptimeRequest(BNetworkOperation *op)
+{
+    logLocal("Uptime request");
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::ModeratorLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    QVariantMap out;
+    out.insert("msecs", TerminalIOHandler::instance()->uptime());
+    return sendReply(op, out, LocalOnly);
+}
+
+bool Connection::handleUserRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QStringList args = in.value("arguments").toStringList();
+    logLocal("User request: " + args.join(" "));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::AdminLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    QVariant result;
+    TOperationResult r = TerminalIOHandler::instance()->user(args, result);
+    QVariantMap out;
+    if (r)
+        out.insert("result", result);
+    return sendReply(op, out, r, LocalOnly);
 }
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
@@ -761,10 +837,12 @@ bool Connection::handleGetLabRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     TLabProject project;
     QString url;
-    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, url);
+    TLabInfo::Type t;
+    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, t, url);
     if (!r)
         return sendReply(op, r);
     QVariantMap out;
+    out.insert("type", (int) t);
     if (project.isValid())
         out.insert("project", project);
     else
@@ -777,7 +855,7 @@ bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TOperat
 {
     out.insert("operation_result", r);
     op->reply(out);
-    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? QString("Success!") : r.messageStringNoTr());
     switch (lt)
     {
     case LocalAndRemote:
@@ -801,7 +879,7 @@ bool Connection::sendReply(BNetworkOperation *op, QVariantMap out, const TCompil
 {
     out.insert("compilation_result", r);
     op->reply(out);
-    QString s = prefix + ((r.message() == TMessage::NoMessage) ? tr("Success!") : r.messageStringNoTr());
+    QString s = prefix + ((r.message() == TMessage::NoMessage) ? QString("Success!") : r.messageStringNoTr());
     switch (lt)
     {
     case LocalAndRemote:
@@ -898,7 +976,8 @@ void Connection::keepAlive()
 
 void Connection::sendLogRequestInternal(const QString &text, int lvl)
 {
-    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+    if (!muserId || !msubscribed || text.isEmpty() || !isConnected()
+            || QAbstractSocket::UnknownSocketError != socket()->error())
         return;
     QVariantMap out;
     out.insert("text", text);
@@ -910,7 +989,8 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
 
 void Connection::sendMessageRequestInternal(int msg)
 {
-    if (!muserId || !msubscribed || msg < 0 || !isConnected())
+    if (!muserId || !msubscribed || msg < 0 || !isConnected()
+            || QAbstractSocket::UnknownSocketError != socket()->error())
         return;
     QVariantMap out;
     out.insert("message", TMessage(msg));
