@@ -14,6 +14,7 @@
 #include <QObject>
 #include <QTcpSocket>
 #include <QList>
+#include <QThread>
 
 /*============================================================================
 ================================ Server ======================================
@@ -29,7 +30,7 @@ Server *Server::instance()
 void Server::sendLogRequest(const QString &text, BLogger::Level lvl)
 {
     Server *s = instance();
-    if (s)
+    if (!s)
         return;
     s->lock();
     foreach (BNetworkConnection *c, s->connections())

@@ -42,7 +42,6 @@ private:
     static QString msecsToString(qint64 msecs);
     static QVariantMap packUserData(Connection *user);
     static QString userPrefix(const QVariantMap &userData);
-    static void writeHelpLine(const QString &command, const QString &description);
 private:
     bool handleUser(const QString &cmd, const QStringList &args);
     bool handleUptime(const QString &cmd, const QStringList &args);

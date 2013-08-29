@@ -311,17 +311,6 @@ QString TerminalIOHandler::userPrefix(const QVariantMap &m)
             + BeQt::pureUuidText(m.value("unique_id").value<QUuid>()) + "]";
 }
 
-void TerminalIOHandler::writeHelpLine(const QString &command, const QString &description)
-{
-    QString s = "  " + command;
-    if (s.length() > 28)
-        s += "\n" + QString().fill(' ', 30);
-    else
-        s += QString().fill(' ', 30 - s.length());
-    s += description;
-    writeLine(s);
-}
-
 /*============================== Private methods ===========================*/
 
 bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
@@ -356,7 +345,7 @@ bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
                 foreach (const QVariant &v, result.toList())
                 {
                     QVariantMap m = v.toMap();
-                    QString f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+                    QString f = "[%u] [%p] [%i]\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
                     f.replace("%l", m.value("locale").toLocale().name());
                     QString s = m.value("client_info").value<TClientInfo>().toString(f);
                     s.replace("%d", QString::number(m.value("user_id").toULongLong()));

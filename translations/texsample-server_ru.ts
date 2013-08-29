@@ -301,32 +301,32 @@ The default is 0</source>
         <translation>дней</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="344"/>
+        <location filename="../src/terminaliohandler.cpp" line="333"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="335"/>
+        <location filename="../src/terminaliohandler.cpp" line="324"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="342"/>
+        <location filename="../src/terminaliohandler.cpp" line="331"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="373"/>
+        <location filename="../src/terminaliohandler.cpp" line="362"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="381"/>
+        <location filename="../src/terminaliohandler.cpp" line="370"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="396"/>
+        <location filename="../src/terminaliohandler.cpp" line="385"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>

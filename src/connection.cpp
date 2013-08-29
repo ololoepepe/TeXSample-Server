@@ -180,7 +180,7 @@ QString Connection::infoString(const QString &format) const
         return "";
     QString f = format;
     if (f.isEmpty())
-        f = "[%u] [%p] %i\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+        f = "[%u] [%p] [%i]\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
     f.replace("%l", mlocale.name());
     QString s = mclientInfo.toString(f);
     s.replace("%d", QString::number(muserId));
@@ -293,8 +293,6 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     muserId = id;
     maccessLevel = mstorage->userAccessLevel(id);
     mservices = mstorage->userServices(muserId);
-    if (maccessLevel >= TAccessLevel::AdminLevel)
-        msubscribed = in.value("subscription").toBool();
     setCriticalBufferSize(200 * BeQt::Megabyte);
     QString f = "Client info:\nUser ID: %d\nUnique ID: %i\nAccess level: %a\nOS: %o\nLocale: ";
     f += "%l\nClient: %c\nClient version: %v\nTeXSample version: %t\nBeQt version: %b\nQt version: %q";
@@ -305,7 +303,10 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     out.insert("access_level", maccessLevel);
     out.insert("services", mservices);
     restartTimer();
-    return sendReply(op, out);
+    bool b = sendReply(op, out);
+    if (maccessLevel >= TAccessLevel::AdminLevel)
+        msubscribed = in.value("subscription").toBool();
+    return b;
 }
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -975,7 +976,8 @@ void Connection::keepAlive()
 
 void Connection::sendLogRequestInternal(const QString &text, int lvl)
 {
-    if (!muserId || !msubscribed || text.isEmpty() || !isConnected())
+    if (!muserId || !msubscribed || text.isEmpty() || !isConnected()
+            || QAbstractSocket::UnknownSocketError != socket()->error())
         return;
     QVariantMap out;
     out.insert("text", text);
@@ -987,7 +989,8 @@ void Connection::sendLogRequestInternal(const QString &text, int lvl)
 
 void Connection::sendMessageRequestInternal(int msg)
 {
-    if (!muserId || !msubscribed || msg < 0 || !isConnected())
+    if (!muserId || !msubscribed || msg < 0 || !isConnected()
+            || QAbstractSocket::UnknownSocketError != socket()->error())
         return;
     QVariantMap out;
     out.insert("message", TMessage(msg));
