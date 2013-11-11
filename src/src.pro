@@ -3,7 +3,7 @@ TARGET = texsample-server
 
 CONFIG += console release
 
-QT = core network sql
+QT = core network sql gui
 BEQT = core network sql
 TSMP = core
 

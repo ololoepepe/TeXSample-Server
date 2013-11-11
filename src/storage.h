@@ -101,6 +101,8 @@ public:
     TServiceList userServices(quint64 userId);
     TServiceList newUserServices(quint64 inviteId);
     TServiceList newUserServices(const QString &inviteCode);
+    QStringList newUserClabGroups(quint64 inviteId);
+    QStringList newUserClabGroups(const QString &inviteCode);
     bool userHasAccessTo(quint64 userId, const TService service);
     QStringList userClabGroups(quint64 userId);
     TSampleInfo::Type sampleType(quint64 sampleId);
