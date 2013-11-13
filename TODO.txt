@@ -1,9 +1,6 @@
 === PATCH ===
 
-[done] Fix some strings
-[done] Use QtGui (TeXSample 1.0.1 compatibility)
-[done] Change maximum invite count to 10
-* Fix locking
+
 
 === MINOR ===
 
