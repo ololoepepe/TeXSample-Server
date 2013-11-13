@@ -296,42 +296,42 @@ The default is 0</source>
 <context>
     <name>TerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="294"/>
+        <location filename="../src/terminaliohandler.cpp" line="296"/>
         <source>days</source>
         <translation>дней</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="333"/>
+        <location filename="../src/terminaliohandler.cpp" line="335"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="324"/>
+        <location filename="../src/terminaliohandler.cpp" line="326"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="331"/>
+        <location filename="../src/terminaliohandler.cpp" line="333"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="362"/>
+        <location filename="../src/terminaliohandler.cpp" line="364"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="370"/>
+        <location filename="../src/terminaliohandler.cpp" line="372"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="385"/>
+        <location filename="../src/terminaliohandler.cpp" line="387"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="276"/>
+        <location filename="../src/terminaliohandler.cpp" line="278"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>

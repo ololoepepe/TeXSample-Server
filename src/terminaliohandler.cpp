@@ -179,7 +179,9 @@ TOperationResult TerminalIOHandler::user(const QStringList &args, QVariant &resu
 {
     if (args.isEmpty())
     {
+        sServer->lock();
         result = sServer->currentConnectionCount();
+        sServer->unlock();
     }
     else if (args.first() == "--list")
     {
@@ -345,7 +347,7 @@ bool TerminalIOHandler::handleUser(const QString &, const QStringList &args)
                 foreach (const QVariant &v, result.toList())
                 {
                     QVariantMap m = v.toMap();
-                    QString f = "[%u] [%p] [%i]\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+                    QString f = "[%u] [%p] [%i]\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q";
                     f.replace("%l", m.value("locale").toLocale().name());
                     QString s = m.value("client_info").value<TClientInfo>().toString(f);
                     s.replace("%d", QString::number(m.value("user_id").toULongLong()));

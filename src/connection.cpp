@@ -180,7 +180,7 @@ QString Connection::infoString(const QString &format) const
         return "";
     QString f = format;
     if (f.isEmpty())
-        f = "[%u] [%p] [%i]\n%a; %o [%l]\nClient v%v; TeXSample v%t; BeQt v%b; Qt v%q";
+        f = "[%u] [%p] [%i]\n%a; %o [%l]\n%c v%v; TeXSample v%t; BeQt v%b; Qt v%q";
     f.replace("%l", mlocale.name());
     QString s = mclientInfo.toString(f);
     s.replace("%d", QString::number(muserId));

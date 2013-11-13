@@ -187,10 +187,18 @@ TOperationResult Storage::registerUser(TUserInfo info, const QLocale &locale)
         return TOperationResult(TMessage::InvalidUserInfoError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
+    qint64 iid = inviteId(info.inviteCode());
+    if (!iid)
+        return TOperationResult(TMessage::NoSuchCodeError);
     info.setContext(TUserInfo::AddContext);
     info.setAccessLevel(TAccessLevel::UserLevel);
     info.setServices(newUserServices(info.inviteCode()));
-    return addUserInternal(info, locale);
+    TOperationResult r = addUserInternal(info, locale, newUserClabGroups(info.inviteCode()));
+    if (!r)
+        return r;
+    mdb->deleteFrom("invite_codes", BSqlWhere("id = :id", ":id", iid));
+    return r;
+
 }
 
 TOperationResult Storage::editUser(const TUserInfo &info, bool editClab, const QStringList &clabGroups)
@@ -527,7 +535,7 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
-    if (!userId || !expirationDT.isValid() || !count || count > Texsample::MaximumInvitesCount)
+    if (!userId || !expirationDT.isValid() || !count || count > 10) //TODO: Make max invite count configurable
         return TOperationResult(TMessage::InvalidDataError);
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
@@ -781,7 +789,7 @@ TOperationResult Storage::addLab(quint64 userId, const TLabInfo &info, const TLa
     }
     foreach (const QString &gr, info.groups())
     {
-        if (!mdb->insert("lab_clab_groups", "lab_id", info.id(), "group_name", gr))
+        if (!mdb->insert("lab_clab_groups", "lab_id", qr.lastInsertId(), "group_name", gr))
         {
             mdb->rollback();
             return TOperationResult(TMessage::InternalQueryError);
@@ -1047,7 +1055,7 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
         info.setAuthors(BeQt::deserialize(m.value("authors").toByteArray()).toStringList());
         info.setTitle(m.value("title").toString());
         info.setType(m.value("type").toInt());
-        info.setGroups(groups);
+        info.setGroups(lg);
         QString url = m.value("url").toString();
         if (url.isEmpty())
         {
@@ -1063,8 +1071,15 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
                 return TOperationResult(TMessage::InternalStorageError);
             }
             if (!QFileInfo(path).isDir())
-                continue;
-            info.setProjectSize(TLabProject::size(path));
+            {
+                if (userAccessLevel(userId) < TAccessLevel::ModeratorLevel)
+                    continue;
+                info.setProjectSize(TLabProject::size(QFileInfo(path).path()));
+            }
+            else
+            {
+                info.setProjectSize(TLabProject::size(path));
+            }
         }
         else
         {
@@ -1247,6 +1262,27 @@ bool Storage::userHasAccessTo(quint64 userId, const TService service)
         return true;
     BSqlWhere w("user_id = :user_id", ":user_id", userId);
     return mdb->select("user_services", "service_id", w).value("service_id").toInt() == service;
+}
+
+QStringList Storage::newUserClabGroups(quint64 inviteId)
+{
+    if (!inviteId || !isValid())
+        return QStringList();
+    BSqlResult r = mdb->select("new_user_clab_groups", "group_name", BSqlWhere("invite_id = :id", ":id", inviteId));
+    if (!r)
+        return QStringList();
+    QStringList list;
+    foreach (const QVariantMap &m, r.values())
+        list << m.value("group_name").toString();
+    return list;
+}
+
+QStringList Storage::newUserClabGroups(const QString &inviteCode)
+{
+    if (BeQt::uuidFromText(inviteCode).isNull() || !isValid())
+        return QStringList();
+    BSqlWhere w("code = :code", ":code", inviteCode);
+    return newUserClabGroups(mdb->select("invite_codes", "id", w).value("id").toULongLong());
 }
 
 QStringList Storage::userClabGroups(quint64 userId)
