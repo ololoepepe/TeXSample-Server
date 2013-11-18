@@ -131,15 +131,13 @@ Connection::~Connection()
 
 void Connection::sendLogRequest(const QString &text, BLogger::Level lvl)
 {
-    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection :
-                                                                     Qt::BlockingQueuedConnection;
+    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection : Qt::QueuedConnection;
     QMetaObject::invokeMethod(this, "sendLogRequestInternal", ct, Q_ARG(QString, text), Q_ARG(int, lvl));
 }
 
 void Connection::sendMessageRequest(const TMessage &msg)
 {
-    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection :
-                                                                     Qt::BlockingQueuedConnection;
+    Qt::ConnectionType ct = (QThread::currentThread() == thread()) ? Qt::DirectConnection : Qt::QueuedConnection;
     QMetaObject::invokeMethod(this, "sendMessageRequestInternal", ct, Q_ARG(int, msg));
 }
 
@@ -713,7 +711,7 @@ bool Connection::handleEditClabGroupsRequest(BNetworkOperation *op)
     QVariantMap in = op->variantData().toMap();
     QStringList newGroups = in.value("new_groups").toStringList();
     QStringList deletedGroups = in.value("deleted_groups").toStringList();
-    log("Edit CLab groups list request: " + QString::number(newGroups.size()) + " new, "
+    log("Edit CloudLab groups list request: " + QString::number(newGroups.size()) + " new, "
         + QString::number(deletedGroups.size()) + " deleted");
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
@@ -726,7 +724,7 @@ bool Connection::handleEditClabGroupsRequest(BNetworkOperation *op)
 
 bool Connection::handleGetClabGroupsListRequest(BNetworkOperation *op)
 {
-    log("Get CLab groups list request");
+    log("Get CloudLab groups list request");
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (maccessLevel < TAccessLevel::ModeratorLevel)
