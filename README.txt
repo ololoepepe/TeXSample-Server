@@ -29,8 +29,8 @@ TeXSample Server is intended for use with Qt 5, or with Qt 4.8.
 In case of using Qt 4.8, some features may be missing.
 Support of Qt libraries' versions lower than 4.8.0 is not guaranteed.
 
-You will also need BeQt libraries version 2.1.0 or higher
-and TeXSample library version 0.2.0 or higher.
+You will also need BeQt libraries version 3.1.0 or higher
+and TeXSample library version 1.1.0 or higher.
 
 See: https://github.com/the-dark-angel/BeQt
 and https://github.com/TeXSample-Team/TeXSample for details.

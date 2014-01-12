@@ -22,6 +22,7 @@
 #include <BTranslation>
 #include <BTranslateFunctor>
 #include <BTranslator>
+#include <BVersion>
 
 #include <QObject>
 #include <QString>
@@ -43,6 +44,9 @@
 #include <QTcpSocket>
 #include <QMutex>
 #include <QMutexLocker>
+#include <QSet>
+#include <QRegExp>
+#include <QUrl>
 
 #include <QDebug>
 
@@ -73,6 +77,7 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     installHandler("uptime", (InternalHandler) &TerminalIOHandler::handleUptime);
     installHandler("start", (InternalHandler) &TerminalIOHandler::handleStart);
     installHandler("stop", (InternalHandler) &TerminalIOHandler::handleStop);
+    installHandler("set-app-version", (InternalHandler) &TerminalIOHandler::handleSetAppVersion);
     BSettingsNode *root = new BSettingsNode;
       BSettingsNode *n = new BSettingsNode("Mail", root);
         BSettingsNode *nn = new BSettingsNode("server_address", n);
@@ -142,6 +147,10 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     ch.usage = "stop";
     ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
     setCommandHelp("stop", ch);
+    ch.usage = "set-app-version cloudlab-client|tex-creator|texsample-console lin|mac|win <version> <url>";
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+                                             "Set the latest version of an application along with the download URL");
+    setCommandHelp("set-app-version", ch);
     melapsedTimer.start();
 }
 
@@ -271,6 +280,47 @@ TOperationResult TerminalIOHandler::user(const QStringList &args, QVariant &resu
     return TOperationResult(true);
 }
 
+TOperationResult TerminalIOHandler::setAppVersion(const QStringList &args)
+{
+    typedef QSet<QString> StringSet;
+    init_once(StringSet, AppNames, StringSet())
+    {
+        AppNames.insert("cloudlab-client");
+        AppNames.insert("tex-creator");
+        AppNames.insert("texsample-console");
+    }
+    init_once(StringSet, PlNames, StringSet())
+    {
+        PlNames.insert("lin");
+        PlNames.insert("mac");
+        PlNames.insert("win");
+    }
+    if (args.size() == 4)
+    {
+        QString name = args.first();
+        name = name.toLower().replace(QRegExp("\\s"), "-");
+        if (!AppNames.contains(name))
+            return TOperationResult(TMessage::InvalidCommandArgumentsError);
+        QString pl = args.at(1).toLower();
+        if (!PlNames.contains(pl))
+            return TOperationResult(TMessage::InvalidCommandArgumentsError);
+        BVersion ver(args.at(2));
+        if (!ver.isValid())
+            return TOperationResult(TMessage::InvalidCommandArgumentsError);
+        QUrl url = QUrl::fromUserInput(args.last());
+        if (!url.isValid())
+            return TOperationResult(TMessage::InvalidCommandArgumentsError);
+        QString s = "AppVersion/" + name + "/" + pl;
+        BCoreApplication::settingsInstance()->setValue(s + "/version", ver);
+        BCoreApplication::settingsInstance()->setValue(s + "/url", url.toString());
+    }
+    else
+    {
+        return TOperationResult(TMessage::InvalidCommandArgumentsError);
+    }
+    return TOperationResult(true, TMessage::OkMessage);
+}
+
 /*============================== Protected methods =========================*/
 
 bool TerminalIOHandler::handleCommand(const QString &, const QStringList &)
@@ -398,6 +448,13 @@ bool TerminalIOHandler::handleStart(const QString &, const QStringList &args)
 bool TerminalIOHandler::handleStop(const QString &, const QStringList &)
 {
     TOperationResult r = stopServer();
+    writeLine(r.messageString());
+    return r;
+}
+
+bool TerminalIOHandler::handleSetAppVersion(const QString &, const QStringList &args)
+{
+    TOperationResult r = setAppVersion(args);
     writeLine(r.messageString());
     return r;
 }

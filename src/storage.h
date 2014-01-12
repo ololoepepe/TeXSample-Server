@@ -7,6 +7,7 @@ class TAccessLevel;
 class TCompilationResult;
 class TTexProject;
 class TProjectFile;
+class TProjectFileList;
 class TMessage;
 class TService;
 class TLabInfoList;
@@ -84,13 +85,15 @@ public:
     TOperationResult getClabGroupsList(QStringList &groups);
     TOperationResult addLab(quint64 userId, const TLabInfo &info, const TLabProject &webProject,
                             const TLabProject &linuxProject, const TLabProject &macProject,
-                            const TLabProject &winProject, const QString &url);
+                            const TLabProject &winProject, const QString &url, const TProjectFileList &extraFiles);
     TOperationResult editLab(const TLabInfo &info, const TLabProject &webProject, const TLabProject &linuxProject,
-                             const TLabProject &macProject, const TLabProject &winProject, const QString &url);
+                             const TLabProject &macProject, const TLabProject &winProject, const QString &url,
+                             const QStringList &deletedExtraFiles, const TProjectFileList &newExtraFiles);
     TOperationResult deleteLab(quint64 labId, const QString &reason);
     TOperationResult getLabsList(quint64 userId, BeQt::OSType osType, TLabInfoList &newLabs, TIdList &deletedLabs,
                                  QDateTime &updateDT);
     TOperationResult getLab(quint64 labId, BeQt::OSType osType, TLabProject &project, TLabInfo::Type &t, QString &url);
+    TOperationResult getLabExtraAttachedFile(quint64 labId, const QString &fn, TProjectFile &file);
     bool isUserUnique(const QString &login, const QString &email);
     quint64 userId(const QString &login, const QByteArray &password = QByteArray());
     quint64 userIdByEmail(const QString &email);
