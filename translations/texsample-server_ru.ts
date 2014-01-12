@@ -4,37 +4,37 @@
 <context>
     <name>BSettingsNode</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="79"/>
+        <location filename="../src/terminaliohandler.cpp" line="84"/>
         <source>E-mail server address used for e-mail delivery</source>
         <translation>Адрес сервера эл. почты, используемый для доставки эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="82"/>
+        <location filename="../src/terminaliohandler.cpp" line="87"/>
         <source>E-mail server port</source>
         <translation>Порт сервера эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="84"/>
+        <location filename="../src/terminaliohandler.cpp" line="89"/>
         <source>Name of local host passed to the e-mail server</source>
         <translation>Имя локального хоста, передаваемое на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="87"/>
+        <location filename="../src/terminaliohandler.cpp" line="92"/>
         <source>Determines wether the e-mail server requires SSL connection</source>
         <translation>Определяет, требуется ли серверу эл. почты SSL-соединение</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="90"/>
+        <location filename="../src/terminaliohandler.cpp" line="95"/>
         <source>Identifier used to log into the e-mail server</source>
         <translation>Идентификатор, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="95"/>
+        <location filename="../src/terminaliohandler.cpp" line="100"/>
         <source>Password used to log into the e-mail server</source>
         <translation>Пароль, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="100"/>
+        <location filename="../src/terminaliohandler.cpp" line="105"/>
         <source>Logging mode. Possible values:
 0 or less - don&apos;t log
 1 - log to console only
@@ -49,7 +49,7 @@ The default is 2</source>
 Значение по умолчанию - 2</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="107"/>
+        <location filename="../src/terminaliohandler.cpp" line="112"/>
         <source>Logging the &quot;keep alive&quot; operations. Possible values:
 0 or less - don&apos;t log
 1 - log locally
@@ -65,22 +65,22 @@ The default is 0</source>
 <context>
     <name>BTerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="114"/>
+        <location filename="../src/terminaliohandler.cpp" line="119"/>
         <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
         <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="119"/>
+        <location filename="../src/terminaliohandler.cpp" line="124"/>
         <source>Show for how long the application has been running</source>
         <translation>Показать, как долго работает приложение</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="123"/>
+        <location filename="../src/terminaliohandler.cpp" line="128"/>
         <source>Show connected user count or list them all</source>
         <translation>Показать количество подключенных пользователей или перечислить их всех</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="126"/>
+        <location filename="../src/terminaliohandler.cpp" line="131"/>
         <source>Show information about the user. The user may be specified by id or by login. Options:
   --connected-at - time when the user connected
   --info - detailed user information
@@ -91,25 +91,30 @@ The default is 0</source>
   --uptime - как долго пользователь был подключен</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="133"/>
+        <location filename="../src/terminaliohandler.cpp" line="138"/>
         <source>Disconnect the specified user. If login is specified, all connections of this user will be closed</source>
         <translation>Отключить указанного пользователя. Если указан логин, то все соединения данного пользователя будут закрыты</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="138"/>
+        <location filename="../src/terminaliohandler.cpp" line="143"/>
         <source>Start the server. If address is specified, the server will only listen on that address, otherwise it will listen on available all addresses.</source>
         <translation>Запустить сервер. Если указан адрес, то сервер будет принимать соединения только по этому адресу, иначе он будет принимать соединения по всем доступным адресам.</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="143"/>
+        <location filename="../src/terminaliohandler.cpp" line="148"/>
         <source>Stop the server. Users are NOT disconnected</source>
         <translation>Остановить сервер. Пользователи НЕ отключаются</translation>
+    </message>
+    <message>
+        <location filename="../src/terminaliohandler.cpp" line="151"/>
+        <source>Set the latest version of an application along with the download URL</source>
+        <translation>Задать последнюю версию приложения вместе со ссылкой для загрузки</translation>
     </message>
 </context>
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="64"/>
+        <location filename="../src/connection.cpp" line="67"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
@@ -206,89 +211,89 @@ The default is 0</source>
 <context>
     <name>Storage</name>
     <message>
-        <location filename="../src/storage.cpp" line="63"/>
+        <location filename="../src/storage.cpp" line="65"/>
         <source>Storage already initialized</source>
         <translation>Хранилище уже инициализировано</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="66"/>
+        <location filename="../src/storage.cpp" line="68"/>
         <source>Initializing storage...</source>
         <translation>Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="70"/>
+        <location filename="../src/storage.cpp" line="72"/>
         <source>Failed to load texsample.sty</source>
         <translation>Не удалось загрузить texsample.sty</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="74"/>
+        <location filename="../src/storage.cpp" line="76"/>
         <source>Failed to load texsample.tex</source>
         <translation>Не удалось загрузить texsample.tex</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="82"/>
+        <location filename="../src/storage.cpp" line="84"/>
         <source>Failed to load database schema</source>
         <translation>Не удалось загрузить схему базы данных</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="95"/>
+        <location filename="../src/storage.cpp" line="97"/>
         <source>Can&apos;t create tables in read-only mode</source>
         <translation>Нельзя создать таблицы в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="101"/>
+        <location filename="../src/storage.cpp" line="103"/>
         <source>Can&apos;t create users in read-only mode</source>
         <translation>Нельзя создать пользователя в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="103"/>
+        <location filename="../src/storage.cpp" line="105"/>
         <source>Database initialization failed</source>
         <translation>Инициализация базы данных не удалась</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="106"/>
+        <location filename="../src/storage.cpp" line="108"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="108"/>
+        <location filename="../src/storage.cpp" line="110"/>
         <source>Failed to test invite codes</source>
         <translation>Не удалось проверить инвайт-коды</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="110"/>
+        <location filename="../src/storage.cpp" line="112"/>
         <source>Failed to test recovery codes</source>
         <translation>Не удалось проверить коды восстановления</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="113"/>
+        <location filename="../src/storage.cpp" line="115"/>
         <source>Enter superuser login:</source>
         <translation>Введите логин суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="116"/>
+        <location filename="../src/storage.cpp" line="118"/>
         <source>Enter superuser e-mail:</source>
         <translation>Введите электронную почту суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="119"/>
+        <location filename="../src/storage.cpp" line="121"/>
         <source>Enter superuser password:</source>
         <translation>Введите пароль сперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="128"/>
+        <location filename="../src/storage.cpp" line="130"/>
         <source>Creating superuser account...</source>
         <translation>Создание аккаунта суперпользователя...</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="115"/>
-        <location filename="../src/storage.cpp" line="118"/>
-        <location filename="../src/storage.cpp" line="121"/>
+        <location filename="../src/storage.cpp" line="117"/>
+        <location filename="../src/storage.cpp" line="120"/>
+        <location filename="../src/storage.cpp" line="123"/>
         <source>Operation aborted</source>
         <translation>Операция прервана</translation>
     </message>
     <message>
-        <location filename="../src/storage.cpp" line="136"/>
+        <location filename="../src/storage.cpp" line="138"/>
         <source>Done!</source>
         <translation>Готово!</translation>
     </message>
@@ -296,42 +301,42 @@ The default is 0</source>
 <context>
     <name>TerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="296"/>
+        <location filename="../src/terminaliohandler.cpp" line="346"/>
         <source>days</source>
         <translation>дней</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="335"/>
+        <location filename="../src/terminaliohandler.cpp" line="385"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="326"/>
+        <location filename="../src/terminaliohandler.cpp" line="376"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="333"/>
+        <location filename="../src/terminaliohandler.cpp" line="383"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="364"/>
+        <location filename="../src/terminaliohandler.cpp" line="414"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="372"/>
+        <location filename="../src/terminaliohandler.cpp" line="422"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="387"/>
+        <location filename="../src/terminaliohandler.cpp" line="437"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="278"/>
+        <location filename="../src/terminaliohandler.cpp" line="328"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>
@@ -359,12 +364,12 @@ The default is 0</source>
         <translation>Ошибка:</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="80"/>
+        <location filename="../src/main.cpp" line="81"/>
         <source>Another instance of</source>
         <translation>Другой экземпляр</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="81"/>
+        <location filename="../src/main.cpp" line="82"/>
         <source>is already running. Quitting...</source>
         <translation>уже запущен. Выходим...</translation>
     </message>

@@ -29,7 +29,7 @@ int main(int argc, char *argv[])
     tInit();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("2.0.1-beta");
+    QCoreApplication::setApplicationVersion("2.1.0-beta");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     QString home = QDir::home().dirName();
@@ -69,6 +69,7 @@ int main(int argc, char *argv[])
             return 0;
         }
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
+        Application::setApplicationCopyrightPeriod("2012-2014");
         ret = app.exec();
 #if defined(BUILTIN_RESOURCES)
         Q_CLEANUP_RESOURCE(texsample_server);

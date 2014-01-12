@@ -1,3 +1,13 @@
+=== TeXSample Server 2.1.0-beta (12 January 2013) ===
+    * Perform invites and recovery codes test automatically
+    * Fix user request logging
+    * Update copyright years
+    * Update README
+    * Add ability to attach extra files to labs
+    * Use BeQt 3.1.0
+    * Use TeXSample 1.1.0
+    * Implement auto-update service
+
 === TeXSample Server 2.0.1-beta (13 November 2013) ===
     * Rename CLab into CloudLab within user visible strings
     * Fix deadlocks

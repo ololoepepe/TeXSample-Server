@@ -17,6 +17,8 @@
 #include <TLabInfo>
 #include <TLabInfoList>
 #include <TLabProject>
+#include <TProjectFile>
+#include <TProjectFileList>
 
 #include <BSmtpSender>
 #include <BEmail>
@@ -584,7 +586,6 @@ TOperationResult Storage::generateInvites(quint64 userId, const QDateTime &expir
         info.setCreationDateTime(createdDT);
         invites << info;
         ++i;
-        bApp->scheduleInvitesAutoTest(info);
     }
     if (!mdb->commit())
         return TOperationResult(TMessage::InternalDatabaseError);
@@ -653,7 +654,6 @@ TOperationResult Storage::getRecoveryCode(const QString &email, const QLocale &l
     }
     if (!mdb->commit())
         return TOperationResult(TMessage::InternalDatabaseError);
-    bApp->scheduleRecoveryCodesAutoTest(expDt);
     return TOperationResult(true);
 }
 
@@ -740,7 +740,7 @@ TOperationResult Storage::getClabGroupsList(QStringList &groups)
 
 TOperationResult Storage::addLab(quint64 userId, const TLabInfo &info, const TLabProject &webProject,
                                  const TLabProject &linuxProject, const TLabProject &macProject,
-                                 const TLabProject &winProject, const QString &url)
+                                 const TLabProject &winProject, const QString &url, const TProjectFileList &extraFiles)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -841,16 +841,35 @@ TOperationResult Storage::addLab(quint64 userId, const TLabInfo &info, const TLa
             }
         }
     }
+    QString epath = path + "_extra";
+    if (!BDirTools::mkpath(epath))
+    {
+        mdb->rollback();
+        BDirTools::rmdir(path);
+        BDirTools::rmdir(epath);
+        return TOperationResult(TMessage::InternalFileSystemError);
+    }
+    foreach (const TProjectFile &f, extraFiles)
+    {
+        if (!f.save(epath))
+        {
+            BDirTools::rmdir(path);
+            BDirTools::rmdir(epath);
+            return TOperationResult(TMessage::InternalDatabaseError);
+        }
+    }
     if (!mdb->commit())
     {
         BDirTools::rmdir(path);
+        BDirTools::rmdir(epath);
         return TOperationResult(TMessage::InternalDatabaseError);
     }
     return TOperationResult(true);
 }
 
 TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webProject, const TLabProject &linuxProject,
-                                  const TLabProject &macProject, const TLabProject &winProject, const QString &url)
+                                  const TLabProject &macProject, const TLabProject &winProject, const QString &url,
+                                  const QStringList &deletedExtraFiles, const TProjectFileList &newExtraFiles)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -931,6 +950,25 @@ TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webPr
         BDirTools::rmdir(bupath);
         return TOperationResult(TMessage::InternalFileSystemError);
     }
+    QString epath = path + "_extra";
+    QString ebupath = bupath + "_extra";
+    bool eempty = BDirTools::entryList(epath, QDir::NoDotAndDotDot).isEmpty();
+    if (!eempty && !BDirTools::copyDir(epath, ebupath, true))
+    {
+        mdb->rollback();
+        BDirTools::rmdir(bupath);
+        BDirTools::rmdir(ebupath);
+        return TOperationResult(TMessage::InternalFileSystemError);
+    }
+    if (!eempty && !BDirTools::rmdir(epath))
+    {
+        mdb->rollback();
+        BDirTools::copyDir(bupath, path, true);
+        BDirTools::rmdir(bupath);
+        BDirTools::copyDir(ebupath, epath, true);
+        BDirTools::rmdir(ebupath);
+        return TOperationResult(TMessage::InternalFileSystemError);
+    }
     if (webProject.isValid())
     {
         if (!webProject.save(path))
@@ -974,13 +1012,40 @@ TOperationResult Storage::editLab(const TLabInfo &info, const TLabProject &webPr
             }
         }
     }
+    foreach (const QString &fn, deletedExtraFiles)
+    {
+        if (!QFile::remove(epath + "/" + fn))
+        {
+            mdb->rollback();
+            BDirTools::copyDir(bupath, path, true);
+            BDirTools::rmdir(bupath);
+            BDirTools::copyDir(ebupath, epath, true);
+            BDirTools::rmdir(ebupath);
+            return TOperationResult(TMessage::InternalDatabaseError);
+        }
+    }
+    foreach (const TProjectFile &f, newExtraFiles)
+    {
+        if (!f.save(epath))
+        {
+            mdb->rollback();
+            BDirTools::copyDir(bupath, path, true);
+            BDirTools::rmdir(bupath);
+            BDirTools::copyDir(ebupath, epath, true);
+            BDirTools::rmdir(ebupath);
+            return TOperationResult(TMessage::InternalDatabaseError);
+        }
+    }
     if (!mdb->commit())
     {
         BDirTools::copyDir(bupath, path, true);
         BDirTools::rmdir(bupath);
+        BDirTools::copyDir(ebupath, epath, true);
+        BDirTools::rmdir(ebupath);
         return TOperationResult(TMessage::InternalDatabaseError);
     }
     BDirTools::rmdir(bupath);
+    BDirTools::rmdir(ebupath);
     return TOperationResult(true);
 }
 
@@ -1151,6 +1216,20 @@ TOperationResult Storage::getLab(quint64 labId, BeQt::OSType osType, TLabProject
     default:
         return TOperationResult(TMessage::InternalStorageError);
     }
+    return TOperationResult(true);
+}
+
+TOperationResult Storage::getLabExtraAttachedFile(quint64 labId, const QString &fn, TProjectFile &file)
+{
+    if (!labId)
+        return TOperationResult(TMessage::InvalidLabIdError);
+    if (fn.isEmpty())
+        return TOperationResult(TMessage::InvalidFileNameError);
+    if (!isValid())
+        return TOperationResult(TMessage::InternalStorageError);
+    file.clear();
+    if (!file.loadAsBinary(rootDir() + "/labs/" + QString::number(labId) + "_extra", fn))
+        return TOperationResult(TMessage::InternalFileSystemError);
     return TOperationResult(true);
 }
 

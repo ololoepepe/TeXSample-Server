@@ -36,6 +36,7 @@ public:
     TOperationResult stopServer();
     qint64 uptime() const;
     TOperationResult user(const QStringList &args, QVariant &result);
+    TOperationResult setAppVersion(const QStringList &args);
 protected:
     bool handleCommand(const QString &command, const QStringList &arguments);
 private:
@@ -47,6 +48,7 @@ private:
     bool handleUptime(const QString &cmd, const QStringList &args);
     bool handleStart(const QString &cmd, const QStringList &args);
     bool handleStop(const QString &cmd, const QStringList &args);
+    bool handleSetAppVersion(const QString &cmd, const QStringList &args);
 private:
     QElapsedTimer melapsedTimer;
 };

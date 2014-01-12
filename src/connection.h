@@ -74,6 +74,7 @@ private:
     bool handleRegisterRequest(BNetworkOperation *op);
     bool handleGetRecoveryCodeRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
+    bool handleGetLatestAppVersionRequest(BNetworkOperation *op);
     bool handleAuthorizeRequest(BNetworkOperation *op);
     bool handleAddUserRequest(BNetworkOperation *op);
     bool handleEditUserRequest(BNetworkOperation *op);
@@ -102,6 +103,7 @@ private:
     bool handleDeleteLabRequest(BNetworkOperation *op);
     bool handleGetLabsListRequest(BNetworkOperation *op);
     bool handleGetLabRequest(BNetworkOperation *op);
+    bool handleGetLabExtraAttachedFileRequest(BNetworkOperation *op);
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TOperationResult &r, LogTarget lt = LocalAndRemote,
                    const QString &prefix = QString());
     bool sendReply(BNetworkOperation *op, QVariantMap out, const TCompilationResult &r, LogTarget lt = LocalAndRemote,

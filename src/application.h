@@ -4,9 +4,7 @@
 class Storage;
 class Server;
 
-class TInviteInfo;
-
-class QDateTime;
+class QTimerEvent;
 
 #include <BCoreApplication>
 
@@ -29,15 +27,12 @@ public:
 public:
     explicit Application();
     ~Application();
-public:
-    void scheduleInvitesAutoTest(const TInviteInfo &info);
-    void scheduleRecoveryCodesAutoTest(const QDateTime &expirationDT);
-private slots:
-    void invitesTestTimeout();
-    void recoveryCodesTestTimeout();
+protected:
+    void timerEvent(QTimerEvent *e);
 private:
     Storage *mstorage;
     Server *mserver;
+    int timerId;
 private:
     Q_DISABLE_COPY(Application)
 };

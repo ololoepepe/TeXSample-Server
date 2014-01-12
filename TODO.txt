@@ -4,9 +4,10 @@
 
 === MINOR ===
 
-* Add access level info to invites
-* Add ability to attach extra files to labs
+
 
 === MAJOR ===
 
-
+* Implement registration confirmation
+* Add access level info to invites
+* Implement shutdown notification

@@ -18,6 +18,8 @@
 #include <TLabProject>
 #include <TLabInfo>
 #include <TLabInfoList>
+#include <TProjectFile>
+#include <TProjectFileList>
 
 #include <BNetworkConnection>
 #include <BNetworkServer>
@@ -44,6 +46,7 @@
 #include <QMetaObject>
 #include <QSettings>
 #include <QThread>
+#include <QSet>
 
 #include <QDebug>
 
@@ -81,6 +84,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
                           (InternalHandler) &Connection::handleGetRecoveryCodeRequest);
     installRequestHandler(Texsample::RecoverAccountRequest,
                           (InternalHandler) &Connection::handleRecoverAccountRequest);
+    installRequestHandler(Texsample::GetLatestAppVersionRequest,
+                          (InternalHandler) &Connection::handleGetLatestAppVersionRequest);
     installRequestHandler(Texsample::AuthorizeRequest, (InternalHandler) &Connection::handleAuthorizeRequest);
     installRequestHandler(Texsample::AddUserRequest, (InternalHandler) &Connection::handleAddUserRequest);
     installRequestHandler(Texsample::EditUserRequest, (InternalHandler) &Connection::handleEditUserRequest);
@@ -117,6 +122,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler(Texsample::DeleteLabRequest, (InternalHandler) &Connection::handleDeleteLabRequest);
     installRequestHandler(Texsample::GetLabRequest, (InternalHandler) &Connection::handleGetLabRequest);
     installRequestHandler(Texsample::GetLabsListRequest, (InternalHandler) &Connection::handleGetLabsListRequest);
+    installRequestHandler(Texsample::GetLabExtraAttachedFileRequest,
+                          (InternalHandler) &Connection::handleGetLabExtraAttachedFileRequest);
     QTimer::singleShot(15 * BeQt::Second, this, SLOT(testAuthorization()));
     mconnectedAt = QDateTime::currentDateTimeUtc();
     muptimeTimer.start();
@@ -264,6 +271,19 @@ bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
     op->waitForFinished();
     close();
     return b;
+}
+
+bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
+{
+    TClientInfo ci = op->variantData().toMap().value("client_info").value<TClientInfo>();
+    QString name = ci.client().toLower().replace(QRegExp("\\s"), "-");
+    log("Get latest app version request: " + name + "@" + ci.os());
+    QVariantMap out;
+    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower();
+    out.insert("version", BCoreApplication::settingsInstance()->value(s + "/version"));
+    out.insert("url", BCoreApplication::settingsInstance()->value(s + "/url"));
+    sendReply(op, out);
+    return true;
 }
 
 bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
@@ -515,7 +535,7 @@ bool Connection::handleUserRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     QStringList args = in.value("arguments").toStringList();
-    logLocal("User request: " + args.join(" "));
+    logLocal("User request" + (args.size() ? (": " + args.join(" ")) : ""));
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
     if (maccessLevel < TAccessLevel::AdminLevel)
@@ -748,6 +768,7 @@ bool Connection::handleAddLabRequest(BNetworkOperation *op)
     TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
     TLabProject macProject = in.value("mac_project").value<TLabProject>();
     TLabProject winProject = in.value("win_project").value<TLabProject>();
+    TProjectFileList extraFiles = in.value("extra_files").value<TProjectFileList>();
     QString url = in.value("lab_url").toString();
     log("Add lab request: " + info.title());
     if (!muserId)
@@ -756,7 +777,8 @@ bool Connection::handleAddLabRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotEnoughRightsError);
     if (!mservices.contains(TService::ClabService))
         return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->addLab(muserId, info, webProject, linuxProject, macProject, winProject, url));
+    return sendReply(op, mstorage->addLab(muserId, info, webProject, linuxProject, macProject, winProject, url,
+                                          extraFiles));
 }
 
 bool Connection::handleEditLabRequest(BNetworkOperation *op)
@@ -767,6 +789,8 @@ bool Connection::handleEditLabRequest(BNetworkOperation *op)
     TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
     TLabProject macProject = in.value("mac_project").value<TLabProject>();
     TLabProject winProject = in.value("win_project").value<TLabProject>();
+    QStringList deletedExtraFiles = in.value("deleted_extra_files").toStringList();
+    TProjectFileList newExtraFiles = in.value("new_extra_files").value<TProjectFileList>();
     QString url = in.value("lab_url").toString();
     log("Edit lab request: " + info.title());
     if (!muserId)
@@ -777,7 +801,8 @@ bool Connection::handleEditLabRequest(BNetworkOperation *op)
         return sendReply(op, TMessage::NotOwnLabError);
     if (!mservices.contains(TService::ClabService))
         return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->editLab(info, webProject, linuxProject, macProject, winProject, url));
+    return sendReply(op, mstorage->editLab(info, webProject, linuxProject, macProject, winProject, url,
+                                           deletedExtraFiles, newExtraFiles));
 }
 
 bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
@@ -845,6 +870,27 @@ bool Connection::handleGetLabRequest(BNetworkOperation *op)
         out.insert("project", project);
     else
         out.insert("url", url);
+    return sendReply(op, out, r);
+}
+
+bool Connection::handleGetLabExtraAttachedFileRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    quint64 id = in.value("lab_id").toULongLong();
+    QString fn = in.value("file_name").toString();
+    log("Get lab extra file request: " + QString::number(id) + "/" + fn);
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError);
+    if (maccessLevel < TAccessLevel::UserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    if (!mservices.contains(TService::ClabService))
+        return sendReply(op, TMessage::NotEnoughRightsError);
+    TProjectFile file;
+    TOperationResult r = mstorage->getLabExtraAttachedFile(id, fn, file);
+    if (!r)
+        return sendReply(op, r);
+    QVariantMap out;
+    out.insert("file", file);
     return sendReply(op, out, r);
 }
 
