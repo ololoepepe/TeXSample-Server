@@ -71,6 +71,8 @@ private:
         LocalAndRemote
     };
 private:
+    bool handleCheckEmailRequest(BNetworkOperation *op);
+    bool handleCheckLoginRequest(BNetworkOperation *op);
     bool handleRegisterRequest(BNetworkOperation *op);
     bool handleGetRecoveryCodeRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
@@ -88,6 +90,7 @@ private:
     bool handleStopServerRequest(BNetworkOperation *op);
     bool handleUptimeRequest(BNetworkOperation *op);
     bool handleUserRequest(BNetworkOperation *op);
+    bool handleSetLatestAppVersionRequest(BNetworkOperation *op);
     bool handleAddSampleRequest(BNetworkOperation *op);
     bool handleEditSampleRequest(BNetworkOperation *op);
     bool handleUpdateSampleRequest(BNetworkOperation *op);

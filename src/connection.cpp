@@ -79,6 +79,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(requestReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(replySent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
+    installRequestHandler(Texsample::CheckEmailRequest, (InternalHandler) &Connection::handleCheckEmailRequest);
+    installRequestHandler(Texsample::CheckLoginRequest, (InternalHandler) &Connection::handleCheckLoginRequest);
     installRequestHandler(Texsample::RegisterRequest, (InternalHandler) &Connection::handleRegisterRequest);
     installRequestHandler(Texsample::GetRecoveryCodeRequest,
                           (InternalHandler) &Connection::handleGetRecoveryCodeRequest);
@@ -113,6 +115,8 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket) :
     installRequestHandler(Texsample::StopServerRequest, (InternalHandler) &Connection::handleStopServerRequest);
     installRequestHandler(Texsample::UptimeRequest, (InternalHandler) &Connection::handleUptimeRequest);
     installRequestHandler(Texsample::UserRequest, (InternalHandler) &Connection::handleUserRequest);
+    installRequestHandler(Texsample::SetLatestAppVersionRequest,
+                          (InternalHandler) &Connection::handleSetLatestAppVersionRequest);
     installRequestHandler(Texsample::EditClabGroupsRequest,
                           (InternalHandler) &Connection::handleEditClabGroupsRequest);
     installRequestHandler(Texsample::GetClabGroupsListRequest,
@@ -231,6 +235,34 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 }
 
 /*============================== Private methods ===========================*/
+
+bool Connection::handleCheckEmailRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString email = in.value("email").toString();
+    log("<" + email + "> Check e-mail request");
+    bool free = !mstorage->userIdByEmail(email);
+    QVariantMap out;
+    out.insert("free", free);
+    bool b = sendReply(op, out);
+    op->waitForFinished();
+    close();
+    return b;
+}
+
+bool Connection::handleCheckLoginRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QString login = in.value("login").toString();
+    log("<" + login + "> Check login request");
+    bool free = !mstorage->userId(login);
+    QVariantMap out;
+    out.insert("free", free);
+    bool b = sendReply(op, out);
+    op->waitForFinished();
+    close();
+    return b;
+}
 
 bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
@@ -353,7 +385,7 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
     TUserInfo info = in.value("user_info").value<TUserInfo>();
     bool editClab = in.value("edit_clab").toBool();
     QStringList clabGroups = in.value("clab_groups").toStringList();
-    log("Edit user request: " + info.idString());
+    log("Edit user request: " + (info.id() ? info.idString() : info.login()));
     if (!muserId)
         return sendReply(op, TMessage::NotAuthorizedError);
     if (info.id() == muserId)
@@ -546,6 +578,18 @@ bool Connection::handleUserRequest(BNetworkOperation *op)
     if (r)
         out.insert("result", result);
     return sendReply(op, out, r, LocalOnly);
+}
+
+bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
+{
+    QVariantMap in = op->variantData().toMap();
+    QStringList args = in.value("arguments").toStringList();
+    logLocal("Set latest app version request" + (args.size() ? (": " + args.join(" ")) : ""));
+    if (!muserId)
+        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
+    if (maccessLevel < TAccessLevel::SuperuserLevel)
+        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
+    return sendReply(op, TerminalIOHandler::instance()->setAppVersion(args), LocalOnly);
 }
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
