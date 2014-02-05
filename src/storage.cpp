@@ -1122,9 +1122,9 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
         info.setType(m.value("type").toInt());
         info.setGroups(lg);
         QString url = m.value("url").toString();
+        QString path = rootDir() + "/labs/" + info.idString();
         if (url.isEmpty())
         {
-            QString path = rootDir() + "/labs/" + info.idString();
             switch (info.type())
             {
             case TLabInfo::DesktopType:
@@ -1154,6 +1154,7 @@ TOperationResult Storage::getLabsList(quint64 userId, BeQt::OSType osType, TLabI
         info.setComment(m.value("comment").toString());
         info.setCreationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("creation_dt").toLongLong()));
         info.setUpdateDateTime(QDateTime::fromMSecsSinceEpoch(m.value("update_dt").toLongLong()));
+        info.setExtraAttachedFileNames(QDir(path + "_extra").entryList(QDir::Files));
         newLabs << info;
     }
     foreach (const QVariant &v, r2.values())
@@ -1228,7 +1229,7 @@ TOperationResult Storage::getLabExtraAttachedFile(quint64 labId, const QString &
     if (!isValid())
         return TOperationResult(TMessage::InternalStorageError);
     file.clear();
-    if (!file.loadAsBinary(rootDir() + "/labs/" + QString::number(labId) + "_extra", fn))
+    if (!file.loadAsBinary(rootDir() + "/labs/" + QString::number(labId) + "_extra/" + fn))
         return TOperationResult(TMessage::InternalFileSystemError);
     return TOperationResult(true);
 }

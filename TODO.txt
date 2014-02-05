@@ -11,3 +11,4 @@
 * Implement registration confirmation
 * Add access level info to invites
 * Implement shutdown notification
+* Make invite codes generation available for administrators only

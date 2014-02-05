@@ -1,4 +1,11 @@
-=== TeXSample Server 2.1.0-beta (12 January 2013) ===
+=== TeXSample Server 2.2.0-beta (05 February 2014) ===
+    * Fix GetLabsList request handling
+    * Fix GetLabExtraAttachedFile request handling
+    * Show user login when editing user
+    * Implement SetAppVersionRequest handling
+    * Implement CheckEmailRequest and CheckLoginRequest handling
+
+=== TeXSample Server 2.1.0-beta (12 January 2014) ===
     * Perform invites and recovery codes test automatically
     * Fix user request logging
     * Update copyright years
