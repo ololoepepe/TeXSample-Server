@@ -9,6 +9,7 @@
 #include <BDirTools>
 #include <BTranslator>
 #include <BApplicationServer>
+#include <BVersion>
 
 #include <QObject>
 #include <QString>
@@ -19,6 +20,8 @@
 #include <QDateTime>
 #include <QRegExp>
 #include <QHash>
+#include <QSettings>
+#include <QVariant>
 
 #include <QDebug>
 
@@ -29,7 +32,7 @@ int main(int argc, char *argv[])
     tInit();
     QCoreApplication app(argc, argv);
     QCoreApplication::setApplicationName("TeXSample Server");
-    QCoreApplication::setApplicationVersion("2.2.0-beta");
+    QCoreApplication::setApplicationVersion("2.2.1-beta");
     QCoreApplication::setOrganizationName("TeXSample Team");
     QCoreApplication::setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
     QString home = QDir::home().dirName();
@@ -45,6 +48,30 @@ int main(int argc, char *argv[])
 #endif
         Application bapp;
         Q_UNUSED(bapp);
+        //Compatibility
+        if (bSettings->value("Global/version").value<BVersion>() < BVersion("2.2.1-beta"))
+        {
+            const QStringList Names = QStringList() << "cloudlab-client" << "tex-creator" << "texsample-console";
+            const QStringList Platforms = QStringList() << "lin" << "mac" << "win";
+            foreach (const QString &name, Names)
+            {
+                QString s = "AppVersion/" + name + "/";
+                foreach (const QString &pl, Platforms)
+                {
+                    QString ss = s + pl + "/";
+                    QVariant ver = bSettings->value(ss + "version");
+                    QVariant url = bSettings->value(ss + "url");
+                    bSettings->remove(ss + "version");
+                    bSettings->remove(ss + "url");
+                    if (ver.isNull() || url.isNull())
+                        continue;
+                    ss += "normal/";
+                    bSettings->setValue(ss + "version", ver);
+                    bSettings->setValue(ss + "url", url.toString());
+                }
+            }
+        }
+        bSettings->setValue("Global/version", BVersion(QCoreApplication::applicationVersion()));
         Application::installTranslator(new BTranslator("qt"));
         Application::installTranslator(new BTranslator("beqt"));
         Application::installTranslator(new BTranslator("texsample"));

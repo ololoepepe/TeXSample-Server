@@ -106,7 +106,7 @@ The default is 0</source>
         <translation>Остановить сервер. Пользователи НЕ отключаются</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="151"/>
+        <location filename="../src/terminaliohandler.cpp" line="152"/>
         <source>Set the latest version of an application along with the download URL</source>
         <translation>Задать последнюю версию приложения вместе со ссылкой для загрузки</translation>
     </message>
@@ -114,7 +114,7 @@ The default is 0</source>
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="67"/>
+        <location filename="../src/connection.cpp" line="68"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
@@ -301,42 +301,42 @@ The default is 0</source>
 <context>
     <name>TerminalIOHandler</name>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="346"/>
+        <location filename="../src/terminaliohandler.cpp" line="396"/>
         <source>days</source>
         <translation>дней</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="385"/>
+        <location filename="../src/terminaliohandler.cpp" line="435"/>
         <source>There are no connected users</source>
         <translation>Отсутствуют подключенные пользователи</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="376"/>
+        <location filename="../src/terminaliohandler.cpp" line="426"/>
         <source>Connected user count:</source>
         <translation>Количество подключенных пользователей:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="383"/>
+        <location filename="../src/terminaliohandler.cpp" line="433"/>
         <source>Listing connected users</source>
         <translation>Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="414"/>
+        <location filename="../src/terminaliohandler.cpp" line="464"/>
         <source>Uptime of</source>
         <translation>Аптайм</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="422"/>
+        <location filename="../src/terminaliohandler.cpp" line="472"/>
         <source>Connection time of</source>
         <translation>Время подключения</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="437"/>
+        <location filename="../src/terminaliohandler.cpp" line="487"/>
         <source>Uptime:</source>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/terminaliohandler.cpp" line="328"/>
+        <location filename="../src/terminaliohandler.cpp" line="378"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>
@@ -344,32 +344,32 @@ The default is 0</source>
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/main.cpp" line="56"/>
+        <location filename="../src/main.cpp" line="83"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="54"/>
+        <location filename="../src/main.cpp" line="81"/>
         <source>read-only mode</source>
         <translation>режим только для чтения</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="71"/>
+        <location filename="../src/main.cpp" line="98"/>
         <source>Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="68"/>
+        <location filename="../src/main.cpp" line="95"/>
         <source>Error:</source>
         <translation>Ошибка:</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="81"/>
+        <location filename="../src/main.cpp" line="108"/>
         <source>Another instance of</source>
         <translation>Другой экземпляр</translation>
     </message>
     <message>
-        <location filename="../src/main.cpp" line="82"/>
+        <location filename="../src/main.cpp" line="109"/>
         <source>is already running. Quitting...</source>
         <translation>уже запущен. Выходим...</translation>
     </message>
