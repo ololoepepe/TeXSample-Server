@@ -53,8 +53,7 @@ public:
     TAccessLevel accessLevel() const;
     TServiceList services() const;
     QString infoString(const QString &format = "") const;
-    //%d - user id, "%u - login, %p - address, %i - id
-    //%a - access level
+    //%d - user id, "%u - login, %p - address, %i - id, %a - access level
     QDateTime connectedAt(Qt::TimeSpec spec = Qt::LocalTime) const;
     bool isSubscribed() const;
     qint64 uptime() const;
