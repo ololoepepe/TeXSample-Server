@@ -27,6 +27,7 @@
 #include <BNetworkOperation>
 #include <BDirTools>
 #include <BTranslator>
+#include <BVersion>
 
 #include <QObject>
 #include <QByteArray>
@@ -309,9 +310,14 @@ bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 {
     TClientInfo ci = op->variantData().toMap().value("client_info").value<TClientInfo>();
     QString name = ci.client().toLower().replace(QRegExp("\\s"), "-");
-    log("Get latest app version request: " + name + "@" + ci.os());
+    QString ls = "Get latest app version request: " + name + " v" + ci.clientVersion().toString();
+    if (ci.isClientPortable())
+        ls += " (portable)";
+    ls += "@" + ci.os();
+    log(ls);
     QVariantMap out;
-    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower();
+    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower() + (ci.isClientPortable() ? "portable" :
+                                                                                                  "normal");
     out.insert("version", BCoreApplication::settingsInstance()->value(s + "/version"));
     out.insert("url", BCoreApplication::settingsInstance()->value(s + "/url"));
     sendReply(op, out);

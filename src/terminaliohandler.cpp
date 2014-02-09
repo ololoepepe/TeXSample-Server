@@ -147,7 +147,8 @@ TerminalIOHandler::TerminalIOHandler(QObject *parent) :
     ch.usage = "stop";
     ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
     setCommandHelp("stop", ch);
-    ch.usage = "set-app-version cloudlab-client|tex-creator|texsample-console lin|mac|win <version> <url>";
+    ch.usage = "set-app-version cloudlab-client|tex-creator|texsample-console lin|mac|win [--portable|-p] <version> "
+            "<url>";
     ch.description = BTranslation::translate("BTerminalIOHandler",
                                              "Set the latest version of an application along with the download URL");
     setCommandHelp("set-app-version", ch);
@@ -283,36 +284,85 @@ TOperationResult TerminalIOHandler::user(const QStringList &args, QVariant &resu
 TOperationResult TerminalIOHandler::setAppVersion(const QStringList &args)
 {
     typedef QSet<QString> StringSet;
-    init_once(StringSet, AppNames, StringSet())
+    init_once(StringSet, CClNames, StringSet())
     {
-        AppNames.insert("cloudlab-client");
-        AppNames.insert("tex-creator");
-        AppNames.insert("texsample-console");
+        CClNames.insert("cloudlab-client");
+        CClNames.insert("cc");
+        CClNames.insert("c-c");
     }
-    init_once(StringSet, PlNames, StringSet())
+    init_once(StringSet, TCrNames, StringSet())
     {
-        PlNames.insert("lin");
-        PlNames.insert("mac");
-        PlNames.insert("win");
+        TCrNames.insert("tex-creator");
+        TCrNames.insert("tc");
+        TCrNames.insert("t-c");
     }
-    if (args.size() == 4)
+    init_once(StringSet, TsCNames, StringSet())
+    {
+        TsCNames.insert("texsample-console");
+        TsCNames.insert("tsc");
+        TsCNames.insert("ts-c");
+    }
+    init_once(StringSet, LinNames, StringSet())
+    {
+        LinNames.insert("linux");
+        LinNames.insert("lin");
+        LinNames.insert("l");
+    }
+    init_once(StringSet, MacNames, StringSet())
+    {
+        MacNames.insert("macosx");
+        MacNames.insert("macos-x");
+        MacNames.insert("mac-os-x");
+        MacNames.insert("macos");
+        MacNames.insert("mac-os");
+        MacNames.insert("mac");
+        MacNames.insert("m");
+    }
+    init_once(StringSet, WinNames, StringSet())
+    {
+        WinNames.insert("windows");
+        WinNames.insert("win");
+        WinNames.insert("w");
+    }
+    init_once(StringSet, PortableNames, StringSet())
+    {
+        PortableNames.insert("--portable");
+        PortableNames.insert("-p");
+    }
+    if (bRangeD(4, 5).contains(args.size()))
     {
         QString name = args.first();
         name = name.toLower().replace(QRegExp("\\s"), "-");
-        if (!AppNames.contains(name))
+        if (CClNames.contains(name))
+            name = "cloudlab-client";
+        else if (TCrNames.contains(name))
+            name = "tex-creator";
+        else if (TsCNames.contains(name))
+            name = "texsample-console";
+        else
             return TOperationResult(TMessage::InvalidCommandArgumentsError);
-        QString pl = args.at(1).toLower();
-        if (!PlNames.contains(pl))
+        QString pl = args.at(1).toLower().replace(QRegExp("\\s"), "-");
+        if (LinNames.contains(pl))
+            pl = "lin";
+        else if (MacNames.contains(pl))
+            pl = "mac";
+        else if (WinNames.contains(pl))
+            pl = "win";
+        else
             return TOperationResult(TMessage::InvalidCommandArgumentsError);
-        BVersion ver(args.at(2));
+        bool b = args.size() == 5;
+        if (b && !PortableNames.contains(args.at(2)))
+            return TOperationResult(TMessage::InvalidCommandArgumentsError);
+        BVersion ver(args.at(b ? 3 : 2));
         if (!ver.isValid())
             return TOperationResult(TMessage::InvalidCommandArgumentsError);
         QUrl url = QUrl::fromUserInput(args.last());
         if (!url.isValid())
             return TOperationResult(TMessage::InvalidCommandArgumentsError);
-        QString s = "AppVersion/" + name + "/" + pl;
-        BCoreApplication::settingsInstance()->setValue(s + "/version", ver);
-        BCoreApplication::settingsInstance()->setValue(s + "/url", url.toString());
+        QString s = "AppVersion/" + name + "/" + pl + "/";
+        s += b ? "portable/" : "normal/";
+        bSettings->setValue(s + "version", ver);
+        bSettings->setValue(s + "url", url.toString());
     }
     else
     {
