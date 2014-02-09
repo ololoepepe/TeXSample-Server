@@ -316,8 +316,8 @@ bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
     ls += "@" + ci.os();
     log(ls);
     QVariantMap out;
-    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower() + (ci.isClientPortable() ? "portable" :
-                                                                                                  "normal");
+    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower() + "/" + (ci.isClientPortable() ?
+                                                                                    "portable" : "normal") + "/";
     out.insert("version", BCoreApplication::settingsInstance()->value(s + "/version"));
     out.insert("url", BCoreApplication::settingsInstance()->value(s + "/url"));
     sendReply(op, out);
