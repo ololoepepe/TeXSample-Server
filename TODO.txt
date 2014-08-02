@@ -1,10 +1,10 @@
 === PATCH ===
 
-
+* Add GPL headers to files
 
 === MINOR ===
 
-
+* Consider processor architecture for applications versions
 
 === MAJOR ===
 

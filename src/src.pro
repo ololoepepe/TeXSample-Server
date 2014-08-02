@@ -10,39 +10,45 @@ TSMP = core
 isEmpty(BEQT_PREFIX) {
     #TODO: Add MacOS support
     mac|unix {
-        BEQT_PREFIX=/usr/share/beqt
+        BEQT_PREFIX=/usr
     } else:win32 {
         BEQT_PREFIX=$$(systemdrive)/PROGRA~1/BeQt
     }
 }
-include($${BEQT_PREFIX}/depend.pri)
+include($${BEQT_PREFIX}/share/beqt/depend.pri)
 
 isEmpty(TSMP_PREFIX) {
     #TODO: Add MacOS support
     mac|unix {
-        TSMP_PREFIX=/usr/share/texsample
+        TSMP_PREFIX=/usr
     } else:win32 {
         TSMP_PREFIX=$$(systemdrive)/PROGRA~1/TeXSample
     }
 }
-include($${TSMP_PREFIX}/depend.pri)
+include($${TSMP_PREFIX}/share/texsample/depend.pri)
 
 SOURCES += \
     application.cpp \
     connection.cpp \
+    datasource.cpp \
     global.cpp \
     main.cpp \
     server.cpp \
     storage.cpp \
-    terminaliohandler.cpp
+    transactionholder.cpp
 
 HEADERS += \
     application.h \
     connection.h \
+    datasource.h \
     global.h \
     server.h \
     storage.h \
-    terminaliohandler.h
+    transactionholder.h
+
+include(entity/entity.pri)
+include(repository/repository.pri)
+include(service/service.pri)
 
 TRANSLATIONS += \
     ../translations/texsample-server_ru.ts

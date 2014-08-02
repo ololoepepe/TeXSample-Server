@@ -2,14 +2,13 @@ class BSettingsNode;
 
 #include "global.h"
 #include "storage.h"
-#include "terminaliohandler.h"
 
-#include <TCompilationResult>
-#include <TCompilerParameters>
+//#include <TCompilationResult>
+//#include <TCompilerParameters>
 #include <TTexProject>
-#include <TCompiledProject>
+//#include <TCompiledProject>
 #include <TMessage>
-#include <TOperationResult>
+//#include <TOperationResult>
 
 #include <BeQt>
 #include <BDirTools>
@@ -54,9 +53,9 @@ bool noMail()
     return nm;
 }
 
-bool initMail(QString *errs)
+bool initMail()
 {
-    static bool initialized = false;
+    /*static bool initialized = false;
     if (initialized)
     {
         bWriteLine(translate("Global", "E-mail already initialized"));
@@ -103,28 +102,28 @@ bool initMail(QString *errs)
     bSettings->setValue("Mail/ssl_required", vssl);
     bSettings->setValue("Mail/login", login);
     initialized = true;
-    bWriteLine(translate("Global", "Done!"));
+    bWriteLine(translate("Global", "Done!"));*/
     return true;
 }
 
 bool setMailPassword(const BSettingsNode *, const QVariant &v)
 {
-    mmailPassword = !v.isNull() ? v.toString() : bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
-    return !mmailPassword.isEmpty();
+    //mmailPassword = !v.isNull() ? v.toString() : bReadLineSecure(translate("Global", "Enter e-mail password:") + " ");
+    //return !mmailPassword.isEmpty();
 }
 
 bool showMailPassword(const BSettingsNode *, const QVariant &)
 {
-    if (!QVariant(bReadLine(translate("Global", "Printing password is unsecure! Do tou want to continue?") +
+    /*if (!QVariant(bReadLine(translate("Global", "Printing password is unsecure! Do tou want to continue?") +
                             " [yes|No] ")).toBool())
         return false;
     bWriteLine(translate("Global", "Value for") + " \"password\": " + mmailPassword);
-    return true;
+    return true;*/
 }
 
 bool setLoggingMode(const BSettingsNode *, const QVariant &v)
 {
-    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Global", "Enter logging mode:") + " ");
+    /*QString s = !v.isNull() ? v.toString() : bReadLine(translate("Global", "Enter logging mode:") + " ");
     if (s.isEmpty())
         return false;
     bool ok = false;
@@ -133,7 +132,7 @@ bool setLoggingMode(const BSettingsNode *, const QVariant &v)
         return false;
     bSettings->setValue("Log/mode", m);
     resetLoggingMode();
-    return true;
+    return true;*/
 }
 
 void resetLoggingMode()
@@ -166,7 +165,7 @@ QString mailPassword()
     return mmailPassword;
 }
 
-TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
+/*TOperationResult sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                            const StringMap &replace)
 {
     if (receiver.isEmpty() || templateName.isEmpty())
@@ -282,6 +281,6 @@ TCompilationResult compileProject(const CompileParameters &p)
     if (p.compiledProject || !r)
         BDirTools::rmdir(p.path);
     return r;
-}
+}*/
 
 }

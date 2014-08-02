@@ -1,24 +1,29 @@
 #include "server.h"
-#include "connection.h"
-#include "terminaliohandler.h"
-#include "application.h"
 
-#include <BNetworkServer>
+#include "application.h"
+#include "connection.h"
+
 #include <BGenericServer>
-#include <BNetworkConnection>
 #include <BGenericSocket>
-#include <BSpamNotifier>
-#include <BeQt>
 #include <BLogger>
+#include <BNetworkConnection>
+#include <BNetworkServer>
 
 #include <QObject>
+#include <QString>
 #include <QTcpSocket>
-#include <QList>
-#include <QThread>
 
 /*============================================================================
 ================================ Server ======================================
 ============================================================================*/
+
+/*============================== Public constructors =======================*/
+
+Server::Server(const QString &location, QObject *parent) :
+    BNetworkServer(BGenericServer::TcpServer, parent), Location(location)
+{
+    //
+}
 
 /*============================== Static public methods =====================*/
 
@@ -33,29 +38,18 @@ void Server::sendLogRequest(const QString &text, BLogger::Level lvl)
     if (!s)
         return;
     s->lock();
-    foreach (BNetworkConnection *c, s->connections())
-    {
+    foreach (BNetworkConnection *c, s->connections()) {
         Connection *cc = static_cast<Connection *>(c);
         cc->sendLogRequest(text, lvl);
     }
     s->unlock();
 }
 
-/*============================== Public constructors =======================*/
-
-Server::Server(QObject *parent) :
-    BNetworkServer(BGenericServer::TcpServer, parent)
-{
-    spamNotifier()->setCheckInterval(BeQt::Second);
-    spamNotifier()->setEventLimit(5);
-    spamNotifier()->setEnabled(true);
-}
-
 /*============================== Protected methods =========================*/
 
 BNetworkConnection *Server::createConnection(BGenericSocket *socket)
 {
-    return new Connection(this, socket);
+    return new Connection(this, socket, Location);
 }
 
 BGenericSocket *Server::createSocket()

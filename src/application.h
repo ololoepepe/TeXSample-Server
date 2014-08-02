@@ -1,38 +1,76 @@
 #ifndef APPLICATION_H
 #define APPLICATION_H
 
-class Storage;
+class DataSource;
 class Server;
+class UserService;
 
+class TCommandMessage;
+class TExecuteCommandReplyData;
+
+class QStringList;
 class QTimerEvent;
 
-#include <BCoreApplication>
+#include <TCoreApplication>
 
+#include <QElapsedTimer>
+#include <QMutex>
 #include <QObject>
+#include <QString>
 
 #if defined(bApp)
-#undef bApp
+#   undef bApp
 #endif
-#define bApp static_cast<Application *>(BCoreApplication::instance())
+#define bApp static_cast<Application *>(BApplicationBase::binstance())
+
+#if defined(tApp)
+#   undef tApp
+#endif
+#define tApp static_cast<Application *>(BApplicationBase::binstance())
 
 /*============================================================================
 ================================ Application =================================
 ============================================================================*/
 
-class Application : public BCoreApplication
+class Application : public TCoreApplication
 {
     Q_OBJECT
+private:
+    static QMutex serverMutex;
+    static QString texsampleSty;
+    static QString texsampleTex;
+private:
+    DataSource * const Source;
+    UserService * const UserServ;
+private:
+    QElapsedTimer melapsedTimer;
+    Server *mserver;
+    int timerId;
 public:
-    static Server *server();
-public:
-    explicit Application();
+    explicit Application(int &argc, char **argv, const QString &applicationName, const QString &organizationName);
     ~Application();
+public:
+    static TExecuteCommandReplyData executeSetAppVersion(const QStringList &args);
+    static TExecuteCommandReplyData executeStartServer(const QStringList &args);
+    static TExecuteCommandReplyData executeStopServer(const QStringList &args);
+    static TExecuteCommandReplyData executeUptime(const QStringList &args);
+    static TExecuteCommandReplyData executeUser(const QStringList &args);
+    static bool initializeStorage();
+    static Server *server();
 protected:
     void timerEvent(QTimerEvent *e);
 private:
-    Storage *mstorage;
-    Server *mserver;
-    int timerId;
+    static bool handleSetAppVersionCommand(const QString &cmd, const QStringList &args);
+    static bool handleStartCommand(const QString &cmd, const QStringList &args);
+    static bool handleStopCommand(const QString &cmd, const QStringList &args);
+    static bool handleUnknownCommand(const QString &command, const QStringList &args);
+    static bool handleUptimeCommand(const QString &cmd, const QStringList &args);
+    static bool handleUserCommand(const QString &cmd, const QStringList &args);
+    static void initTerminal();
+    static QString msecsToString(qint64 msecs);
+    static void writeCommandMessage(const TCommandMessage &msg, const QStringList &args);
+private:
+    void compatibility();
 private:
     Q_DISABLE_COPY(Application)
 };

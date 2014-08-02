@@ -2,16 +2,16 @@
 #define STORAGE_H
 
 class TUserInfo;
-class TOperationResult;
+//class TOperationResult;
 class TAccessLevel;
 class TCompilationResult;
 class TTexProject;
-class TProjectFile;
-class TProjectFileList;
+//class TProjectFile;
+//class TProjectFileList;
 class TMessage;
 class TService;
-class TLabInfoList;
-class TLabProject;
+//class TLabInfoList;
+//class TLabProject;
 
 class BSqlDatabase;
 
@@ -39,7 +39,7 @@ class QDateTime;
 ================================ Storage =====================================
 ============================================================================*/
 
-class Storage
+/*class Storage
 {
     Q_DECLARE_TR_FUNCTIONS(Storage)
 public:
@@ -135,6 +135,6 @@ private:
     static QString mtexsampleTex;
 private:
     BSqlDatabase *mdb;
-};
+};*/
 
 #endif // STORAGE_H

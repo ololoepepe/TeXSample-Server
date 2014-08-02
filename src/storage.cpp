@@ -1,31 +1,29 @@
 #include "storage.h"
 #include "global.h"
 #include "application.h"
-#include "terminaliohandler.h"
 
-#include <TOperationResult>
+//#include <TOperationResult>
 #include <TUserInfo>
 #include <TAccessLevel>
 #include <TSampleInfo>
 #include <TeXSample>
 #include <TInviteInfo>
-#include <TCompilationResult>
+//#include <TCompilationResult>
 #include <TTexProject>
 #include <TMessage>
 #include <TService>
 #include <TServiceList>
 #include <TLabInfo>
 #include <TLabInfoList>
-#include <TLabProject>
-#include <TProjectFile>
-#include <TProjectFileList>
+//#include <TLabProject>
+//#include <TProjectFile>
+//#include <TProjectFileList>
 
 #include <BSmtpSender>
 #include <BEmail>
 #include <BGenericSocket>
 #include <BDirTools>
 #include <BeQt>
-#include <BTerminalIOHandler>
 #include <BSqlDatabase>
 #include <BSqlQuery>
 #include <BSqlWhere>
@@ -46,6 +44,7 @@
 #include <QRegExp>
 #include <QSettings>
 #include <QLocale>
+#include <QCryptographicHash>
 
 #include <QDebug>
 
@@ -55,17 +54,17 @@
 
 /*============================== Static public methods =====================*/
 
-#include <QCryptographicHash>
+/*
 
 bool Storage::initStorage(QString *errs)
 {
     static bool initialized = false;
     if (initialized)
     {
-        bWriteLine(tr("Storage already initialized"));
+        //bWriteLine(tr("Storage already initialized"));
         return true;
     }
-    bWriteLine(tr("Initializing storage..."));
+    //bWriteLine(tr("Initializing storage..."));
     QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
     sty = BDirTools::readTextFile(sty, "UTF-8");
     if (sty.isEmpty())
@@ -151,11 +150,11 @@ bool Storage::copyTexsample(const QString &path, const QString &codecName)
 bool Storage::removeTexsample(const QString &path)
 {
     return BDirTools::removeFilesInDir(path, QStringList() << "texsample.sty" << "texsample.tex");
-}
+}*/
 
 /*============================== Public constructors =======================*/
 
-Storage::Storage()
+/*Storage::Storage()
 {
     mdb = new BSqlDatabase("QSQLITE", QUuid::createUuid().toString());
     mdb->setDatabaseName(BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
@@ -166,11 +165,11 @@ Storage::Storage()
 Storage::~Storage()
 {
     delete mdb;
-}
+}*/
 
 /*============================== Public methods ============================*/
 
-TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
+/*TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -1483,13 +1482,13 @@ bool Storage::testRecoveryCodes()
     BSqlWhere w("expiration_dt <= :current_dt", ":current_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
     bool b = mdb->deleteFrom("recovery_codes", w);
     return mdb->endTransaction(b) && b;
-}
+}*/
 
 /*============================== Static private methods ====================*/
 
-QString Storage::rootDir()
+/*QString Storage::rootDir()
 {
-    return BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResources);
+    return BCoreApplication::location(BCoreApplication::DataPath, BCoreApplication::UserResource);
 }
 
 QString Storage::labSubdir(BeQt::OSType osType)
@@ -1505,11 +1504,11 @@ QString Storage::labSubdir(BeQt::OSType osType)
     default:
         return "";
     }
-}
+}*/
 
 /*============================== Private methods ===========================*/
 
-TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
+/*TOperationResult Storage::addUserInternal(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -1670,9 +1669,9 @@ QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
     if (!QFileInfo(path + "/avatar.dat").exists())
         return bRet(ok, true, QByteArray());
     return BDirTools::readFile(path + "/avatar.dat", -1, ok);
-}
+}*/
 
 /*============================== Static private members ====================*/
 
-QString Storage::mtexsampleSty;
-QString Storage::mtexsampleTex;
+//QString Storage::mtexsampleSty;
+//QString Storage::mtexsampleTex;

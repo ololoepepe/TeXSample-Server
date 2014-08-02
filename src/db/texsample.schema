@@ -1,136 +1,206 @@
-/*Auxiliary tables*/
+/*==========================================================================*/
+/*============================== Auxiliary tables ==========================*/
+/*==========================================================================*/
+
 CREATE TABLE IF NOT EXISTS access_levels (
-  level             INTEGER UNIQUE NOT NULL
-);
-CREATE TABLE IF NOT EXISTS services (
-  id                INTEGER UNIQUE NOT NULL
-);
-CREATE TABLE IF NOT EXISTS states (
-  state             INTEGER UNIQUE NOT NULL
+  access_level                  INTEGER UNIQUE NOT NULL
 );
 
-/*TeXSample*/
-CREATE TABLE IF NOT EXISTS sample_types (
-  type              INTEGER UNIQUE NOT NULL
+CREATE TABLE IF NOT EXISTS os_types (
+  os_type                       INTEGER UNIQUE NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS service_types (
+  service_type                  INTEGER UNIQUE NOT NULL
+);
+
+/*============================== TeXSample =================================*/
+
 CREATE TABLE IF NOT EXISTS sample_ratings (
-  rating            INTEGER UNIQUE NOT NULL
+  rating                        INTEGER UNIQUE NOT NULL
 );
 
-/*CLab*/
-CREATE TABLE IF NOT EXISTS clab_groups (
-  name              TEXT UNIQUE NOT NULL
+CREATE TABLE IF NOT EXISTS sample_types (
+  sample_type                   INTEGER UNIQUE NOT NULL
 );
+
+/*============================== CloudLab ==================================*/
+
 CREATE TABLE IF NOT EXISTS lab_types (
-  type              INTEGER UNIQUE NOT NULL
+  lab_type                      INTEGER UNIQUE NOT NULL
 );
 
-/*Main tables*/
+/*==========================================================================*/
+/*============================== Main tables ===============================*/
+/*==========================================================================*/
+
 CREATE TABLE IF NOT EXISTS users (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  email             TEXT UNIQUE NOT NULL,
-  login             TEXT UNIQUE NOT NULL,
-  password          BLOB NOT NULL,
-  access_level      INTEGER NOT NULL REFERENCES access_levels(level) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  real_name         TEXT,
-  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  creation_dt       INTEGER NOT NULL,
-  update_dt         INTEGER NOT NULL,
-  deletion_dt       INTEGER
+  id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+  access_level                  INTEGER NOT NULL REFERENCES access_levels(access_level) ON DELETE RESTRICT ON UPDATE CASCADE,
+  active                        INTEGER NOT NULL DEFAULT 0,
+  email                         TEXT UNIQUE NOT NULL,
+  last_modification_date_time   INTEGER NOT NULL,
+  login                         TEXT UNIQUE NOT NULL,
+  name                          TEXT,
+  password                      BLOB NOT NULL,
+  patronymic                    TEXT,
+  registration_date_time        INTEGER NOT NULL,
+  surname                       TEXT
 );
+
+CREATE TABLE IF NOT EXISTS groups (
+  id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  creation_date_time            INTEGER NOT NULL,
+  last_modification_date_time   INTEGER NOT NULL,
+  name                          TEXT UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS user_groups (
+  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  group_id                      INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS user_services (
-  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
+  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  service_type                  INTEGER NOT NULL REFERENCES service_types(service_type) ON DELETE CASCADE ON UPDATE CASCADE
 );
-CREATE TABLE IF NOT EXISTS new_user_services (
-  invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  service_id        INTEGER NOT NULL REFERENCES services(id) ON DELETE RESTRICT ON UPDATE RESTRICT
-);
-CREATE TABLE IF NOT EXISTS new_user_clab_groups (
-  invite_id         INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  group_name        TEXT NOT NULL REFERENCES clab_groups(name) ON DELETE CASCADE ON UPDATE CASCADE
-);
+
 CREATE TABLE IF NOT EXISTS invite_codes (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  code              TEXT UNIQUE NOT NULL,
-  creator_id        INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  creation_dt       INTEGER NOT NULL,
-  expiration_dt     INTEGER NOT NULL
+  id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+  owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  code                          TEXT UNIQUE NOT NULL,
+  creation_date_time            INTEGER NOT NULL,
+  expiration_date_time          INTEGER NOT NULL
 );
+
+CREATE TABLE IF NOT EXISTS invite_code_groups (
+  invite_code_id                INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  group_id                      INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS invite_code_services (
+  invite_code_id                INTEGER NOT NULL REFERENCES invite_codes(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  service_type                  INTEGER NOT NULL REFERENCES service_types(service_type) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS recovery_codes (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  code              TEXT UNIQUE NOT NULL,
-  requester_id      INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  creation_dt       INTEGER NOT NULL,
-  expiration_dt     INTEGER NOT NULL
+  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  code                          TEXT UNIQUE NOT NULL,
+  expiration_date_time          INTEGER NOT NULL
 );
 
-/*TeXSample*/
+CREATE TABLE IF NOT EXISTS confirmation_codes (
+  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  code                          TEXT UNIQUE NOT NULL,
+  expiration_date_time          INTEGER NOT NULL
+);
+
+/*============================== TeXSample =================================*/
+
 CREATE TABLE IF NOT EXISTS samples (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  sender_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  title             TEXT NOT NULL,
-  file_name         TEXT NOT NULL,
-  authors           BLOB,
-  type              INTEGER NOT NULL DEFAULT 0 REFERENCES sample_types(type) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  tags              BLOB,
-  comment           TEXT,
-  admin_remark      TEXT,
-  rating            INTEGER NOT NULL DEFAULT 0 REFERENCES sample_ratings(rating) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  deletion_reason   TEXT,
-  creation_dt       INTEGER NOT NULL,
-  update_dt         INTEGER NOT NULL,
-  deletion_dt       INTEGER
+  id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  deleted                       INTEGER NOT NULL DEFAULT 0,
+  admin_remark                  TEXT,
+  creation_date_time            INTEGER NOT NULL,
+  description                   TEXT,
+  last_modification_date_time   INTEGER NOT NULL,
+  main_file_name                TEXT NOT NULL,
+  rating                        INTEGER NOT NULL DEFAULT 0 REFERENCES sample_ratings(rating) ON DELETE RESTRICT ON UPDATE CASCADE,
+  title                         TEXT NOT NULL,
+  type                          INTEGER NOT NULL DEFAULT 0 REFERENCES sample_types(sample_type) ON DELETE RESTRICT ON UPDATE CASCADE
 );
 
-/*CLab*/
-CREATE TABLE IF NOT EXISTS user_clab_groups (
-  user_id           INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  group_name        TEXT NOT NULL REFERENCES clab_groups(name) ON DELETE CASCADE ON UPDATE CASCADE
+CREATE TABLE IF NOT EXISTS sample_authors (
+  sample_id                     INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  name                          TEXT NOT NULL,
+  organization                  TEXT,
+  patronymic                    TEXT,
+  post                          TEXT,
+  role                          TEXT,
+  surname                       TEXT
 );
-CREATE TABLE IF NOT EXISTS lab_clab_groups (
-  lab_id            INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE RESTRICT,
-  group_name        TEXT NOT NULL REFERENCES clab_groups(name) ON DELETE CASCADE ON UPDATE CASCADE
+
+CREATE TABLE IF NOT EXISTS sample_tags (
+  sample_id                     INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  tag                           TEXT NOT NULL
 );
+
+/*============================== CloudLab ==================================*/
+
 CREATE TABLE IF NOT EXISTS labs (
-  id                INTEGER PRIMARY KEY AUTOINCREMENT,
-  sender_id         INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  title             TEXT NOT NULL,
-  file_name_web     TEXT,
-  file_name_linux   TEXT,
-  file_name_mac     TEXT,
-  file_name_win     TEXT,
-  url               TEXT,
-  authors           BLOB,
-  type              INTEGER NOT NULL REFERENCES lab_types(type) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  tags              TEXT,
-  comment           TEXT,
-  state             INTEGER NOT NULL DEFAULT 0 REFERENCES states(state) ON DELETE RESTRICT ON UPDATE RESTRICT,
-  deletion_reason   TEXT,
-  creation_dt       INTEGER NOT NULL,
-  update_dt         INTEGER NOT NULL,
-  deletion_dt       INTEGER
+  id                            INTEGER PRIMARY KEY AUTOINCREMENT,
+  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  creation_date_time            INTEGER NOT NULL,
+  deleted                       INTEGER NOT NULL DEFAULT 0,
+  description                   TEXT,
+  last_modification_date_time   INTEGER NOT NULL,
+  title                         TEXT NOT NULL,
+  type                          INTEGER NOT NULL REFERENCES lab_types(lab_type) ON DELETE RESTRICT ON UPDATE CASCADE                 
 );
 
-/*Filling auxiliary tables*/
-INSERT OR IGNORE INTO access_levels (level) VALUES (0);     --NoLevel
-INSERT OR IGNORE INTO access_levels (level) VALUES (10);    --UserLevel
-INSERT OR IGNORE INTO access_levels (level) VALUES (100);   --ModeratorLevel
-INSERT OR IGNORE INTO access_levels (level) VALUES (1000);  --AdminLevel
-INSERT OR IGNORE INTO access_levels (level) VALUES (10000); --RootLevel
+CREATE TABLE IF NOT EXISTS lab_desktop_applications (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  main_file_name                TEXT NOT NULL,
+  os_type                       INTEGER NOT NULL REFERENCES os_types(os_type) ON DELETE RESTRICT ON UPDATE CASCADE
+);
 
-INSERT OR IGNORE INTO states (state) VALUES (0);            --NormalState
-INSERT OR IGNORE INTO states (state) VALUES (1);            --DeletedState
+CREATE TABLE IF NOT EXISTS lab_web_applications (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  main_file_name                TEXT NOT NULL
+);
 
-INSERT OR IGNORE INTO services (id) VALUES (0);             --NoService
-INSERT OR IGNORE INTO services (id) VALUES (1);             --TexsampleService
-INSERT OR IGNORE INTO services (id) VALUES (2);             --ClabService
+CREATE TABLE IF NOT EXISTS lab_urls (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  url                           TEXT NOT NULL
+);
 
-/*TeXSample*/
-INSERT OR IGNORE INTO sample_types (type) VALUES (0);       --Unverified
-INSERT OR IGNORE INTO sample_types (type) VALUES (10);      --Approved
-INSERT OR IGNORE INTO sample_types (type) VALUES (100);     --Rejected
+CREATE TABLE IF NOT EXISTS lab_authors (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  name                          TEXT NOT NULL,
+  organization                  TEXT,
+  patronymic                    TEXT,
+  post                          TEXT,
+  role                          TEXT,
+  surname                       TEXT
+);
+
+CREATE TABLE IF NOT EXISTS lab_groups (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  group_id                      INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
+CREATE TABLE IF NOT EXISTS lab_tags (
+  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  tag                           TEXT NOT NULL
+);
+
+/*==========================================================================*/
+/*============================== Filling auxiliary tables ==================*/
+/*==========================================================================*/
+
+INSERT OR IGNORE INTO access_levels (access_level) VALUES (0);      --NoLevel
+INSERT OR IGNORE INTO access_levels (access_level) VALUES (10);     --UserLevel
+INSERT OR IGNORE INTO access_levels (access_level) VALUES (100);    --ModeratorLevel
+INSERT OR IGNORE INTO access_levels (access_level) VALUES (1000);   --AdminLevel
+INSERT OR IGNORE INTO access_levels (access_level) VALUES (10000);  --SuperuserLevel
+
+INSERT OR IGNORE INTO os_types (os_type) VALUES (0);                --UnknownOS
+INSERT OR IGNORE INTO os_types (os_type) VALUES (1);                --UnixOS
+INSERT OR IGNORE INTO os_types (os_type) VALUES (2);                --WindowsOS
+INSERT OR IGNORE INTO os_types (os_type) VALUES (5);                --LinuxOS
+INSERT OR IGNORE INTO os_types (os_type) VALUES (9);                --MacOS
+
+INSERT OR IGNORE INTO service_types (service_type) VALUES (0);      --NoService
+INSERT OR IGNORE INTO service_types (service_type) VALUES (1);      --TexsampleService
+INSERT OR IGNORE INTO service_types (service_type) VALUES (2);      --CloudlabService
+
+/*============================== TeXSample =================================*/
+
+INSERT OR IGNORE INTO sample_types (sample_type) VALUES (0);        --Unverified
+INSERT OR IGNORE INTO sample_types (sample_type) VALUES (10);       --Approved
+INSERT OR IGNORE INTO sample_types (sample_type) VALUES (100);      --Rejected
 
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (0);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (1);
@@ -234,8 +304,9 @@ INSERT OR IGNORE INTO sample_ratings (rating) VALUES (98);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (99);
 INSERT OR IGNORE INTO sample_ratings (rating) VALUES (100);
 
-/*CLab*/
-INSERT OR IGNORE INTO lab_types (type) VALUES (0);          --NoType
-INSERT OR IGNORE INTO lab_types (type) VALUES (1);          --DesktopType
-INSERT OR IGNORE INTO lab_types (type) VALUES (2);          --WebType
-INSERT OR IGNORE INTO lab_types (type) VALUES (3);          --UrlType
+/*============================== CloudLab ==================================*/
+
+INSERT OR IGNORE INTO lab_types (lab_type) VALUES (0);              --NoType
+INSERT OR IGNORE INTO lab_types (lab_type) VALUES (1);              --DesktopApplication
+INSERT OR IGNORE INTO lab_types (lab_type) VALUES (2);              --WebApplication
+INSERT OR IGNORE INTO lab_types (lab_type) VALUES (3);              --Url
