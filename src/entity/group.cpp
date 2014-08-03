@@ -124,7 +124,9 @@ Group &Group::operator =(const Group &other)
     mname = other.mname;
     mownerId = other.mownerId;
     mownerLogin = other.mownerLogin;
+    createdByRepo = other.createdByRepo;
     repo = other.repo;
+    valid = other.valid;
     return *this;
 }
 

@@ -172,7 +172,9 @@ InviteCode &InviteCode::operator =(const InviteCode &other)
     mid = other.mid;
     mownerId = other.mownerId;
     mownerLogin = other.mownerLogin;
+    createdByRepo = other.createdByRepo;
     repo = other.repo;
+    valid = other.valid;
     return *this;
 }
 

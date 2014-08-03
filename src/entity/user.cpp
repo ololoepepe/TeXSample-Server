@@ -269,7 +269,9 @@ User &User::operator =(const User &other)
     mregistrationDateTime = other.mregistrationDateTime;
     msaveAvatar = other.msaveAvatar;
     msurname = other.msurname;
+    createdByRepo = other.createdByRepo;
     repo = other.repo;
+    valid = other.valid;
     return *this;
 }
 

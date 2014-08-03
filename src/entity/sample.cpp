@@ -19,10 +19,9 @@
 
 /*============================== Public constructors =======================*/
 
-Sample::Sample(bool saveProject, bool saveAdminRemark)
+Sample::Sample(bool saveAdminRemark)
 {
     init();
-    msaveProject = saveProject;
     msaveAdminRemark = saveAdminRemark;
 }
 
@@ -88,7 +87,7 @@ bool Sample::isValid() const
     if (createdByRepo)
         return valid;
     if (mid)
-        return lastModificationDateTime().isValid() && (!msaveProject || msource.isValid());
+        return lastModificationDateTime().isValid();
     return msenderId && mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && msource.isValid() &&
             !mtitle.isEmpty();
 }
@@ -240,7 +239,6 @@ Sample &Sample::operator =(const Sample &other)
     mpreviewMainFile = other.mpreviewMainFile;
     mrating = other.mrating;
     msaveAdminRemark = other.msaveAdminRemark;
-    msaveProject = other.msaveProject;
     msource = other.msource;
     mtags = other.mtags;
     mtitle = other.mtitle;
@@ -263,7 +261,6 @@ void Sample::init()
     mlastModificationDateTime = QDateTime().toUTC();
     mrating = 0;
     msaveAdminRemark = false;
-    msaveProject = false;
     createdByRepo = false;
     previewFetched = false;
     repo = 0;

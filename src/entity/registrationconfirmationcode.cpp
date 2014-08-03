@@ -93,7 +93,9 @@ RegistrationConfirmationCode &RegistrationConfirmationCode::operator =(const Reg
     mcode = other.mcode;
     mexpirationDateTime = other.mexpirationDateTime;
     muserId = other.muserId;
+    createdByRepo = other.createdByRepo;
     repo = other.repo;
+    valid = other.valid;
     return *this;
 }
 

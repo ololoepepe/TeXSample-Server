@@ -33,7 +33,6 @@ private:
     TBinaryFile mpreviewMainFile;
     quint8 mrating;
     bool msaveAdminRemark;
-    bool msaveProject;
     TTexProject msource;
     QStringList mtags;
     QString mtitle;
@@ -45,7 +44,7 @@ private:
     bool sourceFetched;
     bool valid;
 public:
-    explicit Sample(bool saveProject = true, bool saveAdminRemark = true);
+    explicit Sample(bool saveAdminRemark = true);
     Sample(const Sample &other);
     ~Sample();
 protected:
