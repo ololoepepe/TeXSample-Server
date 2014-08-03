@@ -5,6 +5,7 @@ class UserRepository;
 
 #include <TAccessLevel>
 #include <TGroupInfoList>
+#include <TIdList>
 #include <TServiceList>
 
 #include <QByteArray>
@@ -27,10 +28,12 @@ protected:
 public:
     TAccessLevel accessLevel() const;
     bool active() const;
+    TIdList availableGroupIds() const;
     TGroupInfoList availableGroups() const;
     TServiceList availableServices() const;
     QImage avatar() const;
     QString email() const;
+    TIdList groupIds() const;
     TGroupInfoList groups() const;
     quint64 id() const;
     bool isValid() const;
@@ -43,11 +46,11 @@ public:
     UserRepository *repository() const;
     void setAccessLevel(const TAccessLevel &accessLevel);
     void setActive(bool active);
-    void setAvailableGroups(const TGroupInfoList &groups);
+    void setAvailableGroupIds(const TIdList &ids);
     void setAvailableServices(const TServiceList &services);
     void setAvatar(const QImage &avatar);
     void setEmail(const QString &email);
-    void setGroups(const TGroupInfoList &groups);
+    void setGroupIds(const TIdList &ids);
     void setId(quint64 id);
     void setLastModificationDateTime(const QDateTime &dt);
     void setLogin(const QString &login);
@@ -65,10 +68,12 @@ private:
     bool avatarFetched;
     TAccessLevel maccessLevel;
     bool mactive;
+    TIdList mavailableGroupIds;
     TGroupInfoList mavailableGroups;
     TServiceList mavailableServices;
     QImage mavatar;
     QString memail;
+    TIdList mgroupIds;
     TGroupInfoList mgroups;
     quint64 mid;
     QDateTime mlastModificationDateTime;

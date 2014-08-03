@@ -8,9 +8,7 @@
 
 #include <TAccessLevel>
 #include <TClientInfo>
-#include <TCommandMessage>
 #include <TCoreApplication>
-#include <TExecuteCommandReplyData>
 #include <TeXSample>
 #include <TInviteInfo>
 #include <TUserInfo>
@@ -62,12 +60,10 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
     BLocationProvider *prov = new BLocationProvider;
-    prov->addLocation("labs");
     prov->addLocation("logs");
-    prov->addLocation("samples");
     prov->addLocation("users");
-    compatibility();
     installLocationProvider(prov);
+    compatibility();
     installBeqtTranslator("qt");
     installBeqtTranslator("beqt");
     installBeqtTranslator("texsample");
@@ -99,7 +95,7 @@ Application::~Application()
 
 /*============================== Static public methods =====================*/
 
-TExecuteCommandReplyData Application::executeSetAppVersion(const QStringList &args)
+/*TExecuteCommandReplyData Application::executeSetAppVersion(const QStringList &args)
 {
     init_once(QStringList, clientNames, QStringList()) {
         clientNames << "cloudlab-client";
@@ -410,7 +406,7 @@ TExecuteCommandReplyData Application::executeUser(const QStringList &args)
     }
     reply.setSuccess(true);
     return reply;
-}
+}*/
 
 bool Application::initializeStorage()
 {
@@ -475,23 +471,23 @@ void Application::timerEvent(QTimerEvent *e)
 
 bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply = executeSetAppVersion(args);
-    writeCommandMessage(reply.message(), reply.arguments());
-    return reply.success();
+    //TExecuteCommandReplyData reply = executeSetAppVersion(args);
+    //writeCommandMessage(reply.message(), reply.arguments());
+    //return reply.success();
 }
 
 bool Application::handleStartCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply = executeStartServer(args);
-    writeCommandMessage(reply.message(), reply.arguments());
-    return reply.success();
+    //TExecuteCommandReplyData reply = executeStartServer(args);
+    //writeCommandMessage(reply.message(), reply.arguments());
+    //return reply.success();
 }
 
 bool Application::handleStopCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply = executeStopServer(args);
-    writeCommandMessage(reply.message(), reply.arguments());
-    return reply.success();
+    //TExecuteCommandReplyData reply = executeStopServer(args);
+    //writeCommandMessage(reply.message(), reply.arguments());
+    //return reply.success();
 }
 
 bool Application::handleUnknownCommand(const QString &, const QStringList &)
@@ -502,16 +498,16 @@ bool Application::handleUnknownCommand(const QString &, const QStringList &)
 
 bool Application::handleUptimeCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply = executeUptime(args);
-    writeCommandMessage(reply.message(), reply.arguments());
-    return reply.success();
+    //TExecuteCommandReplyData reply = executeUptime(args);
+    //writeCommandMessage(reply.message(), reply.arguments());
+    //return reply.success();
 }
 
 bool Application::handleUserCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply = executeUser(args);
-    writeCommandMessage(reply.message(), reply.arguments());
-    return reply.success();
+    //TExecuteCommandReplyData reply = executeUser(args);
+    //writeCommandMessage(reply.message(), reply.arguments());
+    //return reply.success();
 }
 
 void Application::initTerminal()
@@ -618,11 +614,6 @@ QString Application::msecsToString(qint64 msecs)
     QString seconds = QString::number(msecs / BeQt::Second);
     seconds.prepend(QString().fill('0', 2 - seconds.length()));
     return days + " " + tr("days") + " " + hours + ":" + minutes + ":" + seconds;
-}
-
-void Application::writeCommandMessage(const TCommandMessage &msg, const QStringList &args)
-{
-    bWriteLine(msg.text(args) + (!msg.extraText().isEmpty() ? (": " + msg.extraText()) : QString()));
 }
 
 /*============================== Private methods ===========================*/

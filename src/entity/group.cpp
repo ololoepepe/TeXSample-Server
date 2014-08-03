@@ -51,7 +51,8 @@ quint64 Group::id() const
 
 bool Group::isValid() const
 {
-    return mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && !mname.isEmpty() && mownerId;
+    return mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && !mname.isEmpty() && mownerId
+            && (mid || !mownerLogin.isEmpty());
 }
 
 QDateTime Group::lastModificationDateTime() const
@@ -102,11 +103,6 @@ void Group::setName(const QString &name)
 void Group::setOwnerId(quint64 ownerId)
 {
     mownerId = ownerId;
-}
-
-void Group::setOwnerLogin(const QString &login)
-{
-    mownerLogin = Texsample::testLogin(login) ? login : QString();
 }
 
 /*============================== Public operators ==========================*/

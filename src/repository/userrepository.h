@@ -38,10 +38,11 @@ public:
     User findOne(const TUserIdentifier &id);
     bool isValid() const;
     QDateTime lastModificationDateTime(const TUserIdentifier &id);
-    quint64 save(const User &entity);
-    TIdList save(const QList<User> &entities);
+    quint64 save(const User &entity, bool saveAvatar = true);
+    TIdList save(const QList<User> &entities, bool saveAvatar = true);
 private:
     QImage fetchAvatar(quint64 userId, bool *ok = 0);
+    bool saveAvatar(const User &entity, quint64 id = 0);
 private:
     DataSource * const Source;
 private:

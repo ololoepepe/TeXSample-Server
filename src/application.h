@@ -5,9 +5,6 @@ class DataSource;
 class Server;
 class UserService;
 
-class TCommandMessage;
-class TExecuteCommandReplyData;
-
 class QStringList;
 class QTimerEvent;
 
@@ -50,11 +47,11 @@ public:
     explicit Application(int &argc, char **argv, const QString &applicationName, const QString &organizationName);
     ~Application();
 public:
-    static TExecuteCommandReplyData executeSetAppVersion(const QStringList &args);
+    /*static TExecuteCommandReplyData executeSetAppVersion(const QStringList &args);
     static TExecuteCommandReplyData executeStartServer(const QStringList &args);
     static TExecuteCommandReplyData executeStopServer(const QStringList &args);
     static TExecuteCommandReplyData executeUptime(const QStringList &args);
-    static TExecuteCommandReplyData executeUser(const QStringList &args);
+    static TExecuteCommandReplyData executeUser(const QStringList &args);*/
     static bool initializeStorage();
     static Server *server();
 protected:
@@ -68,7 +65,6 @@ private:
     static bool handleUserCommand(const QString &cmd, const QStringList &args);
     static void initTerminal();
     static QString msecsToString(qint64 msecs);
-    static void writeCommandMessage(const TCommandMessage &msg, const QStringList &args);
 private:
     void compatibility();
 private:

@@ -32,7 +32,6 @@ public:
     void setLastModificationDateTime(const QDateTime &dt);
     void setName(const QString &name);
     void setOwnerId(quint64 ownerId);
-    void setOwnerLogin(const QString &login);
 public:
     Group &operator =(const Group &other);
 private:

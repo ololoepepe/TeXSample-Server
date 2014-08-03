@@ -82,6 +82,7 @@ private:
     bool handleCheckEmailAvailabilityRequest(BNetworkOperation *op);
     bool handleCheckLoginAvailabilityRequest(BNetworkOperation *op);
     bool handleCompileTexProjectRequest(BNetworkOperation *op);
+    bool handleConfirmRegistrationRequest(BNetworkOperation *op);
     bool handleDeleteGroupRequest(BNetworkOperation *op);
     bool handleDeleteInvitesRequest(BNetworkOperation *op);
     bool handleDeleteLabRequest(BNetworkOperation *op);
@@ -93,7 +94,6 @@ private:
     bool handleEditSampleAdminRequest(BNetworkOperation *op);
     bool handleEditSelfRequest(BNetworkOperation *op);
     bool handleEditUserRequest(BNetworkOperation *op);
-    bool handleExecuteCommandRequest(BNetworkOperation *op);
     bool handleGenerateInvitesRequest(BNetworkOperation *op);
     bool handleGetGroupInfoListRequest(BNetworkOperation *op);
     bool handleGetInviteInfoListRequest(BNetworkOperation *op);

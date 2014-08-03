@@ -190,6 +190,11 @@ bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
     //
 }
 
+bool Connection::handleConfirmRegistrationRequest(BNetworkOperation *op)
+{
+    //
+}
+
 bool Connection::handleDeleteGroupRequest(BNetworkOperation *op)
 {
     //
@@ -241,11 +246,6 @@ bool Connection::handleEditSelfRequest(BNetworkOperation *op)
 }
 
 bool Connection::handleEditUserRequest(BNetworkOperation *op)
-{
-    //
-}
-
-bool Connection::handleExecuteCommandRequest(BNetworkOperation *op)
 {
     //
 }
@@ -1146,53 +1146,51 @@ bool Connection::sendReply(BNetworkOperation *op, LogTarget lt, const QString &p
 
 void Connection::initHandlers()
 {
-    installRequestHandler(TOperation::AddGroup, (InternalHandler) &Connection::handleAddGroupRequest);
-    installRequestHandler(TOperation::AddLab, (InternalHandler) &Connection::handleAddLabRequest);
-    installRequestHandler(TOperation::AddSample, (InternalHandler) &Connection::handleAddSampleRequest);
-    installRequestHandler(TOperation::AddUser, (InternalHandler) &Connection::handleAddUserRequest);
-    installRequestHandler(TOperation::Authorize, (InternalHandler) &Connection::handleAuthorizeRequest);
-    installRequestHandler(TOperation::ChangeEmail, (InternalHandler) &Connection::handleChangeEmailRequest);
-    installRequestHandler(TOperation::ChangePassword, (InternalHandler) &Connection::handleChangePasswordRequest);
+    installRequestHandler(TOperation::AddGroup, InternalHandler(&Connection::handleAddGroupRequest));
+    installRequestHandler(TOperation::AddLab, InternalHandler(&Connection::handleAddLabRequest));
+    installRequestHandler(TOperation::AddSample, InternalHandler(&Connection::handleAddSampleRequest));
+    installRequestHandler(TOperation::AddUser, InternalHandler(&Connection::handleAddUserRequest));
+    installRequestHandler(TOperation::Authorize, InternalHandler(&Connection::handleAuthorizeRequest));
+    installRequestHandler(TOperation::ChangeEmail, InternalHandler(&Connection::handleChangeEmailRequest));
+    installRequestHandler(TOperation::ChangePassword, InternalHandler(&Connection::handleChangePasswordRequest));
     installRequestHandler(TOperation::CheckEmailAvailability,
-                          (InternalHandler) &Connection::handleCheckEmailAvailabilityRequest);
+                          InternalHandler(&Connection::handleCheckEmailAvailabilityRequest));
     installRequestHandler(TOperation::CheckLoginAvailability,
-                          (InternalHandler) &Connection::handleCheckLoginAvailabilityRequest);
-    installRequestHandler(TOperation::CompileTexProject,
-                          (InternalHandler) &Connection::handleCompileTexProjectRequest);
-    installRequestHandler(TOperation::DeleteGroup, (InternalHandler) &Connection::handleDeleteGroupRequest);
-    installRequestHandler(TOperation::DeleteInvites, (InternalHandler) &Connection::handleDeleteInvitesRequest);
-    installRequestHandler(TOperation::DeleteLab, (InternalHandler) &Connection::handleDeleteLabRequest);
-    installRequestHandler(TOperation::DeleteSample, (InternalHandler) &Connection::handleDeleteSampleRequest);
-    installRequestHandler(TOperation::DeleteUser, (InternalHandler) &Connection::handleDeleteUserRequest);
-    installRequestHandler(TOperation::EditGroup, (InternalHandler) &Connection::handleEditGroupRequest);
-    installRequestHandler(TOperation::EditLab, (InternalHandler) &Connection::handleEditLabRequest);
-    installRequestHandler(TOperation::EditSample, (InternalHandler) &Connection::handleEditSampleRequest);
-    installRequestHandler(TOperation::EditSampleAdmin, (InternalHandler) &Connection::handleEditSampleAdminRequest);
-    installRequestHandler(TOperation::EditSelf, (InternalHandler) &Connection::handleEditSelfRequest);
-    installRequestHandler(TOperation::EditUser, (InternalHandler) &Connection::handleEditUserRequest);
-    installRequestHandler(TOperation::ExecuteCommand, (InternalHandler) &Connection::handleExecuteCommandRequest);
-    installRequestHandler(TOperation::GenerateInvites, (InternalHandler) &Connection::handleGenerateInvitesRequest);
-    installRequestHandler(TOperation::GetGroupInfoList, (InternalHandler) &Connection::handleGetGroupInfoListRequest);
-    installRequestHandler(TOperation::GetInviteInfoList,
-                          (InternalHandler) &Connection::handleGetInviteInfoListRequest);
-    installRequestHandler(TOperation::GetLabData, (InternalHandler) &Connection::handleGetLabDataRequest);
-    installRequestHandler(TOperation::GetLabExtraFile, (InternalHandler) &Connection::handleGetLabExtraFileRequest);
-    installRequestHandler(TOperation::GetLabInfoList, (InternalHandler) &Connection::handleGetLabInfoListRequest);
+                          InternalHandler(&Connection::handleCheckLoginAvailabilityRequest));
+    installRequestHandler(TOperation::CompileTexProject, InternalHandler(&Connection::handleCompileTexProjectRequest));
+    installRequestHandler(TOperation::ConfirmRegistration,
+                          InternalHandler(&Connection::handleConfirmRegistrationRequest));
+    installRequestHandler(TOperation::DeleteGroup, InternalHandler(&Connection::handleDeleteGroupRequest));
+    installRequestHandler(TOperation::DeleteInvites, InternalHandler(&Connection::handleDeleteInvitesRequest));
+    installRequestHandler(TOperation::DeleteLab, InternalHandler(&Connection::handleDeleteLabRequest));
+    installRequestHandler(TOperation::DeleteSample, InternalHandler(&Connection::handleDeleteSampleRequest));
+    installRequestHandler(TOperation::DeleteUser, InternalHandler(&Connection::handleDeleteUserRequest));
+    installRequestHandler(TOperation::EditGroup, InternalHandler(&Connection::handleEditGroupRequest));
+    installRequestHandler(TOperation::EditLab, InternalHandler(&Connection::handleEditLabRequest));
+    installRequestHandler(TOperation::EditSample, InternalHandler(&Connection::handleEditSampleRequest));
+    installRequestHandler(TOperation::EditSampleAdmin, InternalHandler(&Connection::handleEditSampleAdminRequest));
+    installRequestHandler(TOperation::EditSelf, InternalHandler(&Connection::handleEditSelfRequest));
+    installRequestHandler(TOperation::EditUser, InternalHandler(&Connection::handleEditUserRequest));
+    installRequestHandler(TOperation::GenerateInvites, InternalHandler(&Connection::handleGenerateInvitesRequest));
+    installRequestHandler(TOperation::GetGroupInfoList, InternalHandler(&Connection::handleGetGroupInfoListRequest));
+    installRequestHandler(TOperation::GetInviteInfoList, InternalHandler(&Connection::handleGetInviteInfoListRequest));
+    installRequestHandler(TOperation::GetLabData, InternalHandler(&Connection::handleGetLabDataRequest));
+    installRequestHandler(TOperation::GetLabExtraFile, InternalHandler(&Connection::handleGetLabExtraFileRequest));
+    installRequestHandler(TOperation::GetLabInfoList, InternalHandler(&Connection::handleGetLabInfoListRequest));
     installRequestHandler(TOperation::GetLatestAppVersion,
-                          (InternalHandler) &Connection::handleGetLatestAppVersionRequest);
-    installRequestHandler(TOperation::GetSampleInfoList,
-                          (InternalHandler) &Connection::handleGetSampleInfoListRequest);
-    installRequestHandler(TOperation::GetSamplePreview, (InternalHandler) &Connection::handleGetSamplePreviewRequest);
-    installRequestHandler(TOperation::GetSampleSource, (InternalHandler) &Connection::handleGetSampleSourceRequest);
-    installRequestHandler(TOperation::GetSelfInfo, (InternalHandler) &Connection::handleGetSelfInfoRequest);
-    installRequestHandler(TOperation::GetUserAvatar, (InternalHandler) &Connection::handleGetUserAvatarRequest);
-    installRequestHandler(TOperation::GetUserInfo, (InternalHandler) &Connection::handleGetUserInfoRequest);
-    installRequestHandler(TOperation::GetUserInfoAdmin, (InternalHandler) &Connection::handleGetUserInfoAdminRequest);
-    installRequestHandler(TOperation::RecoverAccount, (InternalHandler) &Connection::handleRecoverAccountRequest);
-    installRequestHandler(TOperation::Register, (InternalHandler) &Connection::handleRegisterRequest);
+                          InternalHandler(&Connection::handleGetLatestAppVersionRequest));
+    installRequestHandler(TOperation::GetSampleInfoList, InternalHandler(&Connection::handleGetSampleInfoListRequest));
+    installRequestHandler(TOperation::GetSamplePreview, InternalHandler(&Connection::handleGetSamplePreviewRequest));
+    installRequestHandler(TOperation::GetSampleSource, InternalHandler(&Connection::handleGetSampleSourceRequest));
+    installRequestHandler(TOperation::GetSelfInfo, InternalHandler(&Connection::handleGetSelfInfoRequest));
+    installRequestHandler(TOperation::GetUserAvatar, InternalHandler(&Connection::handleGetUserAvatarRequest));
+    installRequestHandler(TOperation::GetUserInfo, InternalHandler(&Connection::handleGetUserInfoRequest));
+    installRequestHandler(TOperation::GetUserInfoAdmin, InternalHandler(&Connection::handleGetUserInfoAdminRequest));
+    installRequestHandler(TOperation::RecoverAccount, InternalHandler(&Connection::handleRecoverAccountRequest));
+    installRequestHandler(TOperation::Register, InternalHandler(&Connection::handleRegisterRequest));
     installRequestHandler(TOperation::RequestRecoveryCode,
-                          (InternalHandler) &Connection::handleRequestRecoveryCodeRequest);
-    installRequestHandler(TOperation::Subscribe, (InternalHandler) &Connection::handleSubscribeRequest);
+                          InternalHandler(&Connection::handleRequestRecoveryCodeRequest));
+    installRequestHandler(TOperation::Subscribe, InternalHandler(&Connection::handleSubscribeRequest));
 }
 
 bool Connection::sendReply(BNetworkOperation *op, const TReply &reply)

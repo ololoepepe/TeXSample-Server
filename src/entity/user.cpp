@@ -5,6 +5,7 @@
 #include <TAccessLevel>
 #include <TeXSample>
 #include <TGroupInfoList>
+#include <TIdList>
 #include <TServiceList>
 
 #include <QByteArray>
@@ -54,6 +55,11 @@ bool User::active() const
     return mactive;
 }
 
+TIdList User::availableGroupIds() const
+{
+    return mavailableGroupIds;
+}
+
 TGroupInfoList User::availableGroups() const
 {
     return mavailableGroups;
@@ -81,6 +87,11 @@ QImage User::avatar() const
 QString User::email() const
 {
     return memail;
+}
+
+TIdList User::groupIds() const
+{
+    return mgroupIds;
 }
 
 TGroupInfoList User::groups() const
@@ -144,10 +155,11 @@ void User::setActive(bool active)
     mactive = active;
 }
 
-void User::setAvailableGroups(const TGroupInfoList &groups)
+void User::setAvailableGroupIds(const TIdList &ids)
 {
-    mavailableGroups = groups;
-    bRemoveDuplicates(mavailableGroups);
+    mavailableGroupIds = ids;
+    mavailableGroupIds.removeAll(0);
+    bRemoveDuplicates(mavailableGroupIds);
 }
 
 void User::setAvailableServices(const TServiceList &services)
@@ -166,10 +178,11 @@ void User::setEmail(const QString &email)
     memail = Texsample::testEmail(email) ? email : QString();
 }
 
-void User::setGroups(const TGroupInfoList &groups)
+void User::setGroupIds(const TIdList &ids)
 {
-    mgroups = groups;
-    bRemoveDuplicates(mgroups);
+    mgroupIds = ids;
+    mgroupIds.removeAll(0);
+    bRemoveDuplicates(mgroupIds);
 }
 
 void User::setId(quint64 id)
@@ -224,10 +237,12 @@ User &User::operator =(const User &other)
     avatarFetched = other.avatarFetched;
     maccessLevel = other.maccessLevel;
     mactive = other.mactive;
+    mavailableGroupIds = other.mavailableGroupIds;
     mavailableGroups = other.mavailableGroups;
     mavailableServices = other.mavailableServices;
     mavatar = other.mavatar;
     memail = other.memail;
+    mgroupIds = other.mgroupIds;
     mgroups = other.mgroups;
     mid = other.mid;
     mlastModificationDateTime = other.mlastModificationDateTime;

@@ -5,6 +5,8 @@ class BSqlDatabase;
 class BSqlQuery;
 class BSqlResult;
 
+class QFile;
+
 #include <BSqlWhere>
 
 #include <QByteArray>
@@ -25,7 +27,7 @@ private:
     const QString Location;
 private:
     BSqlDatabase *db;
-    bool trans;
+    QFile *trans;
 public:
     explicit DataSource(const QString &location);
     ~DataSource();

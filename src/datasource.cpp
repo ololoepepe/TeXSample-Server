@@ -12,6 +12,7 @@
 
 #include <QByteArray>
 #include <QDebug>
+#include <QFile>
 #include <QFileInfo>
 #include <QRegExp>
 #include <QString>
@@ -29,7 +30,7 @@
 DataSource::DataSource(const QString &location) :
     Location(location)
 {
-    trans = false;
+    trans = 0;
     if (location.isEmpty() || !QFileInfo(location).isDir() || !BDirTools::touch(location + "/texsample.sqlite")) {
         db = 0;
         return;
@@ -45,6 +46,8 @@ DataSource::DataSource(const QString &location) :
 
 DataSource::~DataSource()
 {
+    if (trans)
+        rollback();
     delete db;
 }
 
@@ -52,12 +55,24 @@ DataSource::~DataSource()
 
 bool DataSource::commit()
 {
-    return endTransaction(true);
+    if (!isValid() || !trans)
+        return false;
+    //TODO: Commit FS
+    if (!db->commit()) {
+        //TODO: Do not commit FS
+        return false;
+    }
+    delete trans;
+    trans = 0;
+    return true;
 }
 
 bool DataSource::createFile(const QString &fileName, const QByteArray &data)
 {
-    //
+    if (!isValid() || fileName.isEmpty())
+        return false;
+    //TODO: Locking, transaction
+    return BDirTools::writeFile(Location + "/" + fileName, data);
 }
 
 bool DataSource::createTextFile(const QString &fileName, const QString &text)
@@ -79,16 +94,7 @@ BSqlResult DataSource::deleteFrom(const QString &table, const BSqlWhere &where)
 
 bool DataSource::endTransaction(bool success)
 {
-    if (!isValid() || !trans)
-        return false;
-    //TODO: FS transaction
-    bool b = success ? db->commit() : db->rollback();
-    if (!b) {
-        //TODO: Do not cancel FS transaction
-    }
-    if (b)
-        trans = false;
-    return b;
+    return success ? commit() : rollback();
 }
 
 BSqlResult DataSource::exec(const BSqlQuery &q)
@@ -202,7 +208,15 @@ QString DataSource::readTextFile(const QString &fileName, bool *ok)
 
 bool DataSource::rollback()
 {
-    return endTransaction(false);
+    if (!isValid() || !trans)
+        return false;
+    //TODO: Rollback FS
+    if (!db->rollback()) {
+        //TODO: Do not rollback FS
+    }
+    delete trans;
+    trans = 0;
+    return true;
 }
 
 BSqlResult DataSource::select(const QString &table, const QStringList &fields, const BSqlWhere &where)
@@ -221,10 +235,18 @@ BSqlResult DataSource::select(const QString &table, const QString &field, const 
 
 bool DataSource::transaction()
 {
-    if (trans || !isValid() || !db->transaction())
+    if (trans || !isValid())
         return false;
-    //TODO: FS transaction
-    trans = true;
+    QString path = Location + "/transaction/" + BUuid::createUuid().toString(true);
+    if (!BDirTools::touch(path))
+        return false;
+    trans = new QFile(path);
+    if (!trans->open(QFile::ReadWrite) || !db->transaction()) {
+        trans->remove();
+        delete trans;
+        trans = 0;
+        return false;
+    }
     return true;
 }
 
@@ -245,7 +267,12 @@ BSqlResult DataSource::update(const QString &table, const QString &field1, const
 
 bool DataSource::updateFile(const QString &fileName, const QByteArray &data)
 {
-    //
+    if (!isValid() || fileName.isEmpty())
+        return false;
+    //TODO: Locking, transaction
+    if (!QFileInfo(Location + "/" + fileName).isFile())
+        return false;
+    return BDirTools::writeFile(Location + "/" + fileName, data);
 }
 
 bool DataSource::updateTextFile(const QString &fileName, const QString &text)

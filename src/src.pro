@@ -35,6 +35,7 @@ SOURCES += \
     main.cpp \
     server.cpp \
     storage.cpp \
+    temporarylocation.cpp \
     transactionholder.cpp
 
 HEADERS += \
@@ -44,6 +45,7 @@ HEADERS += \
     global.h \
     server.h \
     storage.h \
+    temporarylocation.h \
     transactionholder.h
 
 include(entity/entity.pri)

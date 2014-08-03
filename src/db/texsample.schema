@@ -69,6 +69,7 @@ CREATE TABLE IF NOT EXISTS user_services (
 CREATE TABLE IF NOT EXISTS invite_codes (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
   owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  access_level                  INTEGER NOT NULL REFERENCES access_levels(access_level) ON DELETE CASCADE ON UPDATE CASCADE,
   code                          TEXT UNIQUE NOT NULL,
   creation_date_time            INTEGER NOT NULL,
   expiration_date_time          INTEGER NOT NULL
@@ -84,13 +85,13 @@ CREATE TABLE IF NOT EXISTS invite_code_services (
   service_type                  INTEGER NOT NULL REFERENCES service_types(service_type) ON DELETE CASCADE ON UPDATE CASCADE
 );
 
-CREATE TABLE IF NOT EXISTS recovery_codes (
+CREATE TABLE IF NOT EXISTS account_recovery_codes (
   user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   code                          TEXT UNIQUE NOT NULL,
   expiration_date_time          INTEGER NOT NULL
 );
 
-CREATE TABLE IF NOT EXISTS confirmation_codes (
+CREATE TABLE IF NOT EXISTS registration_confirmation_codes (
   user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   code                          TEXT UNIQUE NOT NULL,
   expiration_date_time          INTEGER NOT NULL

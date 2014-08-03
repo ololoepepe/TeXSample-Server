@@ -4,56 +4,56 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../src/application.cpp" line="419"/>
+        <location filename="../src/application.cpp" line="415"/>
         <source>Storage already initialized</source>
         <comment>message</comment>
         <translation type="unfinished">Хранилище уже инициализировано</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="422"/>
+        <location filename="../src/application.cpp" line="418"/>
         <source>Initializing storage...</source>
         <comment>message</comment>
         <translation type="unfinished">Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="425"/>
+        <location filename="../src/application.cpp" line="421"/>
         <source>Error: No application instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="431"/>
+        <location filename="../src/application.cpp" line="427"/>
         <source>Error: Failed to load texsample.sty</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="437"/>
+        <location filename="../src/application.cpp" line="433"/>
         <source>Failed to load texsample.tex</source>
         <comment>error</comment>
         <translation type="unfinished">Не удалось загрузить texsample.tex</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="442"/>
-        <location filename="../src/application.cpp" line="450"/>
+        <location filename="../src/application.cpp" line="438"/>
+        <location filename="../src/application.cpp" line="446"/>
         <source>Error:</source>
         <comment>error</comment>
         <translation type="unfinished">Ошибка:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="446"/>
-        <location filename="../src/application.cpp" line="456"/>
+        <location filename="../src/application.cpp" line="442"/>
+        <location filename="../src/application.cpp" line="452"/>
         <source>Done!</source>
         <comment>message</comment>
         <translation type="unfinished">Готово!</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="499"/>
+        <location filename="../src/application.cpp" line="495"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation type="unfinished">Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="620"/>
+        <location filename="../src/application.cpp" line="616"/>
         <source>days</source>
         <translation type="unfinished">дней</translation>
     </message>
@@ -61,37 +61,37 @@
 <context>
     <name>BSettingsNode</name>
     <message>
-        <location filename="../src/application.cpp" line="532"/>
+        <location filename="../src/application.cpp" line="528"/>
         <source>E-mail server address used for e-mail delivery</source>
         <translation>Адрес сервера эл. почты, используемый для доставки эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="534"/>
+        <location filename="../src/application.cpp" line="530"/>
         <source>E-mail server port</source>
         <translation>Порт сервера эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="536"/>
+        <location filename="../src/application.cpp" line="532"/>
         <source>Name of local host passed to the e-mail server</source>
         <translation>Имя локального хоста, передаваемое на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="538"/>
+        <location filename="../src/application.cpp" line="534"/>
         <source>Determines wether the e-mail server requires SSL connection</source>
         <translation>Определяет, требуется ли серверу эл. почты SSL-соединение</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="541"/>
+        <location filename="../src/application.cpp" line="537"/>
         <source>Identifier used to log into the e-mail server</source>
         <translation>Идентификатор, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="545"/>
+        <location filename="../src/application.cpp" line="541"/>
         <source>Password used to log into the e-mail server</source>
         <translation>Пароль, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="550"/>
+        <location filename="../src/application.cpp" line="546"/>
         <source>Logging mode. Possible values:
   0 or less - don&apos;t log
   1 - log to console only
@@ -101,7 +101,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="557"/>
+        <location filename="../src/application.cpp" line="553"/>
         <source>Logging the &quot;keep alive&quot; operations. Possible values:
   0 or less - don&apos;t log
   1 - log locally
@@ -139,22 +139,22 @@ The default is 0</source>
 <context>
     <name>BTerminalIOHandler</name>
     <message>
-        <location filename="../src/application.cpp" line="564"/>
+        <location filename="../src/application.cpp" line="560"/>
         <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
         <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="569"/>
+        <location filename="../src/application.cpp" line="565"/>
         <source>Show for how long the application has been running</source>
         <translation>Показать, как долго работает приложение</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="573"/>
+        <location filename="../src/application.cpp" line="569"/>
         <source>Show connected user count or list them all</source>
         <translation>Показать количество подключенных пользователей или перечислить их всех</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="576"/>
+        <location filename="../src/application.cpp" line="572"/>
         <source>Show information about the user. The user may be specified by id or by login. Options:
   --connected-at - time when the user connected
   --info - detailed user information
@@ -165,22 +165,22 @@ The default is 0</source>
   --uptime - как долго пользователь был подключен</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="583"/>
+        <location filename="../src/application.cpp" line="579"/>
         <source>Disconnect the specified user. If login is specified, all connections of this user will be closed</source>
         <translation>Отключить указанного пользователя. Если указан логин, то все соединения данного пользователя будут закрыты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="588"/>
+        <location filename="../src/application.cpp" line="584"/>
         <source>Start the server. If address is specified, the server will only listen on that address, otherwise it will listen on available all addresses.</source>
         <translation>Запустить сервер. Если указан адрес, то сервер будет принимать соединения только по этому адресу, иначе он будет принимать соединения по всем доступным адресам.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="593"/>
+        <location filename="../src/application.cpp" line="589"/>
         <source>Stop the server. Users are NOT disconnected</source>
         <translation>Остановить сервер. Пользователи НЕ отключаются</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="596"/>
+        <location filename="../src/application.cpp" line="592"/>
         <source>Set the latest version of an application along with the download URL
   client must be either cloudlab-client (clab), tex-creator (tcrt), or texsample-console (tcsl)
   os must be either linux (lin, l), macos (mac, m), or windows (win, w)
@@ -203,25 +203,25 @@ The default is 0</source>
 <context>
     <name>DataSource</name>
     <message>
-        <location filename="../src/datasource.cpp" line="138"/>
+        <location filename="../src/datasource.cpp" line="144"/>
         <source>Invalid DataSource instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/datasource.cpp" line="142"/>
+        <location filename="../src/datasource.cpp" line="148"/>
         <source>Failed to load database schema</source>
         <comment>error</comment>
         <translation type="unfinished">Не удалось загрузить схему базы данных</translation>
     </message>
     <message>
-        <location filename="../src/datasource.cpp" line="153"/>
+        <location filename="../src/datasource.cpp" line="159"/>
         <source>Can not create tables in read-only mode</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/datasource.cpp" line="158"/>
+        <location filename="../src/datasource.cpp" line="164"/>
         <source>Database initialization failed</source>
         <comment>error</comment>
         <translation type="unfinished">Инициализация базы данных не удалась</translation>
@@ -476,12 +476,12 @@ The default is 0</source>
 <context>
     <name>main</name>
     <message>
-        <location filename="../src/application.cpp" line="80"/>
+        <location filename="../src/application.cpp" line="76"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="78"/>
+        <location filename="../src/application.cpp" line="74"/>
         <source>read-only mode</source>
         <translation>режим только для чтения</translation>
     </message>
