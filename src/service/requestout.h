@@ -12,6 +12,12 @@
 
 template <typename T> class RequestOut
 {
+private:
+    bool mcacheUpToDate;
+    T mdata;
+    TMessage mmessage;
+    QDateTime mrequestDateTime;
+    bool msuccess;
 public:
     explicit RequestOut()
     {
@@ -106,12 +112,6 @@ public:
         msuccess = other.msuccess;
         return *this;
     }
-private:
-    bool mcacheUpToDate;
-    T mdata;
-    TMessage mmessage;
-    QDateTime mrequestDateTime;
-    bool msuccess;
 };
 
 #endif // REQUESTOUT_H

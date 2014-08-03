@@ -3,8 +3,6 @@
 
 class DataSource;
 
-class QString;
-
 #include "entity/group.h"
 
 #include <TIdList>
@@ -17,6 +15,8 @@ class QString;
 
 class GroupRepository
 {
+private:
+    DataSource * const Source;
 public:
     explicit GroupRepository(DataSource *source);
     ~GroupRepository();
@@ -33,8 +33,6 @@ public:
     bool isValid() const;
     quint64 save(const Group &entity);
     TIdList save(const QList<Group> &entities);
-private:
-    DataSource * const Source;
 private:
     friend class Group;
     Q_DISABLE_COPY(GroupRepository)

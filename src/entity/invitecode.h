@@ -19,6 +19,20 @@ class InviteCodeRepository;
 
 class InviteCode
 {
+private:
+    quint64 mid;
+    quint64 mownerId;
+    QString mownerLogin;
+    TAccessLevel maccessLevel;
+    TServiceList mavailableServices;
+    BUuid mcode;
+    QDateTime mcreationDateTime;
+    QDateTime mexpirationDateTime;
+    TIdList mgroupIds;
+    TGroupInfoList mgroups;
+    bool createdByRepo;
+    InviteCodeRepository *repo;
+    bool valid;
 public:
     explicit InviteCode();
     InviteCode(const InviteCode &other);
@@ -34,6 +48,7 @@ public:
     TIdList groupIds() const;
     TGroupInfoList groups() const;
     quint64 id() const;
+    bool isCreatedByRepo() const;
     bool isValid() const;
     quint64 ownerId() const;
     QString ownerLogin() const;
@@ -50,18 +65,6 @@ public:
     InviteCode &operator =(const InviteCode &other);
 private:
     void init();
-private:
-    TAccessLevel maccessLevel;
-    TServiceList mavailableServices;
-    BUuid mcode;
-    QDateTime mcreationDateTime;
-    QDateTime mexpirationDateTime;
-    TIdList mgroupIds;
-    TGroupInfoList mgroups;
-    quint64 mid;
-    quint64 mownerId;
-    QString mownerLogin;
-    InviteCodeRepository *repo;
 private:
     friend class InviteCodeRepository;
 };

@@ -3,6 +3,7 @@ HEADERS += \
     $${PWD}/group.h \
     $${PWD}/invitecode.h \
     $${PWD}/registrationconfirmationcode.h \
+    $${PWD}/sample.h \
     $${PWD}/user.h
 
 SOURCES += \
@@ -10,4 +11,5 @@ SOURCES += \
     $${PWD}/group.cpp \
     $${PWD}/invitecode.cpp \
     $${PWD}/registrationconfirmationcode.cpp \
+    $${PWD}/sample.cpp \
     $${PWD}/user.cpp

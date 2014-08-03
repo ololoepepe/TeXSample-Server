@@ -111,7 +111,7 @@ QDateTime UserRepository::lastModificationDateTime(const TUserIdentifier &id)
     //
 }
 
-quint64 UserRepository::save(const User &entity, bool saveAvatar)
+quint64 UserRepository::save(const User &entity)
 {
     if (!isValid() || !entity.isValid())
         return 0;
@@ -132,18 +132,18 @@ quint64 UserRepository::save(const User &entity, bool saveAvatar)
     if (!result.success())
         return 0;
     quint64 id = result.lastInsertId().toULongLong();
-    if (saveAvatar && !this->saveAvatar(entity, id))
+    if ((!entity.id() || entity.saveAvatar()) && !saveAvatar(entity, id))
         return 0;
     if (!holder.doCommit())
         return 0;
     return entity.id() ? entity.id() : id;
 }
 
-TIdList UserRepository::save(const QList<User> &entities, bool saveAvatar)
+TIdList UserRepository::save(const QList<User> &entities)
 {
     TIdList list;
     foreach (const User &entity, entities) {
-        quint64 id = save(entity, saveAvatar);
+        quint64 id = save(entity);
         if (!id)
             return list;
         list << id;

@@ -15,6 +15,8 @@ class DataSource;
 
 class RegistrationConfirmationCodeRepository
 {
+private:
+    DataSource * const Source;
 public:
     explicit RegistrationConfirmationCodeRepository(DataSource *source);
     ~RegistrationConfirmationCodeRepository();
@@ -26,8 +28,6 @@ public:
     bool isValid() const;
     bool save(const RegistrationConfirmationCode &entity);
     bool save(const QList<RegistrationConfirmationCode> &entities);
-private:
-    DataSource * const Source;
 private:
     friend class RegistrationConfirmationCode;
     Q_DISABLE_COPY(RegistrationConfirmationCodeRepository)

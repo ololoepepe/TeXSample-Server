@@ -1,6 +1,6 @@
 #include "accountrecoverycode.h"
 
-//#include "repository/accountrecoverycoderepository.h"
+#include "repository/accountrecoverycoderepository.h"
 
 #include <TeXSample>
 
@@ -34,6 +34,7 @@ AccountRecoveryCode::AccountRecoveryCode(AccountRecoveryCodeRepository *repo)
 {
     init();
     this->repo = repo;
+    createdByRepo = true;
 }
 
 /*============================== Public methods ============================*/
@@ -48,8 +49,15 @@ QDateTime AccountRecoveryCode::expirationDateTime() const
     return mexpirationDateTime;
 }
 
+bool AccountRecoveryCode::isCreatedByRepo() const
+{
+    return createdByRepo;
+}
+
 bool AccountRecoveryCode::isValid() const
 {
+    if (createdByRepo)
+        return valid;
     return !mcode.isNull() && mexpirationDateTime.isValid() && muserId;
 }
 
@@ -95,5 +103,7 @@ void AccountRecoveryCode::init()
 {
     mexpirationDateTime = QDateTime().toUTC();
     muserId = 0;
+    createdByRepo = false;
     repo = 0;
+    valid = false;
 }

@@ -13,6 +13,13 @@ class RegistrationConfirmationCodeRepository;
 
 class RegistrationConfirmationCode
 {
+private:
+    quint64 muserId;
+    BUuid mcode;
+    QDateTime mexpirationDateTime;
+    bool createdByRepo;
+    RegistrationConfirmationCodeRepository *repo;
+    bool valid;
 public:
     explicit RegistrationConfirmationCode();
     RegistrationConfirmationCode(const RegistrationConfirmationCode &other);
@@ -22,6 +29,7 @@ protected:
 public:
     BUuid code() const;
     QDateTime expirationDateTime() const;
+    bool isCreatedByRepo() const;
     bool isValid() const;
     RegistrationConfirmationCodeRepository *repository() const;
     void setCode(const BUuid &code);
@@ -32,11 +40,6 @@ public:
     RegistrationConfirmationCode &operator =(const RegistrationConfirmationCode &other);
 private:
     void init();
-private:
-    BUuid mcode;
-    QDateTime mexpirationDateTime;
-    quint64 muserId;
-    RegistrationConfirmationCodeRepository *repo;
 private:
     friend class RegistrationConfirmationCodeRepository;
 };

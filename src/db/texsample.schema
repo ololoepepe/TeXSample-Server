@@ -86,13 +86,13 @@ CREATE TABLE IF NOT EXISTS invite_code_services (
 );
 
 CREATE TABLE IF NOT EXISTS account_recovery_codes (
-  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id                       INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   code                          TEXT UNIQUE NOT NULL,
   expiration_date_time          INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS registration_confirmation_codes (
-  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id                       INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   code                          TEXT UNIQUE NOT NULL,
   expiration_date_time          INTEGER NOT NULL
 );

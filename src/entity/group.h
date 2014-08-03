@@ -12,6 +12,16 @@ class GroupRepository;
 
 class Group
 {
+private:
+    quint64 mid;
+    quint64 mownerId;
+    QString mownerLogin;
+    QDateTime mcreationDateTime;
+    QDateTime mlastModificationDateTime;
+    QString mname;
+    bool createdByRepo;
+    GroupRepository *repo;
+    bool valid;
 public:
     explicit Group();
     Group(const Group &other);
@@ -21,6 +31,7 @@ protected:
 public:
     QDateTime creationDateTime() const;
     quint64 id() const;
+    bool isCreatedByRepo() const;
     bool isValid() const;
     QDateTime lastModificationDateTime() const;
     QString name() const;
@@ -36,14 +47,6 @@ public:
     Group &operator =(const Group &other);
 private:
     void init();
-private:
-    QDateTime mcreationDateTime;
-    quint64 mid;
-    QDateTime mlastModificationDateTime;
-    QString mname;
-    quint64 mownerId;
-    QString mownerLogin;
-    GroupRepository *repo;
 private:
     friend class GroupRepository;
 };

@@ -13,6 +13,13 @@ class AccountRecoveryCodeRepository;
 
 class AccountRecoveryCode
 {
+private:
+    quint64 muserId;
+    BUuid mcode;
+    QDateTime mexpirationDateTime;
+    bool createdByRepo;
+    AccountRecoveryCodeRepository *repo;
+    bool valid;
 public:
     explicit AccountRecoveryCode();
     AccountRecoveryCode(const AccountRecoveryCode &other);
@@ -21,6 +28,7 @@ protected:
     explicit AccountRecoveryCode(AccountRecoveryCodeRepository *repo);
 public:
     BUuid code() const;
+    bool isCreatedByRepo() const;
     QDateTime expirationDateTime() const;
     bool isValid() const;
     AccountRecoveryCodeRepository *repository() const;
@@ -32,11 +40,6 @@ public:
     AccountRecoveryCode &operator =(const AccountRecoveryCode &other);
 private:
     void init();
-private:
-    BUuid mcode;
-    QDateTime mexpirationDateTime;
-    quint64 muserId;
-    AccountRecoveryCodeRepository *repo;
 private:
     friend class AccountRecoveryCodeRepository;
 };

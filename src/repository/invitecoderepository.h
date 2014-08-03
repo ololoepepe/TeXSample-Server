@@ -15,6 +15,8 @@ class DataSource;
 
 class InviteCodeRepository
 {
+private:
+    DataSource * const Source;
 public:
     explicit InviteCodeRepository(DataSource *source);
     ~InviteCodeRepository();
@@ -31,8 +33,6 @@ public:
     bool isValid() const;
     quint64 save(const InviteCode &entity);
     TIdList save(const QList<InviteCode> &entities);
-private:
-    DataSource * const Source;
 private:
     friend class InviteCode;
     Q_DISABLE_COPY(InviteCodeRepository)

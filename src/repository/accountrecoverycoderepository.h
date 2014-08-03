@@ -15,6 +15,8 @@ class DataSource;
 
 class AccountRecoveryCodeRepository
 {
+private:
+    DataSource * const Source;
 public:
     explicit AccountRecoveryCodeRepository(DataSource *source);
     ~AccountRecoveryCodeRepository();
@@ -26,8 +28,6 @@ public:
     bool isValid() const;
     bool save(const AccountRecoveryCode &entity);
     bool save(const QList<AccountRecoveryCode> &entities);
-private:
-    DataSource * const Source;
 private:
     friend class AccountRecoveryCode;
     Q_DISABLE_COPY(AccountRecoveryCodeRepository)

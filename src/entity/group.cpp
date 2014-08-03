@@ -35,6 +35,7 @@ Group::Group(GroupRepository *repo)
 {
     init();
     this->repo = repo;
+    createdByRepo = true;
 }
 
 /*============================== Public methods ============================*/
@@ -49,10 +50,18 @@ quint64 Group::id() const
     return mid;
 }
 
+bool Group::isCreatedByRepo() const
+{
+    return createdByRepo;
+}
+
 bool Group::isValid() const
 {
-    return mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && !mname.isEmpty() && mownerId
-            && (mid || !mownerLogin.isEmpty());
+    if (createdByRepo)
+        return valid;
+    if (mid)
+        return mlastModificationDateTime.isValid();
+    return mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && !mname.isEmpty() && mownerId;
 }
 
 QDateTime Group::lastModificationDateTime() const
@@ -127,5 +136,7 @@ void Group::init()
     mid = 0;
     mlastModificationDateTime = QDateTime().toUTC();
     mownerId = 0;
+    createdByRepo = false;
     repo = 0;
+    valid = false;
 }

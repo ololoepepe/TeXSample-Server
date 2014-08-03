@@ -1,6 +1,6 @@
 #include "registrationconfirmationcode.h"
 
-//#include "repository/registrationconfirmationcoderepository.h"
+#include "repository/registrationconfirmationcoderepository.h"
 
 #include <TeXSample>
 
@@ -34,6 +34,7 @@ RegistrationConfirmationCode::RegistrationConfirmationCode(RegistrationConfirmat
 {
     init();
     this->repo = repo;
+    createdByRepo = true;
 }
 
 /*============================== Public methods ============================*/
@@ -48,8 +49,15 @@ QDateTime RegistrationConfirmationCode::expirationDateTime() const
     return mexpirationDateTime;
 }
 
+bool RegistrationConfirmationCode::isCreatedByRepo() const
+{
+    return createdByRepo;
+}
+
 bool RegistrationConfirmationCode::isValid() const
 {
+    if (createdByRepo)
+        return valid;
     return !mcode.isNull() && mexpirationDateTime.isValid() && muserId;
 }
 
@@ -95,5 +103,7 @@ void RegistrationConfirmationCode::init()
 {
     mexpirationDateTime = QDateTime().toUTC();
     muserId = 0;
+    createdByRepo = false;
     repo = 0;
+    valid = false;
 }

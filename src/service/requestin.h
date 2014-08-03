@@ -12,6 +12,10 @@
 
 template <typename T> class RequestIn
 {
+private:
+    bool mcachingEnabled;
+    T mdata;
+    QDateTime mlastRequestDateTime;
 public:
     explicit RequestIn(const TRequest &request)
     {
@@ -48,10 +52,6 @@ public:
         mlastRequestDateTime = other.mlastRequestDateTime;
         return *this;
     }
-private:
-    bool mcachingEnabled;
-    T mdata;
-    QDateTime mlastRequestDateTime;
 };
 
 #endif // REQUESTIN_H

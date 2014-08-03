@@ -19,9 +19,10 @@
 
 /*============================== Public constructors =======================*/
 
-User::User()
+User::User(bool saveAvatar)
 {
     init();
+    msaveAvatar = saveAvatar;
 }
 
 User::User(const User &other)
@@ -41,6 +42,7 @@ User::User(UserRepository *repo)
 {
     init();
     this->repo = repo;
+    createdByRepo = true;
 }
 
 /*============================== Public methods ============================*/
@@ -72,7 +74,7 @@ TServiceList User::availableServices() const
 
 QImage User::avatar() const
 {
-    if (avatarFetched)
+    if (!createdByRepo || avatarFetched)
         return mavatar;
     if (!repo || !repo->isValid())
         return QImage();
@@ -104,8 +106,17 @@ quint64 User::id() const
     return mid;
 }
 
+bool User::isCreatedByRepo() const
+{
+    return createdByRepo;
+}
+
 bool User::isValid() const
 {
+    if (createdByRepo)
+        return valid;
+    if (mid)
+        return mlastModificationDateTime.isValid();
     return maccessLevel.isValid() && !memail.isEmpty() && !mlogin.isEmpty() && mlastModificationDateTime.isValid()
             && !mpassword.isEmpty() && mregistrationDateTime.isValid();
 }
@@ -143,6 +154,11 @@ QDateTime User::registrationDateTime() const
 UserRepository *User::repository() const
 {
     return repo;
+}
+
+bool User::saveAvatar() const
+{
+    return msaveAvatar;
 }
 
 void User::setAccessLevel(const TAccessLevel &lvl)
@@ -251,6 +267,7 @@ User &User::operator =(const User &other)
     mpassword = other.mpassword;
     mpatronymic = other.mpatronymic;
     mregistrationDateTime = other.mregistrationDateTime;
+    msaveAvatar = other.msaveAvatar;
     msurname = other.msurname;
     repo = other.repo;
     return *this;
@@ -265,5 +282,8 @@ void User::init()
     mid = 0;
     mlastModificationDateTime = QDateTime().toUTC();
     mregistrationDateTime = QDateTime().toUTC();
+    msaveAvatar = false;
+    createdByRepo = false;
     repo = 0;
+    valid = false;
 }

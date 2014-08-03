@@ -26,6 +26,10 @@ class QString;
 class UserService
 {
     Q_DECLARE_TR_FUNCTIONS(UserService)
+private:
+    DataSource * const Source;
+    GroupRepository * const GroupRepo;
+    UserRepository * const UserRepo;
 public:
     explicit UserService(DataSource *source);
     ~UserService();
@@ -38,10 +42,6 @@ public:
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;
-private:
-    DataSource * const Source;
-    GroupRepository * const GroupRepo;
-    UserRepository * const UserRepo;
 private:
     Q_DISABLE_COPY(UserService)
 };

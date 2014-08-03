@@ -1,6 +1,6 @@
 #include "invitecode.h"
 
-//#include "repository/invitecoderepository.h"
+#include "repository/invitecoderepository.h"
 
 #include <TAccessLevel>
 #include <TeXSample>
@@ -41,6 +41,7 @@ InviteCode::InviteCode(InviteCodeRepository *repo)
 {
     init();
     this->repo = repo;
+    createdByRepo = true;
 }
 
 /*============================== Public methods ============================*/
@@ -85,10 +86,19 @@ quint64 InviteCode::id() const
     return mid;
 }
 
+bool InviteCode::isCreatedByRepo() const
+{
+    return createdByRepo;
+}
+
 bool InviteCode::isValid() const
 {
+    if (createdByRepo)
+        return valid;
+    if (mid)
+        return true;
     return maccessLevel.isValid() && !mcode.isNull() && mcreationDateTime.isValid() && mexpirationDateTime.isValid()
-            && mownerId && (mid || !mownerLogin.isEmpty());
+            && mownerId;
 }
 
 quint64 InviteCode::ownerId() const
@@ -174,5 +184,7 @@ void InviteCode::init()
     mexpirationDateTime = QDateTime().toUTC();
     mid = 0;
     mownerId = 0;
+    createdByRepo = false;
     repo = 0;
+    valid = false;
 }

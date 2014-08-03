@@ -19,8 +19,31 @@ class UserRepository;
 
 class User
 {
+private:
+    quint64 mid;
+    TAccessLevel maccessLevel;
+    bool mactive;
+    TIdList mavailableGroupIds;
+    TGroupInfoList mavailableGroups;
+    TServiceList mavailableServices;
+    QImage mavatar;
+    QString memail;
+    TIdList mgroupIds;
+    TGroupInfoList mgroups;
+    QDateTime mlastModificationDateTime;
+    QString mlogin;
+    QString mname;
+    QByteArray mpassword;
+    QString mpatronymic;
+    QDateTime mregistrationDateTime;
+    bool msaveAvatar;
+    QString msurname;
+    bool avatarFetched;
+    bool createdByRepo;
+    UserRepository *repo;
+    bool valid;
 public:
-    explicit User();
+    explicit User(bool saveAvatar = true);
     User(const User &other);
     ~User();
 protected:
@@ -36,6 +59,7 @@ public:
     TIdList groupIds() const;
     TGroupInfoList groups() const;
     quint64 id() const;
+    bool isCreatedByRepo() const;
     bool isValid() const;
     QDateTime lastModificationDateTime() const;
     QString login() const;
@@ -44,6 +68,7 @@ public:
     QString patronymic() const;
     QDateTime registrationDateTime() const;
     UserRepository *repository() const;
+    bool saveAvatar() const;
     void setAccessLevel(const TAccessLevel &accessLevel);
     void setActive(bool active);
     void setAvailableGroupIds(const TIdList &ids);
@@ -64,26 +89,6 @@ public:
     User &operator =(const User &other);
 private:
     void init();
-private:
-    bool avatarFetched;
-    TAccessLevel maccessLevel;
-    bool mactive;
-    TIdList mavailableGroupIds;
-    TGroupInfoList mavailableGroups;
-    TServiceList mavailableServices;
-    QImage mavatar;
-    QString memail;
-    TIdList mgroupIds;
-    TGroupInfoList mgroups;
-    quint64 mid;
-    QDateTime mlastModificationDateTime;
-    QString mlogin;
-    QString mname;
-    QByteArray mpassword;
-    QString mpatronymic;
-    QDateTime mregistrationDateTime;
-    QString msurname;
-    UserRepository *repo;
 private:
     friend class UserRepository;
 };
