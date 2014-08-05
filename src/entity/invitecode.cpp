@@ -61,6 +61,17 @@ BUuid InviteCode::code() const
     return mcode;
 }
 
+void InviteCode::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+    mownerLogin.clear();
+    mgroups.clear();
+}
+
 QDateTime InviteCode::creationDateTime() const
 {
     return mcreationDateTime;

@@ -43,7 +43,7 @@ private:
     UserRepository *repo;
     bool valid;
 public:
-    explicit User(bool saveAvatar = true);
+    explicit User();
     User(const User &other);
     ~User();
 protected:
@@ -55,6 +55,7 @@ public:
     TGroupInfoList availableGroups() const;
     TServiceList availableServices() const;
     QImage avatar() const;
+    void convertToCreatedByUser();
     QString email() const;
     TIdList groupIds() const;
     TGroupInfoList groups() const;
@@ -83,6 +84,7 @@ public:
     void setPassword(const QByteArray &password);
     void setPatronymic(const QString &partonymic);
     void setRegistrationDateTime(const QDateTime &dt);
+    void setSaveAvatar(bool save);
     void setSurname(const QString &surname);
     QString surname() const;
 public:

@@ -43,6 +43,7 @@ public:
     TAccessLevel accessLevel() const;
     TServiceList availableServices() const;
     BUuid code() const;
+    void convertToCreatedByUser();
     QDateTime creationDateTime() const;
     QDateTime expirationDateTime() const;
     TIdList groupIds() const;

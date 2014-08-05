@@ -57,6 +57,20 @@ TAuthorInfoList Lab::authors() const
     return mauthors;
 }
 
+void Lab::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+    msenderLogin.clear();
+    mextraFiles.clear();
+    mgroups.clear();
+    fetchedData.clear();
+    fetchedExtraFiles.clear();
+}
+
 QDateTime Lab::creationDateTime() const
 {
     return mcreationDateTime;
@@ -122,7 +136,7 @@ bool Lab::isValid() const
     if (createdByRepo)
         return valid;
     if (mid)
-        return lastModificationDateTime().isValid();
+        return lastModificationDateTime().isValid() && (!msaveData || !mdataList.isEmpty());
     return msenderId && mcreationDateTime.isValid() && !mdataList.isEmpty() && mlastModificationDateTime.isValid()
             && !mtitle.isEmpty();
 }
@@ -135,6 +149,11 @@ QDateTime Lab::lastModificationDateTime() const
 LabRepository *Lab::repository() const
 {
     return repo;
+}
+
+bool Lab::saveData() const
+{
+    return msaveData;
 }
 
 quint64 Lab::senderId() const
@@ -199,6 +218,11 @@ void Lab::setLastModificationDateTime(const QDateTime &dt)
     mlastModificationDateTime = dt.toUTC();
 }
 
+void Lab::setSaveData(bool save)
+{
+    msaveData = save;
+}
+
 void Lab::setSenderId(quint64 senderId)
 {
     msenderId = senderId;
@@ -241,6 +265,7 @@ Lab &Lab::operator =(const Lab &other)
     mgroupIds = other.mgroupIds;
     mgroups = other.mgroups;
     mlastModificationDateTime = other.mlastModificationDateTime;
+    msaveData = other.msaveData;
     mtags = other.mtags;
     mtitle = other.mtitle;
     mtype = other.mtype;
@@ -261,6 +286,7 @@ void Lab::init()
     mdeleted = false;
     mcreationDateTime = QDateTime().toUTC();
     mlastModificationDateTime = QDateTime().toUTC();
+    msaveData = false;
     createdByRepo = false;
     repo = 0;
     valid = false;

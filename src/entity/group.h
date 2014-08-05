@@ -29,6 +29,7 @@ public:
 protected:
     explicit Group(GroupRepository *repo);
 public:
+    void convertToCreatedByUser();
     QDateTime creationDateTime() const;
     quint64 id() const;
     bool isCreatedByRepo() const;

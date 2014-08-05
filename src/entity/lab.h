@@ -40,6 +40,7 @@ private:
     TIdList mgroupIds;
     TGroupInfoList mgroups;
     QDateTime mlastModificationDateTime;
+    bool msaveData;
     QStringList mtags;
     QString mtitle;
     TLabType mtype;
@@ -56,6 +57,7 @@ protected:
     explicit Lab(LabRepository *repo);
 public:
     TAuthorInfoList authors() const;
+    void convertToCreatedByUser();
     QDateTime creationDateTime() const;
     bool deleted() const;
     const TLabData &labData(BeQt::OSType os) const;
@@ -71,6 +73,7 @@ public:
     bool isValid() const;
     QDateTime lastModificationDateTime() const;
     LabRepository *repository() const;
+    bool saveData() const;
     quint64 senderId() const;
     QString senderLogin() const;
     void setAuthors(const TAuthorInfoList &authors);
@@ -83,6 +86,7 @@ public:
     void setGroupIds(const TIdList &ids);
     void setId(quint64 id);
     void setLastModificationDateTime(const QDateTime &dt);
+    void setSaveData(bool save);
     void setSenderId(quint64 senderId);
     void setTitle(const QString &title);
     void setType(const TLabType &type);

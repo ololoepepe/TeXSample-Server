@@ -44,6 +44,15 @@ BUuid AccountRecoveryCode::code() const
     return mcode;
 }
 
+void AccountRecoveryCode::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+}
+
 QDateTime AccountRecoveryCode::expirationDateTime() const
 {
     return mexpirationDateTime;

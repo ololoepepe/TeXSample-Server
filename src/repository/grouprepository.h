@@ -21,18 +21,13 @@ public:
     explicit GroupRepository(DataSource *source);
     ~GroupRepository();
 public:
-    long count();
+    quint64 add(const Group &entity);
     DataSource *dataSource() const;
-    bool deleteAll();
     bool deleteOne(quint64 id);
-    bool deleteSome(const TIdList &ids);
-    bool exists(quint64 id);
-    QList<Group> findAll();
-    QList<Group> findAll(const TIdList &ids);
+    bool edit(const Group &entity);
+    QList<Group> findAllByUserId(quint64 userId);
     Group findOne(quint64 id);
     bool isValid() const;
-    quint64 save(const Group &entity);
-    TIdList save(const QList<Group> &entities);
 private:
     friend class Group;
     Q_DISABLE_COPY(GroupRepository)

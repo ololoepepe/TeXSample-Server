@@ -19,7 +19,6 @@
 #include <TGetUserInfoRequestData>
 #include <TGroupInfo>
 #include <TGroupInfoList>
-#include <TMessage>
 #include <TServiceList>
 #include <TUserIdentifier>
 #include <TUserInfo>
@@ -53,23 +52,23 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
 {
     typedef RequestOut<TAddGroupReplyData> Out;
     if (!isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Invalid UserService instance", "error"));
     if (!in.data().isValid())
-        return Out(TMessage(TMessage::InvalidDataMessage));
+        return Out(tr("Invalid data", "error"));
     if (!userId)
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Invalid user ID (internal error)", "error"));
     Group entity;
     QDateTime dt = QDateTime::currentDateTime();
     entity.setCreationDateTime(dt);
     entity.setLastModificationDateTime(dt);
     entity.setName(in.data().name());
     entity.setOwnerId(userId);
-    quint64 id = GroupRepo->save(entity);
+    quint64 id = GroupRepo->add(entity);
     if (!id)
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Repository operation failed (internal error)", "error"));
     entity = GroupRepo->findOne(id);
     if (!entity.isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Repository operation failed (internal error)", "error"));
     TGroupInfo info;
     info.setCreationDateTime(entity.creationDateTime());
     info.setId(entity.id());
@@ -97,9 +96,9 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
 {
     typedef RequestOut<TGetUserInfoReplyData> Out;
     if (!isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Invalid UserService instance", "error"));
     if (!in.data().isValid())
-        return Out(TMessage(TMessage::InvalidDataMessage));
+        return Out(tr("Invalid data", "error"));
     TUserIdentifier id = in.data().identifier();
     if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
         QDateTime dt = QDateTime::currentDateTime();
@@ -109,7 +108,7 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     QDateTime dt = QDateTime::currentDateTime();
     User entity = UserRepo->findOne(id);
     if (!entity.isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("No such user", "error"));
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());
@@ -134,9 +133,9 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
 {
     typedef RequestOut<TGetUserInfoAdminReplyData> Out;
     if (!isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("Invalid UserService instance", "error"));
     if (!in.data().isValid())
-        return Out(TMessage(TMessage::InvalidDataMessage));
+        return Out(tr("Invalid data", "error"));
     TUserIdentifier id = in.data().identifier();
     if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
         QDateTime dt = QDateTime::currentDateTime();
@@ -146,7 +145,7 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     QDateTime dt = QDateTime::currentDateTime();
     User entity = UserRepo->findOne(id);
     if (!entity.isValid())
-        return Out(TMessage(TMessage::InternalErrorMessage));
+        return Out(tr("No such user", "error"));
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());

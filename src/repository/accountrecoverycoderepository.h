@@ -3,6 +3,8 @@
 
 class DataSource;
 
+class BUuid;
+
 #include "entity/accountrecoverycode.h"
 
 #include <TIdList>
@@ -21,13 +23,11 @@ public:
     explicit AccountRecoveryCodeRepository(DataSource *source);
     ~AccountRecoveryCodeRepository();
 public:
-    long count();
+    bool add(const AccountRecoveryCode &entity);
+    bool deleteOneByUserId(quint64 userId);
+    AccountRecoveryCode findOneByCode(const BUuid &code);
     DataSource *dataSource() const;
-    bool deleteAll();
-    QList<AccountRecoveryCode> findAll();
     bool isValid() const;
-    bool save(const AccountRecoveryCode &entity);
-    bool save(const QList<AccountRecoveryCode> &entities);
 private:
     friend class AccountRecoveryCode;
     Q_DISABLE_COPY(AccountRecoveryCodeRepository)

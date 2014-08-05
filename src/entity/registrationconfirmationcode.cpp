@@ -44,6 +44,15 @@ BUuid RegistrationConfirmationCode::code() const
     return mcode;
 }
 
+void RegistrationConfirmationCode::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+}
+
 QDateTime RegistrationConfirmationCode::expirationDateTime() const
 {
     return mexpirationDateTime;

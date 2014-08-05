@@ -3,6 +3,8 @@
 
 class DataSource;
 
+class BUuid;
+
 #include "entity/registrationconfirmationcode.h"
 
 #include <TIdList>
@@ -21,13 +23,11 @@ public:
     explicit RegistrationConfirmationCodeRepository(DataSource *source);
     ~RegistrationConfirmationCodeRepository();
 public:
-    long count();
+    bool add(const RegistrationConfirmationCode &entity);
+    bool deleteOneByUserId(quint64 userId);
+    RegistrationConfirmationCode findOneByCode(const BUuid &code);
     DataSource *dataSource() const;
-    bool deleteAll();
-    QList<RegistrationConfirmationCode> findAll();
     bool isValid() const;
-    bool save(const RegistrationConfirmationCode &entity);
-    bool save(const QList<RegistrationConfirmationCode> &entities);
 private:
     friend class RegistrationConfirmationCode;
     Q_DISABLE_COPY(RegistrationConfirmationCodeRepository)

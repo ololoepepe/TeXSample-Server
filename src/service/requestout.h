@@ -1,10 +1,10 @@
 #ifndef REQUESTOUT_H
 #define REQUESTOUT_H
 
-#include <TMessage>
 #include <TReply>
 
 #include <QDateTime>
+#include <QString>
 
 /*============================================================================
 ================================ RequestOut ==================================
@@ -15,7 +15,7 @@ template <typename T> class RequestOut
 private:
     bool mcacheUpToDate;
     T mdata;
-    TMessage mmessage;
+    QString mmessage;
     QDateTime mrequestDateTime;
     bool msuccess;
 public:
@@ -37,7 +37,7 @@ public:
         mrequestDateTime = requestDateTime.toUTC();
         msuccess = true;
     }
-    explicit RequestOut(const TMessage &message)
+    explicit RequestOut(const QString &message)
     {
         mcacheUpToDate = false;
         msuccess = false;
@@ -70,7 +70,7 @@ public:
     {
         return mdata;
     }
-    TMessage message() const
+    QString message() const
     {
         return mmessage;
     }
@@ -86,7 +86,7 @@ public:
     {
         mdata = data;
     }
-    void setMessage(const TMessage &message)
+    void setMessage(const QString &message)
     {
         mmessage = message;
     }

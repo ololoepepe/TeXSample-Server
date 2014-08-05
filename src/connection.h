@@ -114,6 +114,7 @@ private:
     bool handleSubscribeRequest(BNetworkOperation *op);
     void initHandlers();
     bool sendReply(BNetworkOperation *op, const TReply &reply);
+    bool sendReply(BNetworkOperation *op, const QString &message, bool success = false);
 private slots:
     void keepAlive();
     void restartTimer(BNetworkOperation *op = 0);

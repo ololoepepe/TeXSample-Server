@@ -469,7 +469,7 @@ void Application::timerEvent(QTimerEvent *e)
 
 /*============================== Static private methods ====================*/
 
-bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
+/*bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
 {
     //TExecuteCommandReplyData reply = executeSetAppVersion(args);
     //writeCommandMessage(reply.message(), reply.arguments());
@@ -488,7 +488,7 @@ bool Application::handleStopCommand(const QString &, const QStringList &args)
     //TExecuteCommandReplyData reply = executeStopServer(args);
     //writeCommandMessage(reply.message(), reply.arguments());
     //return reply.success();
-}
+}*/
 
 bool Application::handleUnknownCommand(const QString &, const QStringList &)
 {
@@ -496,7 +496,7 @@ bool Application::handleUnknownCommand(const QString &, const QStringList &)
     return false;
 }
 
-bool Application::handleUptimeCommand(const QString &, const QStringList &args)
+/*bool Application::handleUptimeCommand(const QString &, const QStringList &args)
 {
     //TExecuteCommandReplyData reply = executeUptime(args);
     //writeCommandMessage(reply.message(), reply.arguments());
@@ -508,7 +508,7 @@ bool Application::handleUserCommand(const QString &, const QStringList &args)
     //TExecuteCommandReplyData reply = executeUser(args);
     //writeCommandMessage(reply.message(), reply.arguments());
     //return reply.success();
-}
+}*/
 
 void Application::initTerminal()
 {
@@ -517,11 +517,11 @@ void Application::initTerminal()
     BTerminal::installHandler(BTerminal::SetCommand);
     BTerminal::installHandler(BTerminal::HelpCommand);
     BTerminal::installDefaultHandler(&handleUnknownCommand);
-    BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
-    BTerminal::installHandler("start", &handleStartCommand);
-    BTerminal::installHandler("stop", &handleStopCommand);
-    BTerminal::installHandler("uptime", &handleUptimeCommand);
-    BTerminal::installHandler("user", &handleUserCommand);
+    //BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
+    //BTerminal::installHandler("start", &handleStartCommand);
+    //BTerminal::installHandler("stop", &handleStopCommand);
+    //BTerminal::installHandler("uptime", &handleUptimeCommand);
+    //BTerminal::installHandler("user", &handleUserCommand);
     BSettingsNode *root = new BSettingsNode;
     BSettingsNode *n = new BSettingsNode("Mail", root);
     BSettingsNode *nn = new BSettingsNode("server_address", n);
@@ -561,32 +561,31 @@ void Application::initTerminal()
                                                           "Enter \"help --all\" to see full Help"));
     BTerminal::CommandHelpList chl;
     BTerminal::CommandHelp ch;
-    ch.usage = "uptime";
+    ch.usage = "server-state";
     ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Show for how long the application has been running");
-    BTerminal::setCommandHelp("uptime", ch);
-    ch.usage = "user [--list]";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Show connected user count or list them all");
+                                             "Show information about server state (uptime, listening state, etc.)");
+    BTerminal::setCommandHelp("server-state", ch);
+    ch.usage = "set-server-state on|off [address]";
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+                                             "Set server state: on (listening) or off (not listening).\n"
+                                             "If [address] is passed, server will listen on that exact address");
+    BTerminal::setCommandHelp("set-server-state", ch);
+    ch.usage = "user-info [--match-type=<match_type>] <match_pattern>";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about connected users matching"
+                                             "<match_pattern>, which is to be a wildcard.\n"
+                                             "<match_type> may be one of the following:\n"
+                                             "  login-and-unique-id - attempt to match both login and uinque id "
+                                             "(default)\n"
+                                             "  login - match login only\n"
+                                             "  unique-id - match unique id only");
     chl << ch;
-    ch.usage = "user --connected-at|--info|--uptime <id|login>";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about the user. "
-                                             "The user may be specified by id or by login. Options:\n"
-                                             "  --connected-at - time when the user connected\n"
-                                             "  --info - detailed user information\n"
-                                             "  --uptime - for how long the user has been connected");
-    chl << ch;
-    ch.usage = "user --kick <id|login>";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Disconnect the specified user. "
-                                             "If login is specified, all connections of this user will be closed");
-    chl << ch;
-    BTerminal::setCommandHelp("user", chl);
+    BTerminal::setCommandHelp("user-info", chl);
     ch.usage = "start [address]";
     ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server. "
-                                             "If address is specified, the server will only listen on that address, "
-                                             "otherwise it will listen on available all addresses.");
+                                             "The same as \"set-server-state on [address]\"");
     BTerminal::setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. Users are NOT disconnected");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "The same as \"set-server-state off\"");
     BTerminal::setCommandHelp("stop", ch);
     ch.usage = "set-app-version --client|-c=<client> --os|-o=<os> --arch|-a=<arch> [--portable|-p] <version> <url>";
     ch.description = BTranslation::translate("BTerminalIOHandler",

@@ -19,10 +19,9 @@
 
 /*============================== Public constructors =======================*/
 
-Sample::Sample(bool saveAdminRemark)
+Sample::Sample()
 {
     init();
-    msaveAdminRemark = saveAdminRemark;
 }
 
 Sample::Sample(const Sample &other)
@@ -55,6 +54,21 @@ QString Sample::adminRemark() const
 TAuthorInfoList Sample::authors() const
 {
     return mauthors;
+}
+
+void Sample::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+    msenderLogin.clear();
+    mpreviewExtraFiles.clear();
+    mpreviewMainFile.clear();
+    msource.clear();
+    previewFetched = false;
+    sourceFetched = false;
 }
 
 QDateTime Sample::creationDateTime() const
@@ -127,6 +141,11 @@ SampleRepository *Sample::repository() const
     return repo;
 }
 
+bool Sample::saveAdminRemark() const
+{
+    return msaveAdminRemark;
+}
+
 quint64 Sample::senderId() const
 {
     return msenderId;
@@ -180,6 +199,11 @@ void Sample::setProject(const TTexProject &project)
 void Sample::setRating(quint8 rating)
 {
     mrating = (rating < 100) ? rating : 100;
+}
+
+void Sample::setSaveAdminRemark(bool save)
+{
+    msaveAdminRemark = save;
 }
 
 void Sample::setSenderId(quint64 senderId)

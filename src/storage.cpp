@@ -10,7 +10,6 @@
 #include <TInviteInfo>
 //#include <TCompilationResult>
 #include <TTexProject>
-#include <TMessage>
 #include <TService>
 #include <TServiceList>
 #include <TLabInfo>

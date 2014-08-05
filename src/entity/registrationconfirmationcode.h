@@ -28,6 +28,7 @@ protected:
     explicit RegistrationConfirmationCode(RegistrationConfirmationCodeRepository *repo);
 public:
     BUuid code() const;
+    void convertToCreatedByUser();
     QDateTime expirationDateTime() const;
     bool isCreatedByRepo() const;
     bool isValid() const;

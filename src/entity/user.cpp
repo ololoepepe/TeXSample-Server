@@ -19,10 +19,9 @@
 
 /*============================== Public constructors =======================*/
 
-User::User(bool saveAvatar)
+User::User()
 {
     init();
-    msaveAvatar = saveAvatar;
 }
 
 User::User(const User &other)
@@ -84,6 +83,18 @@ QImage User::avatar() const
         return QImage();
     *const_cast<bool *>(&avatarFetched) = true;
     return mavatar;
+}
+
+void User::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+    mavailableGroups.clear();
+    mgroups.clear();
+    avatarFetched = false;
 }
 
 QString User::email() const
@@ -234,6 +245,11 @@ void User::setPatronymic(const QString &patronymic)
 void User::setRegistrationDateTime(const QDateTime &dt)
 {
     mregistrationDateTime = dt.toUTC();
+}
+
+void User::setSaveAvatar(bool save)
+{
+    msaveAvatar = save;
 }
 
 void User::setSurname(const QString &surname)

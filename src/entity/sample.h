@@ -44,7 +44,7 @@ private:
     bool sourceFetched;
     bool valid;
 public:
-    explicit Sample(bool saveAdminRemark = true);
+    explicit Sample();
     Sample(const Sample &other);
     ~Sample();
 protected:
@@ -52,6 +52,7 @@ protected:
 public:
     QString adminRemark() const;
     TAuthorInfoList authors() const;
+    void convertToCreatedByUser();
     QDateTime creationDateTime() const;
     bool deleted() const;
     QString description() const;
@@ -63,6 +64,7 @@ public:
     const TBinaryFile &previewMainFile() const;
     quint8 rating() const;
     SampleRepository *repository() const;
+    bool saveAdminRemark() const;
     quint64 senderId() const;
     QString senderLogin() const;
     void setAdminRemark(const QString &remark);
@@ -74,6 +76,7 @@ public:
     void setLastModificationDateTime(const QDateTime &dt);
     void setProject(const TTexProject &project);
     void setRating(quint8 rating);
+    void setSaveAdminRemark(bool save);
     void setSenderId(quint64 senderId);
     void setTitle(const QString &title);
     void setType(const TSampleType &type);

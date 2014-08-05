@@ -40,6 +40,16 @@ Group::Group(GroupRepository *repo)
 
 /*============================== Public methods ============================*/
 
+void Group::convertToCreatedByUser()
+{
+    if (!createdByRepo)
+        return;
+    createdByRepo = false;
+    repo = 0;
+    valid = false;
+    mownerLogin.clear();
+}
+
 QDateTime Group::creationDateTime() const
 {
     return mcreationDateTime;

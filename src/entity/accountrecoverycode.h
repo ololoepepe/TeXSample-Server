@@ -28,6 +28,7 @@ protected:
     explicit AccountRecoveryCode(AccountRecoveryCodeRepository *repo);
 public:
     BUuid code() const;
+    void convertToCreatedByUser();
     bool isCreatedByRepo() const;
     QDateTime expirationDateTime() const;
     bool isValid() const;

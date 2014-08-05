@@ -15,7 +15,6 @@
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
 #include <TLogRequestData>
-#include <TMessage>
 #include <TOperation>
 #include <TReply>
 #include <TRequest>
@@ -136,11 +135,11 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 bool Connection::handleAddGroupRequest(BNetworkOperation *op)
 {
     if (!isValid())
-        return sendReply(op, TReply(TMessage(TMessage::InternalErrorMessage, "Invalid Connection instance")));
+        return sendReply(op, tr("Invalid Connection instance", "error"));
     if (!muserInfo.isValid())
-        return sendReply(op, TReply(TMessage::NotAuthorizedMessage));
+        return sendReply(op, tr("Not authorized", "error"));
     if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, TReply(TMessage::NotEnoughRightsMessage));
+        return sendReply(op, tr("Not enough rights", "error"));
     RequestIn<TAddGroupRequestData> in(op->variantData().value<TRequest>());
     return sendReply(op, UserServ->addGroup(in, muserInfo.id()).createReply());
 }
@@ -313,11 +312,11 @@ bool Connection::handleGetUserAvatarRequest(BNetworkOperation *op)
 bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
 {
     if (!isValid())
-        return sendReply(op, TReply(TMessage(TMessage::InternalErrorMessage, "Invalid Connection instance")));
+        return sendReply(op, tr("Invalid Connection instance", "error"));
     if (!muserInfo.isValid())
-        return sendReply(op, TReply(TMessage::NotAuthorizedMessage));
+        return sendReply(op, tr("Not authorized", "error"));
     if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, TReply(TMessage::NotEnoughRightsMessage));
+        return sendReply(op, tr("Not enough rights", "error"));
     RequestIn<TGetUserInfoAdminRequestData> in(op->variantData().value<TRequest>());
     return sendReply(op, UserServ->getUserInfoAdmin(in).createReply());
 }
@@ -325,11 +324,11 @@ bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
 bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
     if (!isValid())
-        return sendReply(op, TReply(TMessage(TMessage::InternalErrorMessage, "Invalid Connection instance")));
+        return sendReply(op, tr("Invalid Connection instance", "error"));
     if (!muserInfo.isValid())
-        return sendReply(op, TReply(TMessage::NotAuthorizedMessage));
+        return sendReply(op, tr("Not authorized", "error"));
     if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::UserLevel))
-        return sendReply(op, TReply(TMessage::NotEnoughRightsMessage));
+        return sendReply(op, tr("Not enough rights", "error"));
     RequestIn<TGetUserInfoRequestData> in(op->variantData().value<TRequest>());
     return sendReply(op, UserServ->getUserInfo(in).createReply());
 }
@@ -1196,6 +1195,13 @@ void Connection::initHandlers()
 bool Connection::sendReply(BNetworkOperation *op, const TReply &reply)
 {
     return op->reply(QVariant::fromValue(reply)) && reply.success();
+}
+
+bool Connection::sendReply(BNetworkOperation *op, const QString &message, bool success)
+{
+    TReply reply(message);
+    reply.setSuccess(success);
+    return sendReply(op, reply);
 }
 
 /*============================== Private slots =============================*/

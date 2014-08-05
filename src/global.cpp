@@ -3,12 +3,7 @@ class BSettingsNode;
 #include "global.h"
 #include "storage.h"
 
-//#include <TCompilationResult>
-//#include <TCompilerParameters>
 #include <TTexProject>
-//#include <TCompiledProject>
-#include <TMessage>
-//#include <TOperationResult>
 
 #include <BeQt>
 #include <BDirTools>
@@ -32,7 +27,7 @@ class BSettingsNode;
 
 #include <QDebug>
 
-B_DECLARE_TRANSLATE_FUNCTION
+//B_DECLARE_TRANSLATE_FUNCTION
 
 namespace Global
 {
