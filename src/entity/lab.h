@@ -8,7 +8,6 @@ class TLabData;
 
 #include <TAuthorInfoList>
 #include <TBinaryFileList>
-#include <TGroupInfoList>
 #include <TIdList>
 #include <TLabDataList>
 #include <TLabType>
@@ -29,7 +28,6 @@ class Lab
 private:
     quint64 mid;
     quint64 msenderId;
-    QString msenderLogin;
     bool mdeleted;
     TAuthorInfoList mauthors;
     QDateTime mcreationDateTime;
@@ -37,8 +35,7 @@ private:
     QStringList mdeletedExtraFiles;
     QString mdescription;
     TBinaryFileList mextraFiles;
-    TIdList mgroupIds;
-    TGroupInfoList mgroups;
+    TIdList mgroups;
     QDateTime mlastModificationDateTime;
     bool msaveData;
     QStringList mtags;
@@ -66,8 +63,7 @@ public:
     QString description() const;
     const TBinaryFile &extraFile(const QString &fileName) const;
     const TBinaryFileList &extraFiles() const;
-    TIdList groupIds() const;
-    TGroupInfoList groups() const;
+    TIdList groups() const;
     quint64 id() const;
     bool isCreatedByRepo() const;
     bool isValid() const;
@@ -75,7 +71,6 @@ public:
     LabRepository *repository() const;
     bool saveData() const;
     quint64 senderId() const;
-    QString senderLogin() const;
     void setAuthors(const TAuthorInfoList &authors);
     void setCreationDateTime(const QDateTime &dt);
     void setDataList(const TLabDataList &list);
@@ -83,13 +78,14 @@ public:
     void setDeletedExtraFiles(const QStringList &fileNames);
     void setDescription(const QString &description);
     void setExtraFiles(const TBinaryFileList &extraFiles);
-    void setGroupIds(const TIdList &ids);
+    void setGroups(const TIdList &ids);
     void setId(quint64 id);
-    void setLastModificationDateTime(const QDateTime &dt);
     void setSaveData(bool save);
     void setSenderId(quint64 senderId);
+    void setTags(const QStringList &tags);
     void setTitle(const QString &title);
     void setType(const TLabType &type);
+    QStringList tags() const;
     QString title() const;
     TLabType type() const;
 public:

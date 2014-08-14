@@ -11,6 +11,7 @@ class TTexProject;
 
 #include <TIdList>
 
+#include <QDateTime>
 #include <QList>
 
 /*============================================================================
@@ -25,21 +26,17 @@ public:
     explicit SampleRepository(DataSource *source);
     ~SampleRepository();
 public:
-    long count();
+    quint64 add(const Sample &entity);
     DataSource *dataSource() const;
-    bool deleteAll();
-    bool deleteOne(quint64 id);
-    bool deleteSome(const TIdList &ids);
-    bool exists(quint64 id);
-    QList<Sample> findAll();
-    QList<Sample> findAll(const TIdList &ids);
+    bool edit(const Sample &entity);
+    QList<Sample> findAllNewerThan(const QDateTime &newerThan = QDateTime());
     Sample findOne(quint64 id);
     bool isValid() const;
-    quint64 save(const Sample &entity);
-    TIdList save(const QList<Sample> &entities);
 private:
+    bool createSource(quint64 sampleId, const TTexProject &data);
     bool fetchPreview(quint64 sampleId, TBinaryFile &mainFile, TBinaryFileList &extraFiles);
     TTexProject fetchSource(quint64 sampleId, bool *ok = false);
+    bool updateSource(quint64 sampleId, const TTexProject &data);
 private:
     friend class Sample;
     Q_DISABLE_COPY(SampleRepository)

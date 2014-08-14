@@ -3,10 +3,14 @@
 
 class DataSource;
 
+class TBinaryFileList;
+class TLabDataList;
+
 #include "entity/lab.h"
 
 #include <TIdList>
 
+#include <QDateTime>
 #include <QList>
 
 /*============================================================================
@@ -21,20 +25,19 @@ public:
     explicit LabRepository(DataSource *source);
     ~LabRepository();
 public:
-    long count();
+    quint64 add(const Lab &entity);
     DataSource *dataSource() const;
-    bool deleteAll();
-    bool deleteOne(quint64 id);
-    bool deleteSome(const TIdList &ids);
-    bool exists(quint64 id);
-    QList<Lab> findAll();
-    QList<Lab> findAll(const TIdList &ids);
+    bool edit(const Lab &entity);
+    QList<Lab> findAllNewerThan(const TIdList &groups = TIdList());
+    QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList());
     Lab findOne(quint64 id);
     bool isValid() const;
-    quint64 save(const Lab &entity);
-    TIdList save(const QList<Lab> &entities);
 private:
     //fetch
+    bool createData(quint64 labId, const TLabDataList &data);
+    bool createExtraFiles(quint64 labId, const TBinaryFileList &files);
+    bool deleteExtraFiles(quint64 labId, const QStringList &fileNames);
+    bool updateData(quint64 labId, const TLabDataList &data);
 private:
     friend class Lab;
     Q_DISABLE_COPY(LabRepository)

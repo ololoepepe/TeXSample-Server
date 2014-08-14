@@ -2,6 +2,7 @@
 
 #include "datasource.h"
 #include "entity/user.h"
+#include "repositorytools.h"
 #include "transactionholder.h"
 
 #include <TAccessLevel>
@@ -10,6 +11,7 @@
 
 #include <BSqlResult>
 #include <BSqlWhere>
+#include <BTextTools>
 
 #include <QBuffer>
 #include <QByteArray>
@@ -40,17 +42,39 @@ UserRepository::~UserRepository()
 
 /*============================== Public methods ============================*/
 
-long UserRepository::count()
+quint64 UserRepository::add(const User &entity)
 {
-    if (!isValid())
+    if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
         return 0;
+    QDateTime dt = QDateTime::currentDateTimeUtc();
     TransactionHolder holder(Source);
-    BSqlResult result = Source->select("users", "COUNT(id)");
-    holder.setSuccess(result.success());
-    return result.value("COUNT(id)").toLongLong();
+    QVariantMap values;
+    values.insert("access_level", int(entity.accessLevel()));
+    values.insert("active", int(entity.active()));
+    values.insert("email", entity.email());
+    values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
+    values.insert("login", entity.login());
+    values.insert("name", entity.name());
+    values.insert("password", entity.password());
+    values.insert("patronymic", entity.patronymic());
+    values.insert("registration_date_time", dt.toMSecsSinceEpoch());
+    values.insert("surname", entity.surname());
+    BSqlResult result = Source->insert("users", values);
+    if (!result.success())
+        return 0;
+    quint64 id = result.lastInsertId().toULongLong();
+    if (!RepositoryTools::setGroupIdList(Source, "user_groups", "user_id", id, entity.groups()))
+        return 0;
+    if (!RepositoryTools::setServices(Source, "user_services", "user_id", id, entity.availableServices()))
+        return 0;
+    if (!createAvatar(id, entity.avatar()))
+        return 0;
+    if (!holder.doCommit())
+        return 0;
+    return id;
 }
 
-long UserRepository::count(const TAccessLevel &accessLevel)
+long UserRepository::countByAccessLevel(const TAccessLevel &accessLevel)
 {
     if (!isValid())
         return 0;
@@ -66,39 +90,142 @@ DataSource *UserRepository::dataSource() const
     return Source;
 }
 
-bool UserRepository::deleteAll()
+bool UserRepository::edit(const User &entity)
 {
-    //
-}
-
-bool UserRepository::deleteOne(const TUserIdentifier &id)
-{
-    //
-}
-
-bool UserRepository::deleteSome(const TIdList &ids)
-{
-    //
+    if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || !entity.id())
+        return false;
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    QVariantMap values;
+    values.insert("access_level", int(entity.accessLevel()));
+    values.insert("active", int(entity.active()));
+    values.insert("email", entity.email());
+    values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
+    values.insert("login", entity.login());
+    values.insert("name", entity.name());
+    values.insert("password", entity.password());
+    values.insert("patronymic", entity.patronymic());
+    values.insert("surname", entity.surname());
+    TransactionHolder holder(Source);
+    BSqlResult result = Source->update("users", values, BSqlWhere("id = :id", ":id", entity.id()));
+    if (!result.success())
+        return false;
+    if (!RepositoryTools::deleteHelper(Source, QStringList() << "user_groups" << "user_services", "user_id",
+                                       entity.id())) {
+        return false;
+    }
+    if (!RepositoryTools::setGroupIdList(Source, "user_groups", "user_id", entity.id(), entity.groups()))
+        return false;
+    if (!RepositoryTools::setServices(Source, "user_services", "user_id", entity.id(), entity.availableServices()))
+        return false;
+    if (entity.saveAvatar() && !updateAvatar(entity.id(), entity.avatar()))
+        return false;
+    return holder.doCommit();
 }
 
 bool UserRepository::exists(const TUserIdentifier &id)
 {
-    //
+    if (!isValid() || !id.isValid())
+        return false;
+    BSqlWhere where = (id.type() == TUserIdentifier::IdType) ? BSqlWhere("id = :id", ":id", id.id()) :
+                                                               BSqlWhere("login = :login", ":login", id.login());
+    BSqlResult result = Source->select("users", "COUNT(*)", where);
+    return result.success() && result.value("COUNT(*)").toInt() > 0;
 }
 
-QList<User> UserRepository::findAll()
+bool UserRepository::exists(const QString &identifier, const QByteArray &password)
 {
-    //
+    if (!isValid() || identifier.isEmpty() || password.isEmpty())
+        return false;
+    QString ws = "(login = :identifier OR email = :identifier) AND password = :password";
+    BSqlResult result = Source->select("users", "COUNT(*)",
+                                       BSqlWhere(ws, ":identifier", identifier, ":password", password));
+    return result.success() && result.value("COUNT(*)").toInt() > 0;
 }
 
-QList<User> UserRepository::findAll(const TIdList &ids)
+QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan)
 {
-    //
+    QList<User> list;
+    if (!isValid())
+        return list;
+    static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
+        << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
+        << "surname";
+    BSqlWhere where;
+    if (newerThan.isValid())
+        where = BSqlWhere("last_modification_date_time > :last_modification_date_time", ":last_modification_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    BSqlResult result = Source->select("users", Fields, where);
+    if (!result.success() || result.values().isEmpty())
+        return list;
+    foreach (const QVariantMap &m, result.values()) {
+        User entity(this);
+        entity.mid = m.value("id").toULongLong();
+        entity.maccessLevel = m.value("access_level").toInt();
+        entity.mactive = m.value("active").toBool();
+        entity.memail = m.value("email").toString();
+        entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("last_modification_date_time").toLongLong());
+        entity.mlogin = m.value("login").toString();
+        entity.mname = m.value("name").toString();
+        entity.mpassword = m.value("password").toByteArray();
+        entity.mpatronymic = m.value("patronymic").toString();
+        entity.mregistrationDateTime.setMSecsSinceEpoch(m.value("registration_date_time").toLongLong());
+        entity.msurname = m.value("surname").toString();
+        bool ok = false;
+        entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
+        if (!ok)
+            return QList<User>();
+        entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
+        if (!ok)
+            return QList<User>();
+        entity.valid = true;
+        list << entity;
+    }
+    return list;
+}
+
+QString UserRepository::findLogin(quint64 id)
+{
+    if (!isValid() || !id)
+        return QString();
+    BSqlResult result = Source->select("users", "login", BSqlWhere("id = :id", ":id", id));
+    if (!result.success())
+        return QString();
+    return result.value("login").toString();
 }
 
 User UserRepository::findOne(const TUserIdentifier &id)
 {
-    //
+    User entity(this);
+    if (!isValid() || !id.isValid())
+        return entity;
+    static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
+        << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
+        << "surname";
+    BSqlWhere where = (id.type() == TUserIdentifier::IdType) ? BSqlWhere("id = :id", ":id", id.id()) :
+                                                               BSqlWhere("login = :login", ":login", id.login());
+    BSqlResult result = Source->select("users", Fields, where);
+    if (!result.success() || result.value().isEmpty())
+        return entity;
+    entity.mid = result.value("id").toULongLong();
+    entity.maccessLevel = result.value("access_level").toInt();
+    entity.mactive = result.value("active").toBool();
+    entity.memail = result.value("email").toString();
+    entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    entity.mlogin = result.value("login").toString();
+    entity.mname = result.value("name").toString();
+    entity.mpassword = result.value("password").toByteArray();
+    entity.mpatronymic = result.value("patronymic").toString();
+    entity.mregistrationDateTime.setMSecsSinceEpoch(result.value("registration_date_time").toLongLong());
+    entity.msurname = result.value("surname").toString();
+    bool ok = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.valid = true;
+    return entity;
 }
 
 bool UserRepository::isValid() const
@@ -106,52 +233,46 @@ bool UserRepository::isValid() const
     return Source && Source->isValid();
 }
 
-QDateTime UserRepository::lastModificationDateTime(const TUserIdentifier &id)
+QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id)
 {
-    //
-}
-
-quint64 UserRepository::save(const User &entity)
-{
-    if (!isValid() || !entity.isValid())
-        return 0;
-    TransactionHolder holder(Source);
-    QVariantMap values;
-    values.insert("access_level", int(entity.accessLevel()));
-    values.insert("active", int(entity.active()));
-    values.insert("email", entity.email());
-    values.insert("last_modification_date_time", entity.lastModificationDateTime().toUTC().toMSecsSinceEpoch());
-    values.insert("login", entity.login());
-    values.insert("name", entity.name());
-    values.insert("password", entity.password());
-    values.insert("patronymic", entity.patronymic());
-    values.insert("registration_date_time", entity.registrationDateTime().toUTC().toMSecsSinceEpoch());
-    values.insert("surname", entity.surname());
-    BSqlResult result = entity.id() ? Source->update("users", values, BSqlWhere("id = :id", ":id", entity.id())) :
-                                      Source->insert("users", values);
-    if (!result.success())
-        return 0;
-    quint64 id = result.lastInsertId().toULongLong();
-    if ((!entity.id() || entity.saveAvatar()) && !saveAvatar(entity, id))
-        return 0;
-    if (!holder.doCommit())
-        return 0;
-    return entity.id() ? entity.id() : id;
-}
-
-TIdList UserRepository::save(const QList<User> &entities)
-{
-    TIdList list;
-    foreach (const User &entity, entities) {
-        quint64 id = save(entity);
-        if (!id)
-            return list;
-        list << id;
+    if (!isValid() || !id.isValid())
+        return QDateTime();
+    BSqlResult result;
+    switch (id.type()) {
+    case TUserIdentifier::IdType:
+        result = Source->select("users", "last_modification_date_time", BSqlWhere("id = :id", ":id", id.id()));
+        break;
+    case TUserIdentifier::LoginType:
+        result = Source->select("users", "last_modification_date_time",
+                                BSqlWhere("login = :login", ":login", id.login()));
+        break;
+    default:
+        break;
     }
-    return list;
+    if (!result.success())
+        return QDateTime();
+    QDateTime dt;
+    dt.setTimeSpec(Qt::UTC);
+    dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    return dt;
 }
 
 /*============================== Private methods ===========================*/
+
+bool UserRepository::createAvatar(quint64 userId, const QImage &avatar)
+{
+    if (!userId)
+        return false;
+    QByteArray data;
+    if (!avatar.isNull()) {
+        QBuffer buff(&data);
+        buff.open(QBuffer::WriteOnly);
+        if (!avatar.save(&buff, "png"))
+            return false;
+        buff.close();
+    }
+    return Source->createFile("users/" + QString::number(userId) + "/avatar.dat", data);
+}
 
 QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)
 {
@@ -172,18 +293,17 @@ QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)
     return bRet(ok, true, img);
 }
 
-bool UserRepository::saveAvatar(const User &entity, quint64 id)
+bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
 {
-    if (!entity.isValid() || (!entity.id() && !id))
+    if (!userId)
         return false;
-    QByteArray avatar;
-    if (!entity.avatar().isNull()) {
-        QBuffer buff(&avatar);
+    QByteArray data;
+    if (!avatar.isNull()) {
+        QBuffer buff(&data);
         buff.open(QBuffer::WriteOnly);
-        if (!entity.avatar().save(&buff, "png"))
+        if (!avatar.save(&buff, "png"))
             return false;
         buff.close();
     }
-    return entity.id() ? Source->updateFile("users/" + QString::number(entity.id()) + "/avatar.dat", avatar) :
-                         Source->createFile("users/" + QString::number(id) + "/avatar.dat", avatar);
+    return Source->updateFile("users/" + QString::number(userId) + "/avatar.dat", data);
 }

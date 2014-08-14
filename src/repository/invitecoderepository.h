@@ -21,18 +21,11 @@ public:
     explicit InviteCodeRepository(DataSource *source);
     ~InviteCodeRepository();
 public:
-    long count();
+    quint64 add(const InviteCode &entity);
     DataSource *dataSource() const;
-    bool deleteAll();
-    bool deleteOne(quint64 id);
     bool deleteSome(const TIdList &ids);
-    bool exists(quint64 id);
-    QList<InviteCode> findAll();
-    QList<InviteCode> findAll(const TIdList &ids);
-    InviteCode findOne(quint64 id);
+    QList<InviteCode> findAllByOwnerId(quint64 ownerId);
     bool isValid() const;
-    quint64 save(const InviteCode &entity);
-    TIdList save(const QList<InviteCode> &entities);
 private:
     friend class InviteCode;
     Q_DISABLE_COPY(InviteCodeRepository)

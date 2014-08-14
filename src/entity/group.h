@@ -15,7 +15,6 @@ class Group
 private:
     quint64 mid;
     quint64 mownerId;
-    QString mownerLogin;
     QDateTime mcreationDateTime;
     QDateTime mlastModificationDateTime;
     QString mname;
@@ -37,11 +36,9 @@ public:
     QDateTime lastModificationDateTime() const;
     QString name() const;
     quint64 ownerId() const;
-    QString ownerLogin() const;
     GroupRepository *repository() const;
     void setCreationDateTime(const QDateTime &dt);
     void setId(quint64 id);
-    void setLastModificationDateTime(const QDateTime &dt);
     void setName(const QString &name);
     void setOwnerId(quint64 ownerId);
 public:

@@ -47,7 +47,6 @@ void Group::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    mownerLogin.clear();
 }
 
 QDateTime Group::creationDateTime() const
@@ -69,9 +68,7 @@ bool Group::isValid() const
 {
     if (createdByRepo)
         return valid;
-    if (mid)
-        return mlastModificationDateTime.isValid();
-    return mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && !mname.isEmpty() && mownerId;
+    return !mname.isEmpty() && mownerId;
 }
 
 QDateTime Group::lastModificationDateTime() const
@@ -89,11 +86,6 @@ quint64 Group::ownerId() const
     return mownerId;
 }
 
-QString Group::ownerLogin() const
-{
-    return mownerLogin;
-}
-
 GroupRepository *Group::repository() const
 {
     return repo;
@@ -107,11 +99,6 @@ void Group::setCreationDateTime(const QDateTime &dt)
 void Group::setId(quint64 id)
 {
     mid = id;
-}
-
-void Group::setLastModificationDateTime(const QDateTime &dt)
-{
-    mlastModificationDateTime = dt.toUTC();
 }
 
 void Group::setName(const QString &name)
@@ -133,7 +120,6 @@ Group &Group::operator =(const Group &other)
     mlastModificationDateTime = other.mlastModificationDateTime;
     mname = other.mname;
     mownerId = other.mownerId;
-    mownerLogin = other.mownerLogin;
     createdByRepo = other.createdByRepo;
     repo = other.repo;
     valid = other.valid;

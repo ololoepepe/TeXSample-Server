@@ -456,16 +456,16 @@ If [address] is passed, server will listen on that exact address</source>
     <name>UserService</name>
     <message>
         <location filename="../src/service/userservice.cpp" line="55"/>
-        <location filename="../src/service/userservice.cpp" line="99"/>
-        <location filename="../src/service/userservice.cpp" line="136"/>
+        <location filename="../src/service/userservice.cpp" line="98"/>
+        <location filename="../src/service/userservice.cpp" line="135"/>
         <source>Invalid UserService instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
         <location filename="../src/service/userservice.cpp" line="57"/>
-        <location filename="../src/service/userservice.cpp" line="101"/>
-        <location filename="../src/service/userservice.cpp" line="138"/>
+        <location filename="../src/service/userservice.cpp" line="100"/>
+        <location filename="../src/service/userservice.cpp" line="137"/>
         <source>Invalid data</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
@@ -477,81 +477,81 @@ If [address] is passed, server will listen on that exact address</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="68"/>
-        <location filename="../src/service/userservice.cpp" line="71"/>
+        <location filename="../src/service/userservice.cpp" line="67"/>
+        <location filename="../src/service/userservice.cpp" line="70"/>
         <source>Repository operation failed (internal error)</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="111"/>
-        <location filename="../src/service/userservice.cpp" line="148"/>
+        <location filename="../src/service/userservice.cpp" line="110"/>
+        <location filename="../src/service/userservice.cpp" line="147"/>
         <source>No such user</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="174"/>
+        <location filename="../src/service/userservice.cpp" line="173"/>
         <source>Can&apos;t create users in read-only mode</source>
         <comment>error</comment>
         <translation type="unfinished">Нельзя создать пользователя в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="179"/>
+        <location filename="../src/service/userservice.cpp" line="178"/>
         <source>Enter superuser login [default: &quot;root&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="184"/>
+        <location filename="../src/service/userservice.cpp" line="183"/>
         <source>Enter superuser e-mail:</source>
         <comment>prompt</comment>
         <translation type="unfinished">Введите электронную почту суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="187"/>
+        <location filename="../src/service/userservice.cpp" line="186"/>
         <source>Enter superuser password:</source>
         <comment>prompt</comment>
         <translation type="unfinished">Введите пароль сперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="190"/>
+        <location filename="../src/service/userservice.cpp" line="189"/>
         <source>Confirm password:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="191"/>
+        <location filename="../src/service/userservice.cpp" line="190"/>
         <source>Passwords does not match</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="192"/>
+        <location filename="../src/service/userservice.cpp" line="191"/>
         <source>Enter superuser name [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="195"/>
+        <location filename="../src/service/userservice.cpp" line="194"/>
         <source>Enter superuser patronymic [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="198"/>
+        <location filename="../src/service/userservice.cpp" line="197"/>
         <source>Enter superuser surname [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="213"/>
+        <location filename="../src/service/userservice.cpp" line="209"/>
         <source>Creating superuser account...</source>
         <comment>message</comment>
         <translation type="unfinished">Создание аккаунта суперпользователя...</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="215"/>
+        <location filename="../src/service/userservice.cpp" line="211"/>
         <source>Failed to create superuser</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>

@@ -60,7 +60,6 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     Group entity;
     QDateTime dt = QDateTime::currentDateTime();
     entity.setCreationDateTime(dt);
-    entity.setLastModificationDateTime(dt);
     entity.setName(in.data().name());
     entity.setOwnerId(userId);
     quint64 id = GroupRepo->add(entity);
@@ -75,7 +74,7 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     info.setLastModificationDateTime(entity.lastModificationDateTime());
     info.setName(entity.name());
     info.setOwnerId(entity.ownerId());
-    info.setOwnerLogin(entity.ownerLogin());
+    info.setOwnerLogin(UserRepo->findLogin(entity.ownerId()));
     TAddGroupReplyData replyData;
     replyData.setGroupInfo(info);
     return Out(replyData, dt);
@@ -102,7 +101,7 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     TUserIdentifier id = in.data().identifier();
     if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
         QDateTime dt = QDateTime::currentDateTime();
-        if (in.lastRequestDateTime() >= UserRepo->lastModificationDateTime(id))
+        if (in.lastRequestDateTime() >= UserRepo->findLastModificationDateTime(id))
             return Out(dt);
     }
     QDateTime dt = QDateTime::currentDateTime();
@@ -112,11 +111,11 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());
-    info.setAvailableGroups(entity.availableGroups());
+    //info.setAvailableGroups(getGroups(entity.availableGroups()));
     info.setAvailableServices(entity.availableServices());
     if (in.data().includeAvatar())
         info.setAvatar(entity.avatar());
-    info.setGroups(entity.groups());
+    info.setGroups(getGroups(entity.groups()));
     info.setId(entity.id());
     info.setLastModificationDateTime(entity.lastModificationDateTime());
     info.setLogin(entity.login());
@@ -139,7 +138,7 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     TUserIdentifier id = in.data().identifier();
     if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
         QDateTime dt = QDateTime::currentDateTime();
-        if (in.lastRequestDateTime() >= UserRepo->lastModificationDateTime(id))
+        if (in.lastRequestDateTime() >= UserRepo->findLastModificationDateTime(id))
             return Out(dt);
     }
     QDateTime dt = QDateTime::currentDateTime();
@@ -149,12 +148,12 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());
-    info.setAvailableGroups(entity.availableGroups());
+    //info.setAvailableGroups(getGroups(entity.availableGroups()));
     info.setAvailableServices(entity.availableServices());
     if (in.data().includeAvatar())
         info.setAvatar(entity.avatar());
     info.setEmail(entity.email());
-    info.setGroups(entity.groups());
+    info.setGroups(getGroups(entity.groups()));
     info.setId(entity.id());
     info.setLastModificationDateTime(entity.lastModificationDateTime());
     info.setLogin(entity.login());
@@ -169,7 +168,7 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
 
 bool UserService::initializeRoot(QString *error)
 {
-    bool users = UserRepo->count(TAccessLevel::SuperuserLevel);
+    bool users = UserRepo->countByAccessLevel(TAccessLevel::SuperuserLevel);
     if (Global::readOnly() && !users)
         return bRet(error, tr("Can't create users in read-only mode", "error"), false);
     if (!Global::readOnly() && !checkOutdatedEntries(error))
@@ -207,21 +206,38 @@ bool UserService::initializeRoot(QString *error)
     entity.setSurname(surname);
     entity.setAccessLevel(TAccessLevel::SuperuserLevel);
     entity.setActive(true);
-    QDateTime dt = QDateTime::currentDateTime();
-    entity.setRegistrationDateTime(dt);
-    entity.setLastModificationDateTime(dt);
     bWriteLine(tr("Creating superuser account...", "message"));
-    if (!UserRepo->save(entity))
+    if (!UserRepo->add(entity))
         return bRet(error, tr("Failed to create superuser", "error"), false);
     return bRet(error, QString(), true);
 }
 
 bool UserService::isRootInitialized()
 {
-    return isValid() && UserRepo->count(TAccessLevel::SuperuserLevel);
+    return isValid() && UserRepo->countByAccessLevel(TAccessLevel::SuperuserLevel);
 }
 
 bool UserService::isValid() const
 {
     return Source && Source->isValid() && GroupRepo->isValid() && UserRepo->isValid();
+}
+
+/*============================== Private methods ===========================*/
+
+TGroupInfoList UserService::getGroups(const TIdList &ids, bool *ok)
+{
+    TGroupInfoList groups;
+    if (!isValid())
+        return bRet(ok, false, groups);
+    QList<Group> entities = GroupRepo->findAll(ids);
+    foreach (const Group &entity, entities) {
+        TGroupInfo group;
+        group.setCreationDateTime(entity.creationDateTime());
+        group.setId(entity.id());
+        group.setName(entity.name());
+        group.setOwnerId(entity.ownerId());
+        group.setOwnerLogin(UserRepo->findLogin(entity.ownerId()));
+        groups << group;
+    }
+    return bRet(ok, true, groups);
 }

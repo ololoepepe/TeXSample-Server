@@ -63,7 +63,6 @@ void Sample::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    msenderLogin.clear();
     mpreviewExtraFiles.clear();
     mpreviewMainFile.clear();
     msource.clear();
@@ -100,10 +99,7 @@ bool Sample::isValid() const
 {
     if (createdByRepo)
         return valid;
-    if (mid)
-        return lastModificationDateTime().isValid();
-    return msenderId && mcreationDateTime.isValid() && mlastModificationDateTime.isValid() && msource.isValid() &&
-            !mtitle.isEmpty();
+    return msenderId && msource.isValid() && !mtitle.isEmpty() && ((mid && !msaveData) || msource.isValid());
 }
 
 QDateTime Sample::lastModificationDateTime() const
@@ -146,14 +142,14 @@ bool Sample::saveAdminRemark() const
     return msaveAdminRemark;
 }
 
+bool Sample::saveData() const
+{
+    return msaveData;
+}
+
 quint64 Sample::senderId() const
 {
     return msenderId;
-}
-
-QString Sample::senderLogin() const
-{
-    return msenderLogin;
 }
 
 void Sample::setAdminRemark(const QString &remark)
@@ -186,11 +182,6 @@ void Sample::setId(quint64 id)
     mid = id;
 }
 
-void Sample::setLastModificationDateTime(const QDateTime &dt)
-{
-    mlastModificationDateTime = dt.toUTC();
-}
-
 void Sample::setProject(const TTexProject &project)
 {
     msource = project;
@@ -206,9 +197,19 @@ void Sample::setSaveAdminRemark(bool save)
     msaveAdminRemark = save;
 }
 
+void Sample::setSaveData(bool save)
+{
+    msaveData = save;
+}
+
 void Sample::setSenderId(quint64 senderId)
 {
     msenderId = senderId;
+}
+
+void Sample::setTags(const QStringList &tags)
+{
+    mtags = tags;
 }
 
 void Sample::setTitle(const QString &title)
@@ -236,6 +237,11 @@ const TTexProject &Sample::source() const
     return msource;
 }
 
+QStringList Sample::tags() const
+{
+    return mtags;
+}
+
 QString Sample::title() const
 {
     return mtitle;
@@ -252,7 +258,6 @@ Sample &Sample::operator =(const Sample &other)
 {
     mid = other.mid;
     msenderId = other.msenderId;
-    msenderLogin = other.msenderLogin;
     mdeleted = other.mdeleted;
     madminRemark = other.madminRemark;
     mauthors = other.mauthors;
@@ -263,6 +268,7 @@ Sample &Sample::operator =(const Sample &other)
     mpreviewMainFile = other.mpreviewMainFile;
     mrating = other.mrating;
     msaveAdminRemark = other.msaveAdminRemark;
+    msaveData = other.msaveData;
     msource = other.msource;
     mtags = other.mtags;
     mtitle = other.mtitle;
@@ -285,6 +291,7 @@ void Sample::init()
     mlastModificationDateTime = QDateTime().toUTC();
     mrating = 0;
     msaveAdminRemark = false;
+    msaveData = false;
     createdByRepo = false;
     previewFetched = false;
     repo = 0;

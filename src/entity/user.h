@@ -4,7 +4,6 @@
 class UserRepository;
 
 #include <TAccessLevel>
-#include <TGroupInfoList>
 #include <TIdList>
 #include <TServiceList>
 
@@ -23,13 +22,11 @@ private:
     quint64 mid;
     TAccessLevel maccessLevel;
     bool mactive;
-    TIdList mavailableGroupIds;
-    TGroupInfoList mavailableGroups;
+    TIdList mavailableGroups;
     TServiceList mavailableServices;
     QImage mavatar;
     QString memail;
-    TIdList mgroupIds;
-    TGroupInfoList mgroups;
+    TIdList mgroups;
     QDateTime mlastModificationDateTime;
     QString mlogin;
     QString mname;
@@ -51,14 +48,11 @@ protected:
 public:
     TAccessLevel accessLevel() const;
     bool active() const;
-    TIdList availableGroupIds() const;
-    TGroupInfoList availableGroups() const;
     TServiceList availableServices() const;
     QImage avatar() const;
     void convertToCreatedByUser();
     QString email() const;
-    TIdList groupIds() const;
-    TGroupInfoList groups() const;
+    TIdList groups() const;
     quint64 id() const;
     bool isCreatedByRepo() const;
     bool isValid() const;
@@ -72,18 +66,15 @@ public:
     bool saveAvatar() const;
     void setAccessLevel(const TAccessLevel &accessLevel);
     void setActive(bool active);
-    void setAvailableGroupIds(const TIdList &ids);
     void setAvailableServices(const TServiceList &services);
     void setAvatar(const QImage &avatar);
     void setEmail(const QString &email);
-    void setGroupIds(const TIdList &ids);
+    void setGroups(const TIdList &ids);
     void setId(quint64 id);
-    void setLastModificationDateTime(const QDateTime &dt);
     void setLogin(const QString &login);
     void setName(const QString &name);
     void setPassword(const QByteArray &password);
     void setPatronymic(const QString &partonymic);
-    void setRegistrationDateTime(const QDateTime &dt);
     void setSaveAvatar(bool save);
     void setSurname(const QString &surname);
     QString surname() const;

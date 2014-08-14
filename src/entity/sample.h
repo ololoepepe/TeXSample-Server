@@ -22,7 +22,6 @@ class Sample
 private:
     quint64 mid;
     quint64 msenderId;
-    QString msenderLogin;
     bool mdeleted;
     QString madminRemark;
     TAuthorInfoList mauthors;
@@ -33,6 +32,7 @@ private:
     TBinaryFile mpreviewMainFile;
     quint8 mrating;
     bool msaveAdminRemark;
+    bool msaveData;
     TTexProject msource;
     QStringList mtags;
     QString mtitle;
@@ -65,22 +65,24 @@ public:
     quint8 rating() const;
     SampleRepository *repository() const;
     bool saveAdminRemark() const;
+    bool saveData() const;
     quint64 senderId() const;
-    QString senderLogin() const;
     void setAdminRemark(const QString &remark);
     void setAuthors(const TAuthorInfoList &authors);
     void setCreationDateTime(const QDateTime &dt);
     void setDeleted(bool deleted);
     void setDescription(const QString &description);
     void setId(quint64 id);
-    void setLastModificationDateTime(const QDateTime &dt);
     void setProject(const TTexProject &project);
     void setRating(quint8 rating);
     void setSaveAdminRemark(bool save);
+    void setSaveData(bool save);
     void setSenderId(quint64 senderId);
+    void setTags(const QStringList &tags);
     void setTitle(const QString &title);
     void setType(const TSampleType &type);
     const TTexProject &source() const;
+    QStringList tags() const;
     QString title() const;
     TSampleType type() const;
 public:

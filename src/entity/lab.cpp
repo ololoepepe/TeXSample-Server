@@ -6,7 +6,6 @@
 #include <TBinaryFile>
 #include <TBinaryFileList>
 #include <TeXSample>
-#include <TGroupInfoList>
 #include <TIdList>
 #include <TLabData>
 #include <TLabDataList>
@@ -64,7 +63,6 @@ void Lab::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    msenderLogin.clear();
     mextraFiles.clear();
     mgroups.clear();
     fetchedData.clear();
@@ -111,12 +109,7 @@ const TBinaryFileList &Lab::extraFiles() const
     return mextraFiles;
 }
 
-TIdList Lab::groupIds() const
-{
-    return mgroupIds;
-}
-
-TGroupInfoList Lab::groups() const
+TIdList Lab::groups() const
 {
     return mgroups;
 }
@@ -135,10 +128,7 @@ bool Lab::isValid() const
 {
     if (createdByRepo)
         return valid;
-    if (mid)
-        return lastModificationDateTime().isValid() && (!msaveData || !mdataList.isEmpty());
-    return msenderId && mcreationDateTime.isValid() && !mdataList.isEmpty() && mlastModificationDateTime.isValid()
-            && !mtitle.isEmpty();
+    return msenderId && !mdataList.isEmpty() && !mtitle.isEmpty() && ((mid && !msaveData) || !mdataList.isEmpty());
 }
 
 QDateTime Lab::lastModificationDateTime() const
@@ -159,11 +149,6 @@ bool Lab::saveData() const
 quint64 Lab::senderId() const
 {
     return msenderId;
-}
-
-QString Lab::senderLogin() const
-{
-    return msenderLogin;
 }
 
 void Lab::setAuthors(const TAuthorInfoList &authors)
@@ -201,21 +186,16 @@ void Lab::setExtraFiles(const TBinaryFileList &extraFiles)
     mextraFiles = extraFiles;
 }
 
-void Lab::setGroupIds(const TIdList &ids)
+void Lab::setGroups(const TIdList &ids)
 {
-    mgroupIds = ids;
-    mgroupIds.removeAll(0);
-    bRemoveDuplicates(mgroupIds);
+    mgroups = ids;
+    mgroups.removeAll(0);
+    bRemoveDuplicates(mgroups);
 }
 
 void Lab::setId(quint64 id)
 {
     mid = id;
-}
-
-void Lab::setLastModificationDateTime(const QDateTime &dt)
-{
-    mlastModificationDateTime = dt.toUTC();
 }
 
 void Lab::setSaveData(bool save)
@@ -228,6 +208,11 @@ void Lab::setSenderId(quint64 senderId)
     msenderId = senderId;
 }
 
+void Lab::setTags(const QStringList &tags)
+{
+    mtags = tags;
+}
+
 void Lab::setTitle(const QString &title)
 {
     mtitle = Texsample::testLabTitle(title) ? title : QString();
@@ -236,6 +221,11 @@ void Lab::setTitle(const QString &title)
 void Lab::setType(const TLabType &type)
 {
     mtype = type;
+}
+
+QStringList Lab::tags() const
+{
+    return mtags;
 }
 
 QString Lab::title() const
@@ -254,7 +244,6 @@ Lab &Lab::operator =(const Lab &other)
 {
     mid = other.mid;
     msenderId = other.msenderId;
-    msenderLogin = other.msenderLogin;
     mdeleted = other.mdeleted;
     mauthors = other.mauthors;
     mcreationDateTime = other.mcreationDateTime;
@@ -262,7 +251,6 @@ Lab &Lab::operator =(const Lab &other)
     mdeletedExtraFiles = other.mdeletedExtraFiles;
     mdescription = other.mdescription;
     mextraFiles = other.mextraFiles;
-    mgroupIds = other.mgroupIds;
     mgroups = other.mgroups;
     mlastModificationDateTime = other.mlastModificationDateTime;
     msaveData = other.msaveData;

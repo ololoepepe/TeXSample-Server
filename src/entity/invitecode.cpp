@@ -4,7 +4,6 @@
 
 #include <TAccessLevel>
 #include <TeXSample>
-#include <TGroupInfoList>
 #include <TIdList>
 #include <TServiceList>
 
@@ -68,7 +67,6 @@ void InviteCode::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    mownerLogin.clear();
     mgroups.clear();
 }
 
@@ -82,12 +80,7 @@ QDateTime InviteCode::expirationDateTime() const
     return mexpirationDateTime;
 }
 
-TIdList InviteCode::groupIds() const
-{
-    return mgroupIds;
-}
-
-TGroupInfoList InviteCode::groups() const
+TIdList InviteCode::groups() const
 {
     return mgroups;
 }
@@ -108,18 +101,12 @@ bool InviteCode::isValid() const
         return valid;
     if (mid)
         return true;
-    return maccessLevel.isValid() && !mcode.isNull() && mcreationDateTime.isValid() && mexpirationDateTime.isValid()
-            && mownerId;
+    return maccessLevel.isValid() && !mcode.isNull() && mexpirationDateTime.isValid() && mownerId;
 }
 
 quint64 InviteCode::ownerId() const
 {
     return mownerId;
-}
-
-QString InviteCode::ownerLogin() const
-{
-    return mownerLogin;
 }
 
 InviteCodeRepository *InviteCode::repository() const
@@ -152,11 +139,11 @@ void InviteCode::setExpirationDateTime(const QDateTime &dt)
     mexpirationDateTime = dt.toUTC();
 }
 
-void InviteCode::setGroupIds(const TIdList &ids)
+void InviteCode::setGroups(const TIdList &ids)
 {
-    mgroupIds = ids;
-    mgroupIds.removeAll(0);
-    bRemoveDuplicates(mgroupIds);
+    mgroups = ids;
+    mgroups.removeAll(0);
+    bRemoveDuplicates(mgroups);
 }
 
 void InviteCode::setId(quint64 id)
@@ -178,11 +165,9 @@ InviteCode &InviteCode::operator =(const InviteCode &other)
     mcode = other.mcode;
     mcreationDateTime = other.mcreationDateTime;
     mexpirationDateTime = other.mexpirationDateTime;
-    mgroupIds = other.mgroupIds;
     mgroups = other.mgroups;
     mid = other.mid;
     mownerId = other.mownerId;
-    mownerLogin = other.mownerLogin;
     createdByRepo = other.createdByRepo;
     repo = other.repo;
     valid = other.valid;

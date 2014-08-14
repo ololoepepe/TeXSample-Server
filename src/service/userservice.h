@@ -5,6 +5,9 @@ class DataSource;
 class GroupRepository;
 class UserRepository;
 
+class TGroupInfoList;
+class TIdList;
+
 class QString;
 
 #include "requestin.h"
@@ -42,6 +45,8 @@ public:
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;
+private:
+    TGroupInfoList getGroups(const TIdList &ids, bool *ok = 0);
 private:
     Q_DISABLE_COPY(UserService)
 };

@@ -56,16 +56,6 @@ bool User::active() const
     return mactive;
 }
 
-TIdList User::availableGroupIds() const
-{
-    return mavailableGroupIds;
-}
-
-TGroupInfoList User::availableGroups() const
-{
-    return mavailableGroups;
-}
-
 TServiceList User::availableServices() const
 {
     return mavailableServices;
@@ -92,7 +82,6 @@ void User::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    mavailableGroups.clear();
     mgroups.clear();
     avatarFetched = false;
 }
@@ -102,12 +91,7 @@ QString User::email() const
     return memail;
 }
 
-TIdList User::groupIds() const
-{
-    return mgroupIds;
-}
-
-TGroupInfoList User::groups() const
+TIdList User::groups() const
 {
     return mgroups;
 }
@@ -126,10 +110,7 @@ bool User::isValid() const
 {
     if (createdByRepo)
         return valid;
-    if (mid)
-        return mlastModificationDateTime.isValid();
-    return maccessLevel.isValid() && !memail.isEmpty() && !mlogin.isEmpty() && mlastModificationDateTime.isValid()
-            && !mpassword.isEmpty() && mregistrationDateTime.isValid();
+    return maccessLevel.isValid() && !memail.isEmpty() && !mlogin.isEmpty() && !mpassword.isEmpty();
 }
 
 QDateTime User::lastModificationDateTime() const
@@ -182,13 +163,6 @@ void User::setActive(bool active)
     mactive = active;
 }
 
-void User::setAvailableGroupIds(const TIdList &ids)
-{
-    mavailableGroupIds = ids;
-    mavailableGroupIds.removeAll(0);
-    bRemoveDuplicates(mavailableGroupIds);
-}
-
 void User::setAvailableServices(const TServiceList &services)
 {
     mavailableServices = services;
@@ -205,21 +179,16 @@ void User::setEmail(const QString &email)
     memail = Texsample::testEmail(email) ? email : QString();
 }
 
-void User::setGroupIds(const TIdList &ids)
+void User::setGroups(const TIdList &ids)
 {
-    mgroupIds = ids;
-    mgroupIds.removeAll(0);
-    bRemoveDuplicates(mgroupIds);
+    mgroups = ids;
+    mgroups.removeAll(0);
+    bRemoveDuplicates(mgroups);
 }
 
 void User::setId(quint64 id)
 {
     mid = id;
-}
-
-void User::setLastModificationDateTime(const QDateTime &dt)
-{
-    mlastModificationDateTime = dt.toUTC();
 }
 
 void User::setLogin(const QString &login)
@@ -240,11 +209,6 @@ void User::setPassword(const QByteArray &password)
 void User::setPatronymic(const QString &patronymic)
 {
     mpatronymic = Texsample::testName(patronymic) ? patronymic : QString();
-}
-
-void User::setRegistrationDateTime(const QDateTime &dt)
-{
-    mregistrationDateTime = dt.toUTC();
 }
 
 void User::setSaveAvatar(bool save)
@@ -269,12 +233,9 @@ User &User::operator =(const User &other)
     avatarFetched = other.avatarFetched;
     maccessLevel = other.maccessLevel;
     mactive = other.mactive;
-    mavailableGroupIds = other.mavailableGroupIds;
-    mavailableGroups = other.mavailableGroups;
     mavailableServices = other.mavailableServices;
     mavatar = other.mavatar;
     memail = other.memail;
-    mgroupIds = other.mgroupIds;
     mgroups = other.mgroups;
     mid = other.mid;
     mlastModificationDateTime = other.mlastModificationDateTime;

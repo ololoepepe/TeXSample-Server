@@ -25,6 +25,7 @@ public:
     DataSource *dataSource() const;
     bool deleteOne(quint64 id);
     bool edit(const Group &entity);
+    QList<Group> findAll(const TIdList &ids);
     QList<Group> findAllByUserId(quint64 userId);
     Group findOne(quint64 id);
     bool isValid() const;
