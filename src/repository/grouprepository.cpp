@@ -83,7 +83,7 @@ bool GroupRepository::edit(const Group &entity)
     values.insert("last_modification_date_time", entity.lastModificationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("name", entity.name());
     TransactionHolder holder(Source);
-    if (!Source->insert("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success())
+    if (!Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success())
         return false;
     return holder.doCommit();
 }

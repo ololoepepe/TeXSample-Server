@@ -24,6 +24,7 @@ public:
     ~AccountRecoveryCodeRepository();
 public:
     bool add(const AccountRecoveryCode &entity);
+    bool deleteExpired();
     bool deleteOneByUserId(quint64 userId);
     AccountRecoveryCode findOneByCode(const BUuid &code);
     DataSource *dataSource() const;

@@ -1,6 +1,8 @@
 #ifndef SERVER_H
 #define SERVER_H
 
+class TUserConnectionInfoList;
+
 class BGenericSocket;
 class BNetworkConnection;
 
@@ -9,8 +11,6 @@ class BNetworkConnection;
 
 #include <QObject>
 #include <QString>
-
-#define sServer Server::instance()
 
 /*============================================================================
 ================================ Server ======================================
@@ -23,12 +23,11 @@ private:
     const QString Location;
 public:
     explicit Server(const QString &location, QObject *parent = 0);
+public:
+    TUserConnectionInfoList userConnections() const;
 protected:
     BNetworkConnection *createConnection(BGenericSocket *socket);
     BGenericSocket *createSocket();
-public:
-    static Server *instance();
-    static void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 };
 
 #endif // SERVER_H

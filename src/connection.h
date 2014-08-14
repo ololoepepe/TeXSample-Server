@@ -61,7 +61,7 @@ public:
     ~Connection();
 public:
     TClientInfo clientInfo() const;
-    QDateTime connectionDT(Qt::TimeSpec spec = Qt::UTC) const;
+    QDateTime connectionDateTime() const;
     bool isSubscribed(Subscription subscription) const;
     QLocale locale() const;
     void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
@@ -105,12 +105,16 @@ private:
     bool handleGetSamplePreviewRequest(BNetworkOperation *op);
     bool handleGetSampleSourceRequest(BNetworkOperation *op);
     bool handleGetSelfInfoRequest(BNetworkOperation *op);
+    bool handleGetServerStateRequest(BNetworkOperation *op);
     bool handleGetUserAvatarRequest(BNetworkOperation *op);
+    bool handleGetUserConnectionInfoListRequest(BNetworkOperation *op);
     bool handleGetUserInfoAdminRequest(BNetworkOperation *op);
     bool handleGetUserInfoRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
     bool handleRegisterRequest(BNetworkOperation *op);
     bool handleRequestRecoveryCodeRequest(BNetworkOperation *op);
+    bool handleSetLatestAppVersionRequest(BNetworkOperation *op);
+    bool handleSetServerStateRequest(BNetworkOperation *op);
     bool handleSubscribeRequest(BNetworkOperation *op);
     void initHandlers();
     bool sendReply(BNetworkOperation *op, const TReply &reply);

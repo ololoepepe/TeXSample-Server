@@ -47,13 +47,20 @@ bool RegistrationConfirmationCodeRepository::add(const RegistrationConfirmationC
     return Source->insert("registration_confirmation_codes_codes", values).success() && holder.doCommit();
 }
 
+bool RegistrationConfirmationCodeRepository::deleteExpired()
+{
+    return isValid() && Source->deleteFrom("registration_confirmation_codes",
+                                           BSqlWhere("expiration_date_time <= :date_time", ":date_time",
+                                                     QDateTime::currentDateTimeUtc().toMSecsSinceEpoch()));
+}
+
 bool RegistrationConfirmationCodeRepository::deleteOneByUserId(quint64 userId)
 {
     if (!isValid() || !userId)
         return false;
     TransactionHolder holder(Source);
-    Source->deleteFrom("registration_confirmation_codes_codes",
-                       BSqlWhere("user_id = :user_id", ":user_id", userId)).success() && holder.doCommit();
+    return Source->deleteFrom("registration_confirmation_codes_codes",
+                              BSqlWhere("user_id = :user_id", ":user_id", userId)).success() && holder.doCommit();
 }
 
 RegistrationConfirmationCode RegistrationConfirmationCodeRepository::findOneByCode(const BUuid &code)

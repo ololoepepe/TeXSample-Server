@@ -24,6 +24,7 @@ public:
     ~RegistrationConfirmationCodeRepository();
 public:
     bool add(const RegistrationConfirmationCode &entity);
+    bool deleteExpired();
     bool deleteOneByUserId(quint64 userId);
     RegistrationConfirmationCode findOneByCode(const BUuid &code);
     DataSource *dataSource() const;

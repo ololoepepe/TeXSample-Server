@@ -1,14 +1,17 @@
 #include "server.h"
 
-#include "application.h"
 #include "connection.h"
+
+#include <TUserConnectionInfo>
+#include <TUserConnectionInfoList>
+#include <TUserInfo>
 
 #include <BGenericServer>
 #include <BGenericSocket>
-#include <BLogger>
-#include <BNetworkConnection>
 #include <BNetworkServer>
+#include <BUuid>
 
+#include <QDateTime>
 #include <QObject>
 #include <QString>
 #include <QTcpSocket>
@@ -27,22 +30,23 @@ Server::Server(const QString &location, QObject *parent) :
 
 /*============================== Static public methods =====================*/
 
-Server *Server::instance()
+TUserConnectionInfoList Server::userConnections() const
 {
-    return Application::server();
-}
-
-void Server::sendLogRequest(const QString &text, BLogger::Level lvl)
-{
-    Server *s = instance();
-    if (!s)
-        return;
-    s->lock();
-    foreach (BNetworkConnection *c, s->connections()) {
+    TUserConnectionInfoList list;
+    const_cast<Server *>(this)->lock();
+    foreach (BNetworkConnection *c, connections()) {
         Connection *cc = static_cast<Connection *>(c);
-        cc->sendLogRequest(text, lvl);
+        TUserConnectionInfo info;
+        info.setClientInfo(cc->clientInfo());
+        info.setConnectionDateTime(cc->connectionDateTime());
+        info.setPeerAddress(cc->peerAddress());
+        info.setUniqueId(cc->uniqueId());
+        info.setUptime(cc->uptime());
+        info.setUserInfo(cc->userInfo());
+        list << info;
     }
-    s->unlock();
+    const_cast<Server *>(this)->unlock();
+    return list;
 }
 
 /*============================== Protected methods =========================*/

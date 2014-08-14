@@ -36,7 +36,7 @@ int main(int argc, char *argv[])
     if (args.contains("--read-only") || !s.testServer()) {
         s.listen();
         Application app(argc, argv, AppName, "TeXSample Team");
-        if ((!Global::noMail() && !Global::initMail()) || !Application::initializeStorage())
+        if ((!Global::noMail() && !Global::initMail()) || !app.initializeStorage())
             return 0;
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
         ret = app.exec();

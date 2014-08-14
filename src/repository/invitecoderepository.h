@@ -23,6 +23,7 @@ public:
 public:
     quint64 add(const InviteCode &entity);
     DataSource *dataSource() const;
+    bool deleteExpired();
     bool deleteSome(const TIdList &ids);
     QList<InviteCode> findAllByOwnerId(quint64 ownerId);
     bool isValid() const;

@@ -6,6 +6,14 @@ CREATE TABLE IF NOT EXISTS access_levels (
   access_level                  INTEGER UNIQUE NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS processor_architecture_types (
+  processor_architecture_type   INTEGER UNIQUE NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS client_types (
+  client_type                   INTEGER UNIQUE NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS os_types (
   os_type                       INTEGER UNIQUE NOT NULL
 );
@@ -97,6 +105,16 @@ CREATE TABLE IF NOT EXISTS registration_confirmation_codes (
   expiration_date_time          INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS application_versions (
+  client_type                   INTEGER NOT NULL REFERENCES client_types(client_type) ON DELETE CASCADE ON UPDATE CASCADE,
+  os_type                       INTEGER NOT NULL REFERENCES os_types(os_type) ON DELETE CASCADE ON UPDATE CASCADE,
+  portable                      INTEGER NOT NULL DEFAULT 0,
+  processor_architecture_type   INTEGER NOT NULL REFERENCES processor_architecture_types(processor_architecture_type) ON DELETE CASCADE ON UPDATE CASCADE,
+  download_url                  TEXT,
+  version                       TEXT NOT NULL,
+  UNIQUE(client_type, os_type, portable, processor_architecture_type)
+);
+
 /*============================== TeXSample =================================*/
 
 CREATE TABLE IF NOT EXISTS samples (
@@ -186,6 +204,33 @@ INSERT OR IGNORE INTO access_levels (access_level) VALUES (10);     --UserLevel
 INSERT OR IGNORE INTO access_levels (access_level) VALUES (100);    --ModeratorLevel
 INSERT OR IGNORE INTO access_levels (access_level) VALUES (1000);   --AdminLevel
 INSERT OR IGNORE INTO access_levels (access_level) VALUES (10000);  --SuperuserLevel
+
+INSERT OR IGNORE INTO client_types (client_type) VALUES (0);        --UnknownClient
+INSERT OR IGNORE INTO client_types (client_type) VALUES (1);        --CloudlabClient
+INSERT OR IGNORE INTO client_types (client_type) VALUES (2);        --TexCreator
+INSERT OR IGNORE INTO client_types (client_type) VALUES (3);        --TexsampleConsole
+
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (0);    --UnknownArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (1);    --AlphaArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (2);    --Amd64Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (3);    --ArmArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (4);    --Arm64Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (5);    --BlackfinArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (6);    --ConvexArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (7);    --EpiphanyArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (8);    --HpPaRiscArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (9);    --IntelX86Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (10);   --IntelItaniumArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (11);   --Motorola68kAArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (12);   --MipsArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (13);   --PowerPcArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (14);   --Pyramid9810Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (15);   --Rs6000Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (16);   --SparcArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (17);   --SuperHArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (18);   --SystemZArchitecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (19);   --Tms320Architecture
+INSERT OR IGNORE INTO processor_architecture_types (processor_architecture_type) VALUES (20);   --Tms470Architecture
 
 INSERT OR IGNORE INTO os_types (os_type) VALUES (0);                --UnknownOS
 INSERT OR IGNORE INTO os_types (os_type) VALUES (1);                --UnixOS

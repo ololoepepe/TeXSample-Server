@@ -4,6 +4,7 @@
 #include "datasource.h"
 #include "global.h"
 #include "server.h"
+#include "service/applicationversionservice.h"
 #include "service/userservice.h"
 
 #include <TAccessLevel>
@@ -50,7 +51,8 @@ QString Application::texsampleTex;
 
 Application::Application(int &argc, char **argv, const QString &applicationName, const QString &organizationName) :
     TCoreApplication(argc, argv, applicationName, organizationName),
-    Source(new DataSource(location(DataPath, UserResource))), UserServ(new UserService(Source))
+    Source(new DataSource(location(DataPath, UserResource))),
+    ApplicationVersionServ(new ApplicationVersionService(Source)), UserServ(new UserService(Source))
 {
     setApplicationVersion("2.2.2-beta");
     setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
@@ -93,28 +95,86 @@ Application::~Application()
 #endif
 }
 
-/*============================== Static public methods =====================*/
+/*============================== Public methods ============================*/
 
-/*TExecuteCommandReplyData Application::executeSetAppVersion(const QStringList &args)
+bool Application::initializeStorage()
 {
-    init_once(QStringList, clientNames, QStringList()) {
-        clientNames << "cloudlab-client";
-        clientNames << "clab";
-        clientNames << "tex-creator";
-        clientNames << "tcrt";
-        clientNames << "texsample-console";
-        clientNames << "tcsl";
+    static bool initialized = false;
+    if (initialized) {
+        bWriteLine(tr("Storage already initialized", "message"));
+        return true;
     }
-    init_once(QStringList, osNames, QStringList()) {
-        osNames << "linux";
-        osNames << "lin";
-        osNames << "l";
-        osNames << "macos";
-        osNames << "mac";
-        osNames << "m";
-        osNames << "windows";
-        osNames << "win";
-        osNames << "w";
+    bWriteLine(tr("Initializing storage...", "message"));
+    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
+    sty = BDirTools::readTextFile(sty, "UTF-8");
+    if (sty.isEmpty()) {
+        bWriteLine(tr("Error: Failed to load texsample.sty", "error"));
+        return false;
+    }
+    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
+    tex = BDirTools::readTextFile(tex, "UTF-8");
+    if (tex.isEmpty()) {
+        bWriteLine(tr("Failed to load texsample.tex", "error"));
+        return false;
+    }
+    QString err;
+    if (!Source->initialize(&err)) {
+        bWriteLine(tr("Error:", "error") + " " + err);
+        return false;
+    }
+    if (UserServ->isRootInitialized()) {
+        bWriteLine(tr("Done!", "message"));
+        return true;
+    }
+    if (!UserServ->initializeRoot(&err)) {
+        bWriteLine(tr("Error:", "error") + " " + err);
+        return false;
+    }
+    texsampleSty = sty;
+    texsampleTex = tex;
+    initialized = true;
+    bWriteLine(tr("Done!", "message"));
+    return true;
+}
+
+Server *Application::server()
+{
+    return mserver;
+}
+
+/*============================== Protected methods =========================*/
+
+void Application::timerEvent(QTimerEvent *e)
+{
+    if (!e || e->timerId() != timerId)
+        return;
+    UserServ->checkOutdatedEntries();
+}
+
+/*============================== Static private methods ====================*/
+
+bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
+{
+    typedef QMap<QString, Texsample::ClientType> ClientMap;
+    init_once(ClientMap, clientMap, ClientMap()) {
+        clientMap.insert("cloudlab-client", Texsample::CloudlabClient);
+        clientMap.insert("clab", Texsample::CloudlabClient);
+        clientMap.insert("tex-creator", Texsample::TexCreator);
+        clientMap.insert("tcrt", Texsample::TexCreator);
+        clientMap.insert("texsample-console", Texsample::TexsampleConsole);
+        clientMap.insert("tcsl", Texsample::TexsampleConsole);
+    }
+    typedef QMap<QString, BeQt::OSType> OsMap;
+    init_once(OsMap, osMap, OsMap()) {
+        osMap.insert("linux", BeQt::LinuxOS);
+        osMap.insert("lin", BeQt::LinuxOS);
+        osMap.insert("l", BeQt::LinuxOS);
+        osMap.insert("macos", BeQt::MacOS);
+        osMap.insert("mac", BeQt::MacOS);
+        osMap.insert("m", BeQt::MacOS);
+        osMap.insert("windows", BeQt::WindowsOS);
+        osMap.insert("win", BeQt::WindowsOS);
+        osMap.insert("w", BeQt::WindowsOS);
     }
     typedef QMap<QString, BeQt::ProcessorArchitecture> ArchMap;
     init_once(ArchMap, archMap, ArchMap()) {
@@ -139,13 +199,12 @@ Application::~Application()
         archMap.insert("tms320", BeQt::Tms320Architecture);
         archMap.insert("tms470", BeQt::Tms470Architecture);
     }
-    TExecuteCommandReplyData reply;
     if (!bRangeD(5, 6).contains(args.size())) {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
+        bWriteLine(tr("Invalid argument count. This command accepts 5-6 arguments", "error"));
+        return false;
     }
-    QString client;
-    QString os;
+    Texsample::ClientType client = Texsample::UnknownClient;
+    BeQt::OSType os = BeQt::UnknownOS;
     BeQt::ProcessorArchitecture arch = BeQt::UnknownArchitecture;
     bool portable = false;
     bool bclient = false;
@@ -156,200 +215,190 @@ Application::~Application()
         QString a = args.at(i);
         if (a.startsWith("--client=") || a.startsWith("-c=")) {
             if (bclient) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Repeating argument", "error"));
+                return false;
             }
             QStringList sl = a.split('=');
             if (sl.size() != 2) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Invalid argument", "error"));
+                return false;
             }
-            if (!clientNames.contains(sl.last())) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+            if (!clientMap.contains(sl.last())) {
+                bWriteLine(tr("Unknown client type", "error"));
+                return false;
             }
-            if (sl.last().startsWith("texsample"))
-                client = "tcsl";
-            else if (sl.last().startsWith("tex"))
-                client = "tcrt";
-            else
-                client = "clab";
+            client = clientMap.value(sl.last());
             bclient = true;
         } else if (a.startsWith("--os=") || a.startsWith("-o=")) {
             if (bos) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Repeating argument", "error"));
+                return false;
             }
             QStringList sl = a.split('=');
             if (sl.size() != 2) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Invalid argument", "error"));
+                return false;
             }
-            if (!osNames.contains(sl.last())) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+            if (!osMap.contains(sl.last())) {
+                bWriteLine(tr("Unknown OS type", "error"));
+                return false;
             }
-            if (sl.last().startsWith("l"))
-                os = "lin";
-            else if (sl.last().startsWith("m"))
-                os = "mac";
-            else
-                os = "win";
+            os = osMap.value(sl.last());
             bos = true;
         } else if (a.startsWith("--arch=") || a.startsWith("-a=")) {
             if (barch) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Repeating argument", "error"));
+                return false;
             }
             QStringList sl = a.split('=');
             if (sl.size() != 2) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Invalid argument", "error"));
+                return false;
             }
             if (!archMap.contains(sl.last())) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Unknown processor architecture", "error"));
+                return false;
             }
             arch = archMap.value(sl.last());
             barch = true;
         } else if (a == "--portable" || a == "-p") {
             if (bportable) {
-                reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-                return reply;
+                bWriteLine(tr("Repeating argument", "error"));
+                return false;
             }
             portable = true;
             bportable = true;
         } else {
-            reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-            return reply;
+            bWriteLine(tr("Unknown argument", "error"));
+            return false;
         }
     }
     if (!bclient || !bos || !barch) {
-        reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-        return reply;
+        bWriteLine(tr("Not enough arguments", "error"));
+        return false;
     }
     BVersion version = BVersion(args.at(args.size() - 2));
     QUrl url = QUrl::fromUserInput(args.at(args.size() - 1));
     if (!version.isValid() || !url.isValid()) {
-        reply.setMessage(TCommandMessage::InvalidArgumentsMessage);
-        return reply;
+        bWriteLine(tr("Invalid argument", "error"));
+        return false;
     }
-    QString s = "AppVersion/" + client + "/" + os + "/" + QString::number(int(arch)) + "/";
-    s += portable ? "portable/" : "normal/";
-    bSettings->setValue(s + "version", version);
-    bSettings->setValue(s + "url", url.toString());
-    reply.setMessage(TCommandMessage::OkMessage);
-    reply.setSuccess(true);
-    return reply;
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
+    }
+    if (!bApp->ApplicationVersionServ->setApplicationVersion(client, os, arch, portable, version, url)) {
+        bWriteLine(tr("Failed to set application version", "error"));
+        return true;
+    }
+    bWriteLine(tr("OK", "message"));
+    return true;
 }
 
-TExecuteCommandReplyData Application::executeStartServer(const QStringList &args)
+bool Application::handleStartCommand(const QString &, const QStringList &args)
 {
     QMutexLocker locker(&serverMutex);
     Q_UNUSED(locker)
-    TExecuteCommandReplyData reply;
     if (args.size() > 1) {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
+        bWriteLine(tr("Invalid argument count. This command accepts 0-1 arguments", "error"));
+        return false;
     }
-    if (!server()) {
-        reply.setMessage(TCommandMessage::InternalErrorMessage);
-        return reply;
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
     }
-    if (server()->isListening()) {
-        reply.setMessage(TCommandMessage::ServerAlreadyListeningMessage);
-        return reply;
+    if (bApp->mserver->isListening()) {
+        bWriteLine(tr("The server is listening already", "error"));
+        return false;
     }
-    if (!server()->listen(!args.isEmpty() ? args.first() : QString("0.0.0.0"), Texsample::MainPort)) {
-        reply.setMessage(TCommandMessage::FailedToStartServerMessage);
-        return reply;
+    if (!bApp->mserver->listen(!args.isEmpty() ? args.first() : QString("0.0.0.0"), Texsample::MainPort)) {
+        bWriteLine(tr("Failed to start server", "error"));
+        return true;
     }
-    reply.setSuccess(true);
-    reply.setMessage(TCommandMessage::OkMessage);
-    return reply;
+    bWriteLine(tr("OK", "message"));
+    return true;
 }
 
-TExecuteCommandReplyData Application::executeStopServer(const QStringList &args)
+bool Application::handleStopCommand(const QString &, const QStringList &args)
 {
     QMutexLocker locker(&serverMutex);
     Q_UNUSED(locker)
-    TExecuteCommandReplyData reply;
     if (!args.isEmpty()) {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
+        bWriteLine(tr("Invalid argument count. This command does not accept any arguments", "error"));
+        return false;
     }
-    if (!server()) {
-        reply.setMessage(TCommandMessage::InternalErrorMessage);
-        return reply;
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
     }
-    if (!server()->isListening()) {
-        reply.setMessage(TCommandMessage::ServerNotListeningMessage);
-        return reply;
+    if (!bApp->mserver->isListening()) {
+        bWriteLine(tr("The server is not listening", "error"));
+        return false;
     }
-    server()->close();
-    reply.setSuccess(true);
-    reply.setMessage(TCommandMessage::OkMessage);
-    return reply;
+    bApp->mserver->close();
+    bWriteLine(tr("OK", "message"));
+    return true;
 }
 
-TExecuteCommandReplyData Application::executeUptime(const QStringList &args)
+bool Application::handleUnknownCommand(const QString &, const QStringList &)
 {
-    TExecuteCommandReplyData reply;
-    if (!args.isEmpty()) {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
-    }
-    if (!tApp) {
-        reply.setMessage(TCommandMessage::InternalErrorMessage);
-        return reply;
-    }
-    reply.setMessage(TCommandMessage::UptimeMessage);
-    reply.setArguments(QStringList() << msecsToString(tApp->melapsedTimer.elapsed()));
-    reply.setSuccess(true);
-    return reply;
+    bWriteLine(tr("Unknown command. Enter \"help --commands\" to see the list of available commands"));
+    return false;
 }
 
-TExecuteCommandReplyData Application::executeUser(const QStringList &args)
+bool Application::handleUptimeCommand(const QString &, const QStringList &args)
 {
-    TExecuteCommandReplyData reply;
+    if (!args.isEmpty()) {
+        bWriteLine(tr("Invalid argument count. This command does not accept any arguments", "error"));
+        return false;
+    }
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
+    }
+    bWriteLine(tr("Uptime:", "message") + " " + msecsToString(bApp->melapsedTimer.elapsed()));
+    return true;
+}
+
+bool Application::handleUserCommand(const QString &, const QStringList &args)
+{
     if (args.size() > 2) {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
+        bWriteLine(tr("Invalid argument count. This command accepts 0-2 arguments", "error"));
+        return false;
     }
     QMutexLocker locker(&serverMutex);
     Q_UNUSED(locker)
-    if (!server()) {
-        reply.setMessage(TCommandMessage::InternalErrorMessage);
-        return reply;
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
     }
+    Server *srv = bApp->mserver;
     if (args.isEmpty()) {
-        reply.setMessage(TCommandMessage::UserCountMessage);
-        server()->lock();
-        int count = server()->currentConnectionCount();
-        server()->unlock();
-        reply.setArguments(QStringList() << QString::number(count));
+        srv->lock();
+        int count = srv->currentConnectionCount();
+        srv->unlock();
+        bWriteLine(tr("User count:", "message") + " " + count);
     } else if (args.first() == "--list") {
         QStringList list;
-        server()->lock();
-        foreach (BNetworkConnection *c, server()->connections()) {
+        srv->lock();
+        foreach (BNetworkConnection *c, srv->connections()) {
             TUserInfo info = static_cast<Connection *>(c)->userInfo();
             list << ("[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]");
         }
-        server()->unlock();
-        reply.setMessage(TCommandMessage::UserInfoListMessage);
-        reply.setArguments(QStringList() << QString::number(list.size()) << list.join("\n"));
+        srv->unlock();
+        bWriteLine(tr("Listing connected users", "message") + " (" + list.size() + "):\n" + list.join("\n"));
     } else if (args.size() == 2) {
         QList<Connection *> users;
         BUuid uuid(args.at(1));
-        server()->lock();
+        srv->lock();
         if (uuid.isNull()) {
-            foreach (BNetworkConnection *c, sServer->connections()) {
+            foreach (BNetworkConnection *c, srv->connections()) {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->userInfo().login() == args.at(1))
                     users << cc;
             }
         } else {
-            foreach (BNetworkConnection *c, sServer->connections()) {
+            foreach (BNetworkConnection *c, srv->connections()) {
                 Connection *cc = static_cast<Connection *>(c);
                 if (cc->uniqueId() == uuid) {
                     users << cc;
@@ -360,11 +409,9 @@ TExecuteCommandReplyData Application::executeUser(const QStringList &args)
         if (args.first() == "--kick") {
             foreach (Connection *c, users)
                 QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
-            server()->unlock();
-            reply.setMessage(TCommandMessage::UserKickedMessage);
-            reply.setArguments(QStringList() << args.at(1) << QString::number(users.size()));
-            reply.setSuccess(true);
-            return reply;
+            srv->unlock();
+            bWriteLine(tr("Kicked users:", "message") + " " + users.size());
+            return true;
         } else if (args.first() == "--info") {
             QStringList list;
             foreach (Connection *c, users) {
@@ -376,8 +423,7 @@ TExecuteCommandReplyData Application::executeUser(const QStringList &args)
                 s += "\n" + client.toString("%n v%v; TeXSample %t; BeQt v%b; Qt v%q");
                 list << s;
             }
-            reply.setMessage(TCommandMessage::UserInfoListMessage);
-            reply.setArguments(QStringList() << QString::number(list.size()) << list.join("\n"));
+            bWriteLine(list.join("\n"));
         } else if (args.first() == "--uptime") {
             QStringList list;
             foreach (Connection *c, users) {
@@ -386,129 +432,24 @@ TExecuteCommandReplyData Application::executeUser(const QStringList &args)
                 s += " " + msecsToString(c->uptime());
                 list << s;
             }
-            reply.setMessage(TCommandMessage::UsersUptimeMessage);
-            reply.setArguments(QStringList() << QString::number(list.size()) << list.join("\n"));
+            bWriteLine(tr("Uptime:", "message") + "\n" + list.join("\n"));
         } else if (args.first() == "--connected-at") {
             QStringList list;
             foreach (Connection *c, users) {
                 TUserInfo info = c->userInfo();
                 QString s = "[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]";
-                s += " " + c->connectionDT().toString("yyyy.MM.dd hh:mm:ss");
+                s += " " + c->connectionDateTime().toString("yyyy.MM.dd hh:mm:ss");
                 list << s;
             }
-            reply.setMessage(TCommandMessage::UsersConnectedAtMessage);
-            reply.setArguments(QStringList() << QString::number(list.size()) << list.join("\n"));
+            bWriteLine(tr("Connection time:", "message") + "\n" + list.join("\n"));
         }
-        server()->unlock();
+        srv->unlock();
     } else {
-        reply.setMessage(TCommandMessage::InvalidArgumentCountMessage);
-        return reply;
-    }
-    reply.setSuccess(true);
-    return reply;
-}*/
-
-bool Application::initializeStorage()
-{
-    static bool initialized = false;
-    if (initialized) {
-        bWriteLine(tr("Storage already initialized", "message"));
-        return true;
-    }
-    bWriteLine(tr("Initializing storage...", "message"));
-    Application *app = tApp;
-    if (!app) {
-        bWriteLine(tr("Error: No application instance", "error"));
+        bWriteLine(tr("Invalid arguments", "error"));
         return false;
     }
-    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
-    sty = BDirTools::readTextFile(sty, "UTF-8");
-    if (sty.isEmpty()) {
-        bWriteLine(tr("Error: Failed to load texsample.sty", "error"));
-        return false;
-    }
-    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
-    tex = BDirTools::readTextFile(tex, "UTF-8");
-    if (tex.isEmpty()) {
-        bWriteLine(tr("Failed to load texsample.tex", "error"));
-        return false;
-    }
-    QString err;
-    if (!app->Source->initialize(&err)) {
-        bWriteLine(tr("Error:", "error") + " " + err);
-        return false;
-    }
-    if (app->UserServ->isRootInitialized()) {
-        bWriteLine(tr("Done!", "message"));
-        return true;
-    }
-    if (!app->UserServ->initializeRoot(&err)) {
-        bWriteLine(tr("Error:", "error") + " " + err);
-        return false;
-    }
-    texsampleSty = sty;
-    texsampleTex = tex;
-    initialized = true;
-    bWriteLine(tr("Done!", "message"));
     return true;
 }
-
-Server *Application::server()
-{
-    return bApp ? bApp->mserver : 0;
-}
-
-/*============================== Protected methods =========================*/
-
-void Application::timerEvent(QTimerEvent *e)
-{
-    if (!e || e->timerId() != timerId)
-        return;
-    UserServ->checkOutdatedEntries();
-}
-
-/*============================== Static private methods ====================*/
-
-/*bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
-{
-    //TExecuteCommandReplyData reply = executeSetAppVersion(args);
-    //writeCommandMessage(reply.message(), reply.arguments());
-    //return reply.success();
-}
-
-bool Application::handleStartCommand(const QString &, const QStringList &args)
-{
-    //TExecuteCommandReplyData reply = executeStartServer(args);
-    //writeCommandMessage(reply.message(), reply.arguments());
-    //return reply.success();
-}
-
-bool Application::handleStopCommand(const QString &, const QStringList &args)
-{
-    //TExecuteCommandReplyData reply = executeStopServer(args);
-    //writeCommandMessage(reply.message(), reply.arguments());
-    //return reply.success();
-}*/
-
-bool Application::handleUnknownCommand(const QString &, const QStringList &)
-{
-    bWriteLine(tr("Unknown command. Enter \"help --commands\" to see the list of available commands"));
-    return false;
-}
-
-/*bool Application::handleUptimeCommand(const QString &, const QStringList &args)
-{
-    //TExecuteCommandReplyData reply = executeUptime(args);
-    //writeCommandMessage(reply.message(), reply.arguments());
-    //return reply.success();
-}
-
-bool Application::handleUserCommand(const QString &, const QStringList &args)
-{
-    //TExecuteCommandReplyData reply = executeUser(args);
-    //writeCommandMessage(reply.message(), reply.arguments());
-    //return reply.success();
-}*/
 
 void Application::initTerminal()
 {
@@ -517,11 +458,11 @@ void Application::initTerminal()
     BTerminal::installHandler(BTerminal::SetCommand);
     BTerminal::installHandler(BTerminal::HelpCommand);
     BTerminal::installDefaultHandler(&handleUnknownCommand);
-    //BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
-    //BTerminal::installHandler("start", &handleStartCommand);
-    //BTerminal::installHandler("stop", &handleStopCommand);
-    //BTerminal::installHandler("uptime", &handleUptimeCommand);
-    //BTerminal::installHandler("user", &handleUserCommand);
+    BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
+    BTerminal::installHandler("start", &handleStartCommand);
+    BTerminal::installHandler("stop", &handleStopCommand);
+    BTerminal::installHandler("uptime", &handleUptimeCommand);
+    BTerminal::installHandler("user", &handleUserCommand);
     BSettingsNode *root = new BSettingsNode;
     BSettingsNode *n = new BSettingsNode("Mail", root);
     BSettingsNode *nn = new BSettingsNode("server_address", n);
@@ -561,15 +502,6 @@ void Application::initTerminal()
                                                           "Enter \"help --all\" to see full Help"));
     BTerminal::CommandHelpList chl;
     BTerminal::CommandHelp ch;
-    ch.usage = "server-state";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Show information about server state (uptime, listening state, etc.)");
-    BTerminal::setCommandHelp("server-state", ch);
-    ch.usage = "set-server-state on|off [address]";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Set server state: on (listening) or off (not listening).\n"
-                                             "If [address] is passed, server will listen on that exact address");
-    BTerminal::setCommandHelp("set-server-state", ch);
     ch.usage = "user-info [--match-type=<match_type>] <match_pattern>";
     ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about connected users matching"
                                              "<match_pattern>, which is to be a wildcard.\n"
@@ -582,10 +514,12 @@ void Application::initTerminal()
     BTerminal::setCommandHelp("user-info", chl);
     ch.usage = "start [address]";
     ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server. "
-                                             "The same as \"set-server-state on [address]\"");
+                                             "If [address] is passed, server will listen on that address. "
+                                             "Otherwise it will listen on all available addresses");
     BTerminal::setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "The same as \"set-server-state off\"");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. "
+                                             "Note: Users are not disconnected.");
     BTerminal::setCommandHelp("stop", ch);
     ch.usage = "set-app-version --client|-c=<client> --os|-o=<os> --arch|-a=<arch> [--portable|-p] <version> <url>";
     ch.description = BTranslation::translate("BTerminalIOHandler",
@@ -598,6 +532,10 @@ void Application::initTerminal()
                                              "epiphany, risc, x86, itanium, motorola, mips, powerpc, "
                                              "pyramid, rs6000, sparc, superh, systemz, tms320, tms470");
     BTerminal::setCommandHelp("set-app-version", ch);
+    ch.usage = "uptime";
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+                                             "Show information about server state (uptime, listening state, etc.)");
+    BTerminal::setCommandHelp("uptime", ch);
 }
 
 QString Application::msecsToString(qint64 msecs)

@@ -18,12 +18,16 @@
 #include <TOperation>
 #include <TReply>
 #include <TRequest>
+#include <TServerState>
+#include <TUserConnectionInfo>
+#include <TUserConnectionInfoList>
 #include <TUserInfo>
 
 #include <BGenericSocket>
 #include <BNetworkConnection>
 #include <BNetworkOperation>
 #include <BNetworkOperationMetaData>
+#include <BUuid>
 
 #include <QAbstractSocket>
 #include <QDateTime>
@@ -80,9 +84,9 @@ TClientInfo Connection::clientInfo() const
     return mclientInfo;
 }
 
-QDateTime Connection::connectionDT(Qt::TimeSpec spec) const
+QDateTime Connection::connectionDateTime() const
 {
-    return mconnectionDT.toTimeSpec(spec);
+    return mconnectionDT;
 }
 
 bool Connection::isSubscribed(Subscription subscription) const
@@ -126,8 +130,14 @@ void Connection::logLocal(const QString &text, BLogger::Level lvl)
 
 void Connection::logRemote(const QString &text, BLogger::Level lvl)
 {
-    QString msg = (muserInfo.id() ? ("[" + muserInfo.login() + "] ") : QString()) + text;
-    Server::sendLogRequest("[" + peerAddress() + "] " + msg, lvl);
+    QString msg = "[" + peerAddress() + "] " + (muserInfo.id() ? ("[" + muserInfo.login() + "] ") : QString()) + text;
+    server()->lock();
+    foreach (BNetworkConnection *c, server()->connections()) {
+        if (this == c)
+            continue;
+        static_cast<Connection *>(c)->sendLogRequest(msg, lvl);
+    }
+    server()->unlock();
 }
 
 /*============================== Private methods ===========================*/
@@ -304,7 +314,17 @@ bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
     //
 }
 
+bool Connection::handleGetServerStateRequest(BNetworkOperation *op)
+{
+    //
+}
+
 bool Connection::handleGetUserAvatarRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleGetUserConnectionInfoListRequest(BNetworkOperation *op)
 {
     //
 }
@@ -344,6 +364,16 @@ bool Connection::handleRegisterRequest(BNetworkOperation *op)
 }
 
 bool Connection::handleRequestRecoveryCodeRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
+{
+    //
+}
+
+bool Connection::handleSetServerStateRequest(BNetworkOperation *op)
 {
     //
 }
@@ -1182,13 +1212,19 @@ void Connection::initHandlers()
     installRequestHandler(TOperation::GetSamplePreview, InternalHandler(&Connection::handleGetSamplePreviewRequest));
     installRequestHandler(TOperation::GetSampleSource, InternalHandler(&Connection::handleGetSampleSourceRequest));
     installRequestHandler(TOperation::GetSelfInfo, InternalHandler(&Connection::handleGetSelfInfoRequest));
+    installRequestHandler(TOperation::GetServerState, InternalHandler(&Connection::handleGetServerStateRequest));
     installRequestHandler(TOperation::GetUserAvatar, InternalHandler(&Connection::handleGetUserAvatarRequest));
+    installRequestHandler(TOperation::GetUserConnectionInfoList,
+                          InternalHandler(&Connection::handleGetUserConnectionInfoListRequest));
     installRequestHandler(TOperation::GetUserInfo, InternalHandler(&Connection::handleGetUserInfoRequest));
     installRequestHandler(TOperation::GetUserInfoAdmin, InternalHandler(&Connection::handleGetUserInfoAdminRequest));
     installRequestHandler(TOperation::RecoverAccount, InternalHandler(&Connection::handleRecoverAccountRequest));
     installRequestHandler(TOperation::Register, InternalHandler(&Connection::handleRegisterRequest));
     installRequestHandler(TOperation::RequestRecoveryCode,
                           InternalHandler(&Connection::handleRequestRecoveryCodeRequest));
+    installRequestHandler(TOperation::SetLatestAppVersion,
+                          InternalHandler(&Connection::handleSetLatestAppVersionRequest));
+    installRequestHandler(TOperation::SetServerState, InternalHandler(&Connection::handleSetServerStateRequest));
     installRequestHandler(TOperation::Subscribe, InternalHandler(&Connection::handleSubscribeRequest));
 }
 

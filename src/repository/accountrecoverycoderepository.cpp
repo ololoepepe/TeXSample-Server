@@ -10,6 +10,7 @@
 #include <BSqlWhere>
 #include <BUuid>
 
+#include <QDateTime>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -45,6 +46,13 @@ bool AccountRecoveryCodeRepository::add(const AccountRecoveryCode &entity)
     values.insert("user_id", entity.userId());
     TransactionHolder holder(Source);
     return Source->insert("account_recovery_codes", values).success() && holder.doCommit();
+}
+
+bool AccountRecoveryCodeRepository::deleteExpired()
+{
+    return isValid() && Source->deleteFrom("account_recovery_codes",
+                                           BSqlWhere("expiration_date_time <= :date_time", ":date_time",
+                                                     QDateTime::currentDateTimeUtc().toMSecsSinceEpoch()));
 }
 
 bool AccountRecoveryCodeRepository::deleteOneByUserId(quint64 userId)

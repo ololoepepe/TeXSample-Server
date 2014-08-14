@@ -4,7 +4,10 @@
 #include "entity/group.h"
 #include "entity/user.h"
 #include "global.h"
+#include "repository/accountrecoverycoderepository.h"
 #include "repository/grouprepository.h"
+#include "repository/invitecoderepository.h"
+#include "repository/registrationconfirmationcoderepository.h"
 #include "repository/userrepository.h"
 #include "requestin.h"
 #include "requestout.h"
@@ -36,7 +39,10 @@
 /*============================== Public constructors =======================*/
 
 UserService::UserService(DataSource *source) :
-    Source(source), GroupRepo(new GroupRepository(source)), UserRepo(new UserRepository(source))
+    AccountRecoveryCodeRepo(new AccountRecoveryCodeRepository(source)), GroupRepo(new GroupRepository(source)),
+    InviteCodeRepo(new InviteCodeRepository(source)),
+    RegistrationConfirmationCodeRepo(new RegistrationConfirmationCodeRepository(source)), Source(source),
+    UserRepo(new UserRepository(source))
 {
     //
 }
@@ -80,10 +86,10 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     return Out(replyData, dt);
 }
 
-bool UserService::checkOutdatedEntries(QString *error)
+bool UserService::checkOutdatedEntries()
 {
-    //
-    return true;
+    return isValid() && AccountRecoveryCodeRepo->deleteExpired() && InviteCodeRepo->deleteExpired()
+            && RegistrationConfirmationCodeRepo->deleteExpired();
 }
 
 DataSource *UserService::dataSource() const
@@ -111,7 +117,7 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());
-    //info.setAvailableGroups(getGroups(entity.availableGroups()));
+    info.setAvailableGroups(getGroups(entity.id()));
     info.setAvailableServices(entity.availableServices());
     if (in.data().includeAvatar())
         info.setAvatar(entity.avatar());
@@ -148,7 +154,7 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     TUserInfo info;
     info.setAccessLevel(entity.accessLevel());
     info.setActive(entity.active());
-    //info.setAvailableGroups(getGroups(entity.availableGroups()));
+    info.setAvailableGroups(getGroups(entity.id()));
     info.setAvailableServices(entity.availableServices());
     if (in.data().includeAvatar())
         info.setAvatar(entity.avatar());
@@ -171,8 +177,8 @@ bool UserService::initializeRoot(QString *error)
     bool users = UserRepo->countByAccessLevel(TAccessLevel::SuperuserLevel);
     if (Global::readOnly() && !users)
         return bRet(error, tr("Can't create users in read-only mode", "error"), false);
-    if (!Global::readOnly() && !checkOutdatedEntries(error))
-        return false;
+    if (!Global::readOnly() && !checkOutdatedEntries())
+        return bRet(error, tr("Failed to delete outdated entries", "error"), false);
     if (users)
         return bRet(error, QString(), true);
     QString login = bReadLine(tr("Enter superuser login [default: \"root\"]:", "prompt") + " ");
@@ -188,13 +194,13 @@ bool UserService::initializeRoot(QString *error)
         return false;
     if (password != bReadLineSecure(tr("Confirm password:", "prompt") + " "))
         return bRet(error, tr("Passwords does not match", "error"), false);
-    QString name = bReadLineSecure(tr("Enter superuser name [default: \"\"]:", "prompt") + " ");
+    QString name = bReadLine(tr("Enter superuser name [default: \"\"]:", "prompt") + " ");
     if (!name.isEmpty() && !Texsample::testName(name, error))
         return false;
-    QString patronymic = bReadLineSecure(tr("Enter superuser patronymic [default: \"\"]:", "prompt") + " ");
+    QString patronymic = bReadLine(tr("Enter superuser patronymic [default: \"\"]:", "prompt") + " ");
     if (!patronymic.isEmpty() && !Texsample::testName(patronymic, error))
         return false;
-    QString surname = bReadLineSecure(tr("Enter superuser surname [default: \"\"]:", "prompt") + " ");
+    QString surname = bReadLine(tr("Enter superuser surname [default: \"\"]:", "prompt") + " ");
     if (!surname.isEmpty() && !Texsample::testName(surname, error))
         return false;
     User entity;
@@ -219,25 +225,41 @@ bool UserService::isRootInitialized()
 
 bool UserService::isValid() const
 {
-    return Source && Source->isValid() && GroupRepo->isValid() && UserRepo->isValid();
+    return Source && Source->isValid() && AccountRecoveryCodeRepo->isValid() && GroupRepo->isValid()
+            && InviteCodeRepo->isValid() && RegistrationConfirmationCodeRepo->isValid() && UserRepo->isValid();
 }
 
 /*============================== Private methods ===========================*/
 
-TGroupInfoList UserService::getGroups(const TIdList &ids, bool *ok)
+TGroupInfoList UserService::getGroups(const TIdList &ids)
 {
     TGroupInfoList groups;
     if (!isValid())
-        return bRet(ok, false, groups);
-    QList<Group> entities = GroupRepo->findAll(ids);
-    foreach (const Group &entity, entities) {
-        TGroupInfo group;
-        group.setCreationDateTime(entity.creationDateTime());
-        group.setId(entity.id());
-        group.setName(entity.name());
-        group.setOwnerId(entity.ownerId());
-        group.setOwnerLogin(UserRepo->findLogin(entity.ownerId()));
-        groups << group;
-    }
-    return bRet(ok, true, groups);
+        return groups;
+    foreach (const Group &entity, GroupRepo->findAll(ids))
+        groups << groupToGroupInfo(entity);
+    return groups;
+}
+
+TGroupInfoList UserService::getGroups(quint64 userId)
+{
+    TGroupInfoList groups;
+    if (!isValid())
+        return groups;
+    foreach (const Group &entity, GroupRepo->findAllByUserId(userId))
+        groups << groupToGroupInfo(entity);
+    return groups;
+}
+
+TGroupInfo UserService::groupToGroupInfo(const Group &entity)
+{
+    TGroupInfo info;
+    if (!isValid() || !entity.isValid() || !entity.isCreatedByRepo())
+        return info;
+    info.setCreationDateTime(entity.creationDateTime());
+    info.setId(entity.id());
+    info.setName(entity.name());
+    info.setOwnerId(entity.ownerId());
+    info.setOwnerLogin(UserRepo->findLogin(entity.ownerId()));
+    return info;
 }
