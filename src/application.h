@@ -11,6 +11,8 @@ class QTimerEvent;
 
 #include <TCoreApplication>
 
+#include <BTextTools>
+
 #include <QElapsedTimer>
 #include <QMutex>
 #include <QObject>
@@ -49,6 +51,7 @@ public:
 protected:
     void timerEvent(QTimerEvent *e);
 private:
+    static bool checkParsingError(BTextTools::OptionsParsingError error, const QString &errorData);
     static bool handleSetAppVersionCommand(const QString &cmd, const QStringList &args);
     static bool handleStartCommand(const QString &cmd, const QStringList &args);
     static bool handleStopCommand(const QString &cmd, const QStringList &args);

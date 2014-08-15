@@ -12,6 +12,8 @@
 #include <TCoreApplication>
 #include <TeXSample>
 #include <TInviteInfo>
+#include <TUserConnectionInfo>
+#include <TUserConnectionInfoList>
 #include <TUserInfo>
 
 #include <BDirTools>
@@ -20,6 +22,7 @@
 #include <BLogger>
 #include <BSettingsNode>
 #include <BTerminal>
+#include <BTextTools>
 #include <BTranslation>
 #include <BUuid>
 #include <BVersion>
@@ -153,6 +156,33 @@ void Application::timerEvent(QTimerEvent *e)
 
 /*============================== Static private methods ====================*/
 
+bool Application::checkParsingError(BTextTools::OptionsParsingError error, const QString &errorData)
+{
+    switch (error) {
+    case BTextTools::InvalidParametersError:
+        bWriteLine(tr("Internal parsing error", "error"));
+        return false;
+    case BTextTools::MalformedOptionError:
+        bWriteLine(tr("Malformed option:", "error") + " " + errorData);
+        return false;
+    case BTextTools::MissingOptionError:
+        bWriteLine(tr("Missing option:", "error") + " " + errorData);
+        return false;
+    case BTextTools::RepeatingOptionError:
+        bWriteLine(tr("Repeating option:", "error") + " " + errorData);
+        return false;
+    case BTextTools::UnknownOptionError:
+        bWriteLine(tr("Unknown option:", "error") + " " + errorData);
+        return false;
+    case BTextTools::UnknownOptionValueError:
+        bWriteLine(tr("Unknown option value:", "error") + " " + errorData);
+        return false;
+    case BTextTools::NoError:
+    default:
+        return true;
+    }
+}
+
 bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
 {
     typedef QMap<QString, Texsample::ClientType> ClientMap;
@@ -199,88 +229,27 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
         archMap.insert("tms320", BeQt::Tms320Architecture);
         archMap.insert("tms470", BeQt::Tms470Architecture);
     }
-    if (!bRangeD(5, 6).contains(args.size())) {
-        bWriteLine(tr("Invalid argument count. This command accepts 5-6 arguments", "error"));
+    QMap<QString, QString> result;
+    QString errorData;
+    QString options = "client:-c|--client=" + QStringList(clientMap.keys()).join("|") + ",";
+    options += "os:-o|--os=" + QStringList(osMap.keys()).join("|") + ",";
+    options += "arch:-a|--arch=" + QStringList(archMap.keys()).join("|") + ",";
+    options += "[portable:-p|--portable],version:-v|--version=,url:-u|--url=";
+    BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
+    if (!checkParsingError(error, errorData))
+        return false;
+    Texsample::ClientType client = clientMap.value(result.value("client"));
+    BeQt::OSType os = osMap.value(result.value("os"));
+    BeQt::ProcessorArchitecture arch = archMap.value(result.value("arch"));
+    BVersion version = BVersion(result.value("version"));
+    QUrl url = QUrl::fromUserInput(result.value("url"));
+    bool portable = result.contains("portable");
+    if (!version.isValid()) {
+        bWriteLine(tr("Invalid version", "error"));
         return false;
     }
-    Texsample::ClientType client = Texsample::UnknownClient;
-    BeQt::OSType os = BeQt::UnknownOS;
-    BeQt::ProcessorArchitecture arch = BeQt::UnknownArchitecture;
-    bool portable = false;
-    bool bclient = false;
-    bool bos = false;
-    bool barch = false;
-    bool bportable = false;
-    foreach (int i, bRangeD(0, 2 + (args.size() == 6 ? 1 : 0))) {
-        QString a = args.at(i);
-        if (a.startsWith("--client=") || a.startsWith("-c=")) {
-            if (bclient) {
-                bWriteLine(tr("Repeating argument", "error"));
-                return false;
-            }
-            QStringList sl = a.split('=');
-            if (sl.size() != 2) {
-                bWriteLine(tr("Invalid argument", "error"));
-                return false;
-            }
-            if (!clientMap.contains(sl.last())) {
-                bWriteLine(tr("Unknown client type", "error"));
-                return false;
-            }
-            client = clientMap.value(sl.last());
-            bclient = true;
-        } else if (a.startsWith("--os=") || a.startsWith("-o=")) {
-            if (bos) {
-                bWriteLine(tr("Repeating argument", "error"));
-                return false;
-            }
-            QStringList sl = a.split('=');
-            if (sl.size() != 2) {
-                bWriteLine(tr("Invalid argument", "error"));
-                return false;
-            }
-            if (!osMap.contains(sl.last())) {
-                bWriteLine(tr("Unknown OS type", "error"));
-                return false;
-            }
-            os = osMap.value(sl.last());
-            bos = true;
-        } else if (a.startsWith("--arch=") || a.startsWith("-a=")) {
-            if (barch) {
-                bWriteLine(tr("Repeating argument", "error"));
-                return false;
-            }
-            QStringList sl = a.split('=');
-            if (sl.size() != 2) {
-                bWriteLine(tr("Invalid argument", "error"));
-                return false;
-            }
-            if (!archMap.contains(sl.last())) {
-                bWriteLine(tr("Unknown processor architecture", "error"));
-                return false;
-            }
-            arch = archMap.value(sl.last());
-            barch = true;
-        } else if (a == "--portable" || a == "-p") {
-            if (bportable) {
-                bWriteLine(tr("Repeating argument", "error"));
-                return false;
-            }
-            portable = true;
-            bportable = true;
-        } else {
-            bWriteLine(tr("Unknown argument", "error"));
-            return false;
-        }
-    }
-    if (!bclient || !bos || !barch) {
-        bWriteLine(tr("Not enough arguments", "error"));
-        return false;
-    }
-    BVersion version = BVersion(args.at(args.size() - 2));
-    QUrl url = QUrl::fromUserInput(args.at(args.size() - 1));
-    if (!version.isValid() || !url.isValid()) {
-        bWriteLine(tr("Invalid argument", "error"));
+    if (!url.isValid()) {
+        bWriteLine(tr("Invalid url", "error"));
         return false;
     }
     if (!bApp) {
@@ -362,8 +331,27 @@ bool Application::handleUptimeCommand(const QString &, const QStringList &args)
 
 bool Application::handleUserCommand(const QString &, const QStringList &args)
 {
-    if (args.size() > 2) {
-        bWriteLine(tr("Invalid argument count. This command accepts 0-2 arguments", "error"));
+    static const int MatchLogin = 0x01;
+    static const int MatchUniqueId = 0x02;
+    typedef QMap<QString, int> IntMap;
+    init_once(IntMap, matchTypeMap, IntMap()) {
+        matchTypeMap.insert("login-and-unique-id", MatchLogin | MatchUniqueId);
+        matchTypeMap.insert("a", MatchLogin | MatchUniqueId);
+        matchTypeMap.insert("login", MatchLogin);
+        matchTypeMap.insert("l", MatchLogin);
+        matchTypeMap.insert("unique-id", MatchUniqueId);
+        matchTypeMap.insert("u", MatchUniqueId);
+    }
+    QMap<QString, QString> result;
+    QString errorData;
+    QString options = "[type:--match-type|-m=login-and-unique-id|a|login|l|unique-id|u],pattern:--match-pattern|-p=";
+    BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
+    if (!checkParsingError(error, errorData))
+        return false;
+    int matchType = result.contains("type") ? matchTypeMap.value(result.value("type")) : (MatchLogin | MatchUniqueId);
+    QRegExp rx = QRegExp(result.value("pattern"), Qt::CaseSensitive, QRegExp::WildcardUnix);
+    if (!rx.isValid()) {
+        bWriteLine(tr("Invalid pattern", "error"));
         return false;
     }
     QMutexLocker locker(&serverMutex);
@@ -372,81 +360,41 @@ bool Application::handleUserCommand(const QString &, const QStringList &args)
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
-    Server *srv = bApp->mserver;
-    if (args.isEmpty()) {
-        srv->lock();
-        int count = srv->currentConnectionCount();
-        srv->unlock();
-        bWriteLine(tr("User count:", "message") + " " + count);
-    } else if (args.first() == "--list") {
-        QStringList list;
-        srv->lock();
-        foreach (BNetworkConnection *c, srv->connections()) {
-            TUserInfo info = static_cast<Connection *>(c)->userInfo();
-            list << ("[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]");
+    TUserConnectionInfoList list;
+    bApp->mserver->lock();
+    int total = 0;
+    foreach (BNetworkConnection *c, bApp->mserver->connections()) {
+        ++total;
+        Connection *cc = static_cast<Connection *>(c);
+        TUserInfo userInfo = cc->userInfo();
+        BUuid uniqueId = cc->uniqueId();
+        if ((!(MatchLogin | matchType) || !rx.exactMatch(userInfo.login()))
+                && (!(MatchUniqueId | matchType) || !rx.exactMatch(cc->uniqueId().toString(true)))) {
+            continue;
         }
-        srv->unlock();
-        bWriteLine(tr("Listing connected users", "message") + " (" + list.size() + "):\n" + list.join("\n"));
-    } else if (args.size() == 2) {
-        QList<Connection *> users;
-        BUuid uuid(args.at(1));
-        srv->lock();
-        if (uuid.isNull()) {
-            foreach (BNetworkConnection *c, srv->connections()) {
-                Connection *cc = static_cast<Connection *>(c);
-                if (cc->userInfo().login() == args.at(1))
-                    users << cc;
-            }
-        } else {
-            foreach (BNetworkConnection *c, srv->connections()) {
-                Connection *cc = static_cast<Connection *>(c);
-                if (cc->uniqueId() == uuid) {
-                    users << cc;
-                    break;
-                }
-            }
-        }
-        if (args.first() == "--kick") {
-            foreach (Connection *c, users)
-                QMetaObject::invokeMethod(c, "abort", Qt::QueuedConnection);
-            srv->unlock();
-            bWriteLine(tr("Kicked users:", "message") + " " + users.size());
-            return true;
-        } else if (args.first() == "--info") {
-            QStringList list;
-            foreach (Connection *c, users) {
-                TUserInfo info = c->userInfo();
-                TClientInfo client = c->clientInfo();
-                QString s = "[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]";
-                s += "\n" + info.accessLevel().toStringNoTr() + "; " + client.toString("%o (%a)");
-                s += " [" + c->locale().name() + "]";
-                s += "\n" + client.toString("%n v%v; TeXSample %t; BeQt v%b; Qt v%q");
-                list << s;
-            }
-            bWriteLine(list.join("\n"));
-        } else if (args.first() == "--uptime") {
-            QStringList list;
-            foreach (Connection *c, users) {
-                TUserInfo info = c->userInfo();
-                QString s = "[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]";
-                s += " " + msecsToString(c->uptime());
-                list << s;
-            }
-            bWriteLine(tr("Uptime:", "message") + "\n" + list.join("\n"));
-        } else if (args.first() == "--connected-at") {
-            QStringList list;
-            foreach (Connection *c, users) {
-                TUserInfo info = c->userInfo();
-                QString s = "[" + info.login() + "] [" + c->peerAddress() + "] [" + c->uniqueId().toString(true) + "]";
-                s += " " + c->connectionDateTime().toString("yyyy.MM.dd hh:mm:ss");
-                list << s;
-            }
-            bWriteLine(tr("Connection time:", "message") + "\n" + list.join("\n"));
-        }
-        srv->unlock();
-    } else {
-        bWriteLine(tr("Invalid arguments", "error"));
-        return false;
+        TUserConnectionInfo info;
+        info.setClientInfo(cc->clientInfo());
+        info.setConnectionDateTime(cc->connectionDateTime());
+        info.setPeerAddress(cc->peerAddress());
+        info.setUniqueId(uniqueId);
+        info.setUptime(cc->uptime());
+        info.setUserInfo(userInfo);
+        list << info;
+    }
+    bApp->mserver->unlock();
+    if (list.isEmpty()) {
+        bWriteLine(tr("No user matched. Total:", "message") + " " + QString::number(total));
+        return true;
+    }
+    bWriteLine(tr("Matched users:", "message") + " " + QString::number(list.size()) + "/" + QString::number(total));
+    foreach (const TUserConnectionInfo &info, list) {
+        QString s = "\n";
+        s += "[" + info.userInfo().login() + "] [" + info.peerAddress() + "] [" + info.uniqueId().toString(true) + "]";
+        s += info.userInfo().accessLevel().toString() + "; " + info.clientInfo().os() + "\n";
+        s += info.clientInfo().toString("%n v%v; TeXSample v%t; BeQt v%b; Qt v%q") + "\n";
+        s += tr("Connected at:", "message") + " "
+                + info.connectionDateTime().toLocalTime().toString("yyyy.MM.dd hh:mm:ss");
+        s += tr("Uptime:", "message") + " " + msecsToString(info.uptime());
     }
     return true;
 }
@@ -466,20 +414,20 @@ void Application::initTerminal()
     BSettingsNode *root = new BSettingsNode;
     BSettingsNode *n = new BSettingsNode("Mail", root);
     BSettingsNode *nn = new BSettingsNode("server_address", n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server address used for e-mail delivery"));
+    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server address used for e-mail delivery."));
     nn = new BSettingsNode(QVariant::UInt, "server_port", n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port"));
+    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port."));
     nn = new BSettingsNode("local_host_name", n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Name of local host passed to the e-mail server"));
+    nn->setDescription(BTranslation::translate("BSettingsNode", "Name of local host passed to the e-mail server."));
     nn = new BSettingsNode("ssl_required", n);
     nn->setDescription(BTranslation::translate("BSettingsNode",
-                                               "Determines wether the e-mail server requires SSL connection"));
+                                               "Determines wether the e-mail server requires SSL connection."));
     nn = new BSettingsNode("login", n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Identifier used to log into the e-mail server"));
+    nn->setDescription(BTranslation::translate("BSettingsNode", "Identifier used to log into the e-mail server."));
     nn = new BSettingsNode("password", n);
     nn->setUserSetFunction(&Global::setMailPassword);
     nn->setUserShowFunction(&Global::showMailPassword);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server"));
+    nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server."));
     BTerminal::createBeQtSettingsNode(root);
     n = new BSettingsNode("Log", root);
     nn = new BSettingsNode("mode", n);
@@ -498,39 +446,50 @@ void Application::initTerminal()
                                                "  2 and more - log loaclly and remotely\n"
                                                "  The default is 0"));
     BTerminal::setRootSettingsNode(root);
-    BTerminal::setHelpDescription(BTranslation::translate("BTerminalIOHandler", "This is TeXSample Server. "
-                                                          "Enter \"help --all\" to see full Help"));
+    BTerminal::setHelpDescription(BTranslation::translate("BTerminalIOHandler",
+        "This is TeXSample Server. Enter \"help --all\" to see full Help"));
     BTerminal::CommandHelpList chl;
     BTerminal::CommandHelp ch;
-    ch.usage = "user-info [--match-type=<match_type>] <match_pattern>";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Show information about connected users matching"
-                                             "<match_pattern>, which is to be a wildcard.\n"
-                                             "<match_type> may be one of the following:\n"
-                                             "  login-and-unique-id - attempt to match both login and uinque id "
-                                             "(default)\n"
-                                             "  login - match login only\n"
-                                             "  unique-id - match unique id only");
+    ch.usage = "user-info [--match-type|-m=<match_type>] --match-pattern|-p=<match_pattern>";
+    ch.description = BTranslation::translate("BTerminalIOHandler",
+        "Show information about connected users matching <match_pattern>, which is to be a wildcard.\n"
+        "<match_type> may be one of the following:\n"
+        "  login-and-unique-id|a - attempt to match both login and uinque id (default)\n"
+        "  login|l - match login only\n"
+        "  unique-id|u - match unique id only");
     chl << ch;
     BTerminal::setCommandHelp("user-info", chl);
     ch.usage = "start [address]";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server. "
-                                             "If [address] is passed, server will listen on that address. "
-                                             "Otherwise it will listen on all available addresses");
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
+        "If [address] is passed, server will listen on that address.\n"
+        "Otherwise it will listen on all available addresses.");
     BTerminal::setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server. "
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server.\n"
                                              "Note: Users are not disconnected.");
     BTerminal::setCommandHelp("stop", ch);
-    ch.usage = "set-app-version --client|-c=<client> --os|-o=<os> --arch|-a=<arch> [--portable|-p] <version> <url>";
+    ch.usage = "set-app-version <parameters>";
     ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Set the latest version of an application along with the download URL\n"
-                                             "  client must be either cloudlab-client (clab), tex-creator (tcrt), "
-                                             "or texsample-console (tcsl)\n"
-                                             "  os must be either linux (lin, l), macos (mac, m), "
-                                             "or windows (win, w)\n"
-                                             "  arch must be either alpha, amd64, arm, arm64, blackfin, convex, "
-                                             "epiphany, risc, x86, itanium, motorola, mips, powerpc, "
-                                             "pyramid, rs6000, sparc, superh, systemz, tms320, tms470");
+        "Set the latest version of an application along with the download URL.\n"
+        "The parameters are:\n"
+        "  --client|-c=<client>, where <client> must be one of the following:\n"
+        "    cloudlab-client|clab\n"
+        "    tex-creator|tcrt\n"
+        "    texsample-console|tcsl\n"
+        "  --os|o=<os>, where <os> must be one of the following:\n"
+        "    linux|lin|l\n"
+        "    macos|mac|m\n"
+        "    windows|win|w\n"
+        "  --arch|-a=<arch>, where <arch> must be one of the following:\n"
+        "    alpha, amd64, arm, arm64, blackfin, convex, epiphany,\n"
+        "    risc, x86, itanium, motorola, mips, powerpc, pyramid,\n"
+        "    rs6000, sparc, superh, systemz, tms320, tms470\n"
+        "  --version|-v=<version>, where <version> must be in the following format:\n"
+        "    <major>[.<minor>[.<patch>]][-<status>[extra]]\n"
+        "  --url|-u<url> (optional), where <url> must be a url (schema may be omitted)\n"
+        "  --portable|-p (optional)\n"
+        "Example:\n"
+        "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
     BTerminal::setCommandHelp("set-app-version", ch);
     ch.usage = "uptime";
     ch.description = BTranslation::translate("BTerminalIOHandler",
