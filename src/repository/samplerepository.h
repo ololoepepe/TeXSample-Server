@@ -4,7 +4,6 @@
 class DataSource;
 
 class TBinaryFile;
-class TBinaryFileList;
 class TTexProject;
 
 #include "entity/sample.h"
@@ -34,7 +33,7 @@ public:
     bool isValid() const;
 private:
     bool createSource(quint64 sampleId, const TTexProject &data);
-    bool fetchPreview(quint64 sampleId, TBinaryFile &mainFile, TBinaryFileList &extraFiles);
+    bool fetchPreview(quint64 sampleId, TBinaryFile &mainFile);
     TTexProject fetchSource(quint64 sampleId, bool *ok = false);
     bool updateSource(quint64 sampleId, const TTexProject &data);
 private:

@@ -1,26 +1,15 @@
 #include "application.h"
 #include "global.h"
 
-#include <TeXSampleGlobal>
-
 #include <BApplicationServer>
-#include <BDirTools>
 #include <BTerminal>
-#include <BVersion>
-
-#include <QObject>
-#include <QString>
-#include <QStringList>
-#include <QCoreApplication>
-#include <QDir>
-#include <QFileInfo>
-#include <QDateTime>
-#include <QRegExp>
-#include <QHash>
-#include <QSettings>
-#include <QVariant>
 
 #include <QDebug>
+#include <QDir>
+#include <QHash>
+#include <QRegExp>
+#include <QString>
+#include <QStringList>
 
 B_DECLARE_TRANSLATE_FUNCTION
 
@@ -31,7 +20,7 @@ int main(int argc, char *argv[])
     BApplicationServer s(9920 + qHash(home) % 10, AppName + home);
     int ret = 0;
     QStringList args;
-    foreach (int i, bRangeD(0, argc - 1))
+    foreach (int i, bRangeD(1, argc - 1))
         args << argv[i];
     if (args.contains("--read-only") || !s.testServer()) {
         s.listen();

@@ -4,7 +4,6 @@
 
 #include <TAuthorInfoList>
 #include <TBinaryFile>
-#include <TBinaryFileList>
 #include <TeXSample>
 #include <TSampleType>
 #include <TTexProject>
@@ -63,7 +62,6 @@ void Sample::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
-    mpreviewExtraFiles.clear();
     mpreviewMainFile.clear();
     msource.clear();
     previewFetched = false;
@@ -105,16 +103,6 @@ bool Sample::isValid() const
 QDateTime Sample::lastModificationDateTime() const
 {
     return mlastModificationDateTime;
-}
-
-const TBinaryFileList &Sample::previewExtraFiles() const
-{
-    static const TBinaryFileList Default;
-    if (!createdByRepo || previewFetched)
-        return mpreviewExtraFiles;
-    if (!const_cast<Sample *>(this)->fetchPreview())
-        return Default;
-    return mpreviewExtraFiles;
 }
 
 const TBinaryFile &Sample::previewMainFile() const
@@ -264,7 +252,6 @@ Sample &Sample::operator =(const Sample &other)
     mcreationDateTime = other.mcreationDateTime;
     mdescription = other.mdescription;
     mlastModificationDateTime = other.mlastModificationDateTime;
-    mpreviewExtraFiles = other.mpreviewExtraFiles;
     mpreviewMainFile = other.mpreviewMainFile;
     mrating = other.mrating;
     msaveAdminRemark = other.msaveAdminRemark;
@@ -303,7 +290,7 @@ bool Sample::fetchPreview()
 {
     if (previewFetched)
         return true;
-    if (!repo || repo->isValid() || !repo->fetchPreview(mid, mpreviewMainFile, mpreviewExtraFiles))
+    if (!repo || repo->isValid() || !repo->fetchPreview(mid, mpreviewMainFile))
         return false;
     previewFetched = true;
     return true;

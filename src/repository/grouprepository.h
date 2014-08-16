@@ -7,6 +7,7 @@ class DataSource;
 
 #include <TIdList>
 
+#include <QDateTime>
 #include <QList>
 
 /*============================================================================
@@ -26,7 +27,7 @@ public:
     bool deleteOne(quint64 id);
     bool edit(const Group &entity);
     QList<Group> findAll(const TIdList &ids);
-    QList<Group> findAllByUserId(quint64 userId);
+    QList<Group> findAllByUserId(quint64 userId, const QDateTime &newerThan = QDateTime());
     Group findOne(quint64 id);
     bool isValid() const;
 private:

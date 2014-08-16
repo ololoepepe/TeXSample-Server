@@ -120,14 +120,20 @@ QList<Group> GroupRepository::findAll(const TIdList &ids)
     return list;
 }
 
-QList<Group> GroupRepository::findAllByUserId(quint64 userId)
+QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &newerThan)
 {
     QList<Group> list;
     if (!isValid() || !userId)
         return list;
+    QString ws = "owner_id = :owner_id";
+    QVariantMap wvalues;
+    wvalues.insert(":owner_id", userId);
+    if (newerThan.isValid()) {
+        ws += " AND last_modification_date_time > :last_modification_date_time";
+        wvalues.insert("last_modification_date_time", newerThan.toUTC().toMSecsSinceEpoch());
+    }
     BSqlResult result = Source->select("groups", QStringList() << "id" << "creation_date_time"
-                                       << "last_modification_date_time" << "name",
-                                       BSqlWhere("owner_id = :owner_id", ":owner_id", userId));
+                                       << "last_modification_date_time" << "name", BSqlWhere(ws, wvalues));
     if (!result.success() || result.values().isEmpty())
         return list;
     foreach (const QVariantMap &m, result.values()) {

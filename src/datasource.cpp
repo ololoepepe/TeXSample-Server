@@ -12,7 +12,6 @@
 
 #include <QByteArray>
 #include <QDebug>
-#include <QFile>
 #include <QFileInfo>
 #include <QRegExp>
 #include <QString>
@@ -30,7 +29,7 @@
 DataSource::DataSource(const QString &location) :
     Location(location)
 {
-    trans = 0;
+    trans = false;
     if (location.isEmpty() || !QFileInfo(location).isDir() || !BDirTools::touch(location + "/texsample.sqlite")) {
         db = 0;
         return;
@@ -62,27 +61,8 @@ bool DataSource::commit()
         //TODO: Do not commit FS
         return false;
     }
-    delete trans;
-    trans = 0;
+    trans = false;
     return true;
-}
-
-bool DataSource::createFile(const QString &fileName, const QByteArray &data)
-{
-    if (!isValid() || fileName.isEmpty())
-        return false;
-    //TODO: Locking, transaction
-    return BDirTools::writeFile(Location + "/" + fileName, data);
-}
-
-bool DataSource::createTextFile(const QString &fileName, const QString &text)
-{
-    //
-}
-
-bool DataSource::deleteFile(const QString &fileName)
-{
-    //
 }
 
 BSqlResult DataSource::deleteFrom(const QString &table, const BSqlWhere &where)
@@ -131,11 +111,6 @@ BSqlResult DataSource::exec(const QString &qs, const QVariantMap &boundValues)
     if (!isValid())
         return BSqlResult();
     return db->exec(qs, boundValues);
-}
-
-bool DataSource::fileExists(const QString &fileName)
-{
-    //
 }
 
 bool DataSource::initialize(QString *error)
@@ -196,16 +171,6 @@ QString DataSource::location() const
     return Location;
 }
 
-QByteArray DataSource::readFile(const QString &fileName, bool *ok)
-{
-    //
-}
-
-QString DataSource::readTextFile(const QString &fileName, bool *ok)
-{
-    //
-}
-
 bool DataSource::rollback()
 {
     if (!isValid() || !trans)
@@ -214,8 +179,7 @@ bool DataSource::rollback()
     if (!db->rollback()) {
         //TODO: Do not rollback FS
     }
-    delete trans;
-    trans = 0;
+    trans = false;
     return true;
 }
 
@@ -240,13 +204,9 @@ bool DataSource::transaction()
     QString path = Location + "/transaction/" + BUuid::createUuid().toString(true);
     if (!BDirTools::touch(path))
         return false;
-    trans = new QFile(path);
-    if (!trans->open(QFile::ReadWrite) || !db->transaction()) {
-        trans->remove();
-        delete trans;
-        trans = 0;
+    if (!db->transaction())
         return false;
-    }
+    trans = true;
     return true;
 }
 
@@ -258,24 +218,17 @@ BSqlResult DataSource::update(const QString &table, const QVariantMap &values, c
 }
 
 BSqlResult DataSource::update(const QString &table, const QString &field1, const QVariant &value1,
+                              const BSqlWhere &where)
+{
+    if (!isValid())
+        return BSqlResult();
+    return db->update(table, field1, value1, where);
+}
+
+BSqlResult DataSource::update(const QString &table, const QString &field1, const QVariant &value1,
                               const QString &field2, const QVariant &value2, const BSqlWhere &where)
 {
     if (!isValid())
         return BSqlResult();
     return db->update(table, field1, value1, field2, value2, where);
-}
-
-bool DataSource::updateFile(const QString &fileName, const QByteArray &data)
-{
-    if (!isValid() || fileName.isEmpty())
-        return false;
-    //TODO: Locking, transaction
-    if (!QFileInfo(Location + "/" + fileName).isFile())
-        return false;
-    return BDirTools::writeFile(Location + "/" + fileName, data);
-}
-
-bool DataSource::updateTextFile(const QString &fileName, const QString &text)
-{
-    //
 }

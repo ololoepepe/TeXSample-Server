@@ -6,7 +6,6 @@
 #include "transactionholder.h"
 
 #include <TBinaryFile>
-#include <TBinaryFileList>
 #include <TIdList>
 #include <TSampleType>
 #include <TTexProject>
@@ -48,7 +47,6 @@ quint64 SampleRepository::add(const Sample &entity)
     values.insert("creation_date_time", dt.toMSecsSinceEpoch());
     values.insert("description", entity.description());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
-    values.insert("main_file_name", entity.source().rootFile().fileName());
     values.insert("rating", quint8(0));
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
@@ -83,7 +81,6 @@ bool SampleRepository::edit(const Sample &entity)
         values.insert("admin_remark", entity.adminRemark());
     values.insert("description", entity.description());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
-    values.insert("main_file_name", entity.source().rootFile().fileName());
     values.insert("rating", quint8(0));
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
@@ -186,7 +183,7 @@ bool SampleRepository::createSource(quint64 sampleId, const TTexProject &data)
     //
 }
 
-bool SampleRepository::fetchPreview(quint64 sampleId, TBinaryFile &mainFile, TBinaryFileList &extraFiles)
+bool SampleRepository::fetchPreview(quint64 sampleId, TBinaryFile &mainFile)
 {
     //
 }

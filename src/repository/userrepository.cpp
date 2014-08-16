@@ -261,7 +261,7 @@ QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id
 
 bool UserRepository::createAvatar(quint64 userId, const QImage &avatar)
 {
-    if (!userId)
+    if (!isValid() || !userId)
         return false;
     QByteArray data;
     if (!avatar.isNull()) {
@@ -271,17 +271,17 @@ bool UserRepository::createAvatar(quint64 userId, const QImage &avatar)
             return false;
         buff.close();
     }
-    return Source->createFile("users/" + QString::number(userId) + "/avatar.dat", data);
+    return Source->insert("user_avatars", "user_id", userId, "avatar", data).success();
 }
 
 QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)
 {
     if (!isValid() || !userId)
         return bRet(ok, false, QImage());
-    bool b = false;
-    QByteArray avatar = Source->readFile("users/" + QString::number(userId) + "/avatar.dat", &b);
-    if (!b)
+    BSqlResult result = Source->select("user_avatars", "avatar", BSqlWhere("user_id = :user_id", ":user_id", userId));
+    if (!result.success() || result.value().isEmpty())
         return bRet(ok, false, QImage());
+    QByteArray avatar = result.value("avatar").toByteArray();
     if (avatar.isEmpty())
         return bRet(ok, true, QImage());
     QBuffer buff(&avatar);
@@ -295,7 +295,7 @@ QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)
 
 bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
 {
-    if (!userId)
+    if (!isValid() || !userId)
         return false;
     QByteArray data;
     if (!avatar.isNull()) {
@@ -305,5 +305,5 @@ bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
             return false;
         buff.close();
     }
-    return Source->updateFile("users/" + QString::number(userId) + "/avatar.dat", data);
+    return Source->update("user_avatars", "user_id", userId, "avatar", data).success();
 }

@@ -57,16 +57,15 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Source(new DataSource(location(DataPath, UserResource))),
     ApplicationVersionServ(new ApplicationVersionService(Source)), UserServ(new UserService(Source))
 {
-    setApplicationVersion("2.2.2-beta");
-    setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
-    setApplicationCopyrightPeriod("2012-2014");
 #if defined(BUILTIN_RESOURCES)
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
+    setApplicationVersion("2.2.2-beta");
+    setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
+    setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
     prov->addLocation("logs");
-    prov->addLocation("users");
     installLocationProvider(prov);
     compatibility();
     installBeqtTranslator("qt");

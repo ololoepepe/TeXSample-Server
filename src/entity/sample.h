@@ -5,7 +5,6 @@ class SampleRepository;
 
 #include <TAuthorInfoList>
 #include <TBinaryFile>
-#include <TBinaryFileList>
 #include <TSampleType>
 #include <TTexProject>
 
@@ -28,7 +27,6 @@ private:
     QDateTime mcreationDateTime;
     QString mdescription;
     QDateTime mlastModificationDateTime;
-    TBinaryFileList mpreviewExtraFiles;
     TBinaryFile mpreviewMainFile;
     quint8 mrating;
     bool msaveAdminRemark;
@@ -60,7 +58,6 @@ public:
     bool isCreatedByRepo() const;
     bool isValid() const;
     QDateTime lastModificationDateTime() const;
-    const TBinaryFileList &previewExtraFiles() const;
     const TBinaryFile &previewMainFile() const;
     quint8 rating() const;
     SampleRepository *repository() const;
