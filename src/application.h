@@ -57,7 +57,7 @@ private:
     static bool handleStopCommand(const QString &cmd, const QStringList &args);
     static bool handleUnknownCommand(const QString &command, const QStringList &args);
     static bool handleUptimeCommand(const QString &cmd, const QStringList &args);
-    static bool handleUserCommand(const QString &cmd, const QStringList &args);
+    static bool handleUserInfoCommand(const QString &cmd, const QStringList &args);
     static void initTerminal();
     static QString msecsToString(qint64 msecs);
 private:

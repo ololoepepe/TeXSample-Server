@@ -24,7 +24,7 @@ int main(int argc, char *argv[])
         args << argv[i];
     if (args.contains("--read-only") || !s.testServer()) {
         s.listen();
-        Application app(argc, argv, AppName, "TeXSample Team");
+        Application app(argc, argv, AppName, "Andrey Bogdanov");
         if ((!Global::noMail() && !Global::initMail()) || !app.initializeStorage())
             return 0;
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));

@@ -15,9 +15,14 @@
 #include <TAccessLevel>
 #include <TAddGroupReplyData>
 #include <TAddGroupRequestData>
+#include <TAuthorizeReplyData>
+#include <TAuthorizeRequestData>
+#include <TClientInfo>
 #include <TeXSample>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
+#include <TGetUserInfoListAdminReplyData>
+#include <TGetUserInfoListAdminRequestData>
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
 #include <TGroupInfo>
@@ -25,10 +30,12 @@
 #include <TServiceList>
 #include <TUserIdentifier>
 #include <TUserInfo>
+#include <TUserInfoList>
 
 #include <BTerminal>
 
 #include <QDateTime>
+#include <QDebug>
 #include <QImage>
 #include <QString>
 
@@ -86,6 +93,35 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     return Out(replyData, dt);
 }
 
+RequestOut<TAuthorizeReplyData> UserService::authorize(const RequestIn<TAuthorizeRequestData> &in)
+{
+    typedef RequestOut<TAuthorizeReplyData> Out;
+    if (!isValid())
+        return Out(tr("Invalid UserService instance", "error"));
+    if (!in.data().isValid())
+        return Out(tr("Invalid data", "error"));
+    QDateTime dt = QDateTime::currentDateTime();
+    User entity = UserRepo->findOne(in.data().identifier(), in.data().password());
+    if (!entity.isValid())
+        return Out(tr("Invalid login, e-mail, or password", "error"));
+    TUserInfo info;
+    info.setAccessLevel(entity.accessLevel());
+    info.setActive(entity.active());
+    info.setAvailableGroups(getGroups(entity.id()));
+    info.setAvailableServices(entity.availableServices());
+    info.setGroups(getGroups(entity.groups()));
+    info.setId(entity.id());
+    info.setLastModificationDateTime(entity.lastModificationDateTime());
+    info.setLogin(entity.login());
+    info.setName(entity.name());
+    info.setPatronymic(entity.patronymic());
+    info.setRegistrationDateTime(entity.registrationDateTime());
+    info.setSurname(entity.surname());
+    TAuthorizeReplyData replyData;
+    replyData.setUserInfo(info);
+    return Out(replyData, dt);
+}
+
 bool UserService::checkOutdatedEntries()
 {
     return isValid() && AccountRecoveryCodeRepo->deleteExpired() && InviteCodeRepo->deleteExpired()
@@ -114,23 +150,8 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     User entity = UserRepo->findOne(id);
     if (!entity.isValid())
         return Out(tr("No such user", "error"));
-    TUserInfo info;
-    info.setAccessLevel(entity.accessLevel());
-    info.setActive(entity.active());
-    info.setAvailableGroups(getGroups(entity.id()));
-    info.setAvailableServices(entity.availableServices());
-    if (in.data().includeAvatar())
-        info.setAvatar(entity.avatar());
-    info.setGroups(getGroups(entity.groups()));
-    info.setId(entity.id());
-    info.setLastModificationDateTime(entity.lastModificationDateTime());
-    info.setLogin(entity.login());
-    info.setName(entity.name());
-    info.setPatronymic(entity.patronymic());
-    info.setRegistrationDateTime(entity.registrationDateTime());
-    info.setSurname(entity.surname());
     TGetUserInfoReplyData replyData;
-    replyData.setUserInfo(info);
+    replyData.setUserInfo(userToUserInfo(entity, false, in.data().includeAvatar()));
     return Out(replyData, dt);
 }
 
@@ -151,24 +172,26 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     User entity = UserRepo->findOne(id);
     if (!entity.isValid())
         return Out(tr("No such user", "error"));
-    TUserInfo info;
-    info.setAccessLevel(entity.accessLevel());
-    info.setActive(entity.active());
-    info.setAvailableGroups(getGroups(entity.id()));
-    info.setAvailableServices(entity.availableServices());
-    if (in.data().includeAvatar())
-        info.setAvatar(entity.avatar());
-    info.setEmail(entity.email());
-    info.setGroups(getGroups(entity.groups()));
-    info.setId(entity.id());
-    info.setLastModificationDateTime(entity.lastModificationDateTime());
-    info.setLogin(entity.login());
-    info.setName(entity.name());
-    info.setPatronymic(entity.patronymic());
-    info.setRegistrationDateTime(entity.registrationDateTime());
-    info.setSurname(entity.surname());
     TGetUserInfoAdminReplyData replyData;
-    replyData.setUserInfo(info);
+    replyData.setUserInfo(userToUserInfo(entity, true, in.data().includeAvatar()));
+    return Out(replyData, dt);
+}
+
+RequestOut<TGetUserInfoListAdminReplyData> UserService::getUserInfoListAdmin(
+        const RequestIn<TGetUserInfoListAdminRequestData> &in)
+{
+    typedef RequestOut<TGetUserInfoListAdminReplyData> Out;
+    if (!isValid())
+        return Out(tr("Invalid UserService instance", "error"));
+    QDateTime dt = QDateTime::currentDateTime();
+    QList<User> entities = UserRepo->findAllNewerThan(in.lastRequestDateTime());
+    TUserInfoList newUsers;
+    //TIdList deletedUsers;
+    foreach (const User &entity, entities)
+        newUsers << userToUserInfo(entity, true, false);
+    TGetUserInfoListAdminReplyData replyData;
+    //replyData.setDeletedUsers(deletedUsers);
+    replyData.setNewUsers(newUsers);
     return Out(replyData, dt);
 }
 
@@ -261,5 +284,29 @@ TGroupInfo UserService::groupToGroupInfo(const Group &entity)
     info.setName(entity.name());
     info.setOwnerId(entity.ownerId());
     info.setOwnerLogin(UserRepo->findLogin(entity.ownerId()));
+    return info;
+}
+
+TUserInfo UserService::userToUserInfo(const User &entity, bool includeEmail, bool includeAvatar)
+{
+    TUserInfo info;
+    if (!isValid() || !entity.isValid() || !entity.isCreatedByRepo())
+        return info;
+    info.setAccessLevel(entity.accessLevel());
+    info.setActive(entity.active());
+    info.setAvailableGroups(getGroups(entity.id()));
+    info.setAvailableServices(entity.availableServices());
+    if (includeAvatar)
+        info.setAvatar(entity.avatar());
+    if (includeEmail)
+    info.setEmail(entity.email());
+    info.setGroups(getGroups(entity.groups()));
+    info.setId(entity.id());
+    info.setLastModificationDateTime(entity.lastModificationDateTime());
+    info.setLogin(entity.login());
+    info.setName(entity.name());
+    info.setPatronymic(entity.patronymic());
+    info.setRegistrationDateTime(entity.registrationDateTime());
+    info.setSurname(entity.surname());
     return info;
 }

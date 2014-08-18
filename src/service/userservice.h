@@ -7,11 +7,13 @@ class Group;
 class GroupRepository;
 class InviteCodeRepository;
 class RegistrationConfirmationCodeRepository;
+class User;
 class UserRepository;
 
 class TGroupInfo;
 class TGroupInfoList;
 class TIdList;
+class TUserInfo;
 
 class QString;
 
@@ -20,8 +22,12 @@ class QString;
 
 #include <TAddGroupReplyData>
 #include <TAddGroupRequestData>
+#include <TAuthorizeReplyData>
+#include <TAuthorizeRequestData>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
+#include <TGetUserInfoListAdminReplyData>
+#include <TGetUserInfoListAdminRequestData>
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
 
@@ -46,10 +52,12 @@ public:
     ~UserService();
 public:
     RequestOut<TAddGroupReplyData> addGroup(const RequestIn<TAddGroupRequestData> &in, quint64 userId);
+    RequestOut<TAuthorizeReplyData> authorize(const RequestIn<TAuthorizeRequestData> &in);
     bool checkOutdatedEntries();
     DataSource *dataSource() const;
     RequestOut<TGetUserInfoReplyData> getUserInfo(const RequestIn<TGetUserInfoRequestData> &in);
     RequestOut<TGetUserInfoAdminReplyData> getUserInfoAdmin(const RequestIn<TGetUserInfoAdminRequestData> &in);
+    RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(const RequestIn<TGetUserInfoListAdminRequestData> &in);
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;
@@ -57,6 +65,7 @@ private:
     TGroupInfoList getGroups(const TIdList &ids);
     TGroupInfoList getGroups(quint64 userId);
     TGroupInfo groupToGroupInfo(const Group &entity);
+    TUserInfo userToUserInfo(const User &entity, bool includeEmail, bool includeAvatar);
 private:
     Q_DISABLE_COPY(UserService)
 };

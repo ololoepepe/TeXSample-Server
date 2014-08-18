@@ -34,10 +34,10 @@ public:
     DataSource *dataSource() const;
     bool edit(const User &entity);
     bool exists(const TUserIdentifier &id);
-    bool exists(const QString &identifier, const QByteArray &password);
     QList<User> findAllNewerThan(const QDateTime &newerThan);
     QString findLogin(quint64 id);
     User findOne(const TUserIdentifier &id);
+    User findOne(const QString &identifier, const QByteArray &password);
     bool isValid() const;
     QDateTime findLastModificationDateTime(const TUserIdentifier &id);
 private:

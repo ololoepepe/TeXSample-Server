@@ -10,8 +10,12 @@
 #include <TAccessLevel>
 #include <TAddGroupReplyData>
 #include <TAddGroupRequestData>
+#include <TAuthorizeReplyData>
+#include <TAuthorizeRequestData>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
+#include <TGetUserInfoListAdminReplyData>
+#include <TGetUserInfoListAdminRequestData>
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
 #include <TLogRequestData>
@@ -171,7 +175,20 @@ bool Connection::handleAddUserRequest(BNetworkOperation *op)
 
 bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
-    //
+    if (!isValid())
+        return sendReply(op, tr("Invalid Connection instance", "error"));
+    if (muserInfo.isValid()) {
+        TAuthorizeReplyData data;
+        data.setUserInfo(muserInfo);
+        return sendReply(op, tr("Already authorized", "message"), data);
+    }
+    RequestIn<TAuthorizeRequestData> in(op->variantData().value<TRequest>());
+    RequestOut<TAuthorizeReplyData> out = UserServ->authorize(in);
+    if (!out.success())
+        return sendReply(op, out.createReply());
+    muserInfo = out.data().userInfo();
+    mclientInfo = in.data().clientInfo();
+    return sendReply(op, out.createReply());
 }
 
 bool Connection::handleChangeEmailRequest(BNetworkOperation *op)
@@ -266,7 +283,13 @@ bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
 
 bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
 {
-    //
+    if (!isValid())
+        return sendReply(op, tr("Invalid Connection instance", "error"));
+    if (!muserInfo.isValid())
+        return sendReply(op, tr("Not authorized", "error"));
+    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::ModeratorLevel))
+        return sendReply(op, tr("Not enough rights", "error"));
+    return sendReply(op, "dummy");
 }
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
@@ -339,6 +362,18 @@ bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
         return sendReply(op, tr("Not enough rights", "error"));
     RequestIn<TGetUserInfoAdminRequestData> in(op->variantData().value<TRequest>());
     return sendReply(op, UserServ->getUserInfoAdmin(in).createReply());
+}
+
+bool Connection::handleGetUserInfoListAdminRequest(BNetworkOperation *op)
+{
+    if (!isValid())
+        return sendReply(op, tr("Invalid Connection instance", "error"));
+    if (!muserInfo.isValid())
+        return sendReply(op, tr("Not authorized", "error"));
+    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
+        return sendReply(op, tr("Not enough rights", "error"));
+    RequestIn<TGetUserInfoListAdminRequestData> in(op->variantData().value<TRequest>());
+    return sendReply(op, UserServ->getUserInfoListAdmin(in).createReply());
 }
 
 bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
@@ -1218,6 +1253,8 @@ void Connection::initHandlers()
                           InternalHandler(&Connection::handleGetUserConnectionInfoListRequest));
     installRequestHandler(TOperation::GetUserInfo, InternalHandler(&Connection::handleGetUserInfoRequest));
     installRequestHandler(TOperation::GetUserInfoAdmin, InternalHandler(&Connection::handleGetUserInfoAdminRequest));
+    installRequestHandler(TOperation::GetUserInfoListAdmin,
+                          InternalHandler(&Connection::handleGetUserInfoListAdminRequest));
     installRequestHandler(TOperation::RecoverAccount, InternalHandler(&Connection::handleRecoverAccountRequest));
     installRequestHandler(TOperation::Register, InternalHandler(&Connection::handleRegisterRequest));
     installRequestHandler(TOperation::RequestRecoveryCode,
@@ -1237,6 +1274,14 @@ bool Connection::sendReply(BNetworkOperation *op, const QString &message, bool s
 {
     TReply reply(message);
     reply.setSuccess(success);
+    return sendReply(op, reply);
+}
+
+bool Connection::sendReply(BNetworkOperation *op, const QString &message, const QVariant &data)
+{
+    TReply reply(message);
+    reply.setSuccess(true);
+    reply.setData(data);
     return sendReply(op, reply);
 }
 

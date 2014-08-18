@@ -62,7 +62,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
     setApplicationVersion("2.2.2-beta");
-    setOrganizationDomain("https://github.com/TeXSample-Team/TeXSample-Server");
+    setOrganizationDomain("https://github.com/ololoepepe/TeXSample-Server");
     setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
     prov->addLocation("logs");
@@ -328,18 +328,16 @@ bool Application::handleUptimeCommand(const QString &, const QStringList &args)
     return true;
 }
 
-bool Application::handleUserCommand(const QString &, const QStringList &args)
+bool Application::handleUserInfoCommand(const QString &, const QStringList &args)
 {
-    static const int MatchLogin = 0x01;
-    static const int MatchUniqueId = 0x02;
-    typedef QMap<QString, int> IntMap;
+    typedef QMap<QString, Server::UserMatchType> IntMap;
     init_once(IntMap, matchTypeMap, IntMap()) {
-        matchTypeMap.insert("login-and-unique-id", MatchLogin | MatchUniqueId);
-        matchTypeMap.insert("a", MatchLogin | MatchUniqueId);
-        matchTypeMap.insert("login", MatchLogin);
-        matchTypeMap.insert("l", MatchLogin);
-        matchTypeMap.insert("unique-id", MatchUniqueId);
-        matchTypeMap.insert("u", MatchUniqueId);
+        matchTypeMap.insert("login-and-unique-id", Server::MatchLoginAndUniqueId);
+        matchTypeMap.insert("a", Server::MatchLoginAndUniqueId);
+        matchTypeMap.insert("login", Server::MatchLogin);
+        matchTypeMap.insert("l", Server::MatchLogin);
+        matchTypeMap.insert("unique-id", Server::MatchUniqueId);
+        matchTypeMap.insert("u", Server::MatchUniqueId);
     }
     QMap<QString, QString> result;
     QString errorData;
@@ -347,9 +345,10 @@ bool Application::handleUserCommand(const QString &, const QStringList &args)
     BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
     if (!checkParsingError(error, errorData))
         return false;
-    int matchType = result.contains("type") ? matchTypeMap.value(result.value("type")) : (MatchLogin | MatchUniqueId);
-    QRegExp rx = QRegExp(result.value("pattern"), Qt::CaseSensitive, QRegExp::WildcardUnix);
-    if (!rx.isValid()) {
+    Server::UserMatchType matchType = result.contains("type") ? matchTypeMap.value(result.value("type")) :
+                                                                Server::MatchLoginAndUniqueId;
+    QString matchPattern = result.value("pattern");
+    if (!QRegExp(matchPattern, Qt::CaseSensitive, QRegExp::WildcardUnix).isValid()) {
         bWriteLine(tr("Invalid pattern", "error"));
         return false;
     }
@@ -359,28 +358,8 @@ bool Application::handleUserCommand(const QString &, const QStringList &args)
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
-    TUserConnectionInfoList list;
-    bApp->mserver->lock();
     int total = 0;
-    foreach (BNetworkConnection *c, bApp->mserver->connections()) {
-        ++total;
-        Connection *cc = static_cast<Connection *>(c);
-        TUserInfo userInfo = cc->userInfo();
-        BUuid uniqueId = cc->uniqueId();
-        if ((!(MatchLogin | matchType) || !rx.exactMatch(userInfo.login()))
-                && (!(MatchUniqueId | matchType) || !rx.exactMatch(cc->uniqueId().toString(true)))) {
-            continue;
-        }
-        TUserConnectionInfo info;
-        info.setClientInfo(cc->clientInfo());
-        info.setConnectionDateTime(cc->connectionDateTime());
-        info.setPeerAddress(cc->peerAddress());
-        info.setUniqueId(uniqueId);
-        info.setUptime(cc->uptime());
-        info.setUserInfo(userInfo);
-        list << info;
-    }
-    bApp->mserver->unlock();
+    TUserConnectionInfoList list = bApp->mserver->userConnections(matchPattern, matchType, &total);
     if (list.isEmpty()) {
         bWriteLine(tr("No user matched. Total:", "message") + " " + QString::number(total));
         return true;
@@ -389,11 +368,12 @@ bool Application::handleUserCommand(const QString &, const QStringList &args)
     foreach (const TUserConnectionInfo &info, list) {
         QString s = "\n";
         s += "[" + info.userInfo().login() + "] [" + info.peerAddress() + "] [" + info.uniqueId().toString(true) + "]";
-        s += info.userInfo().accessLevel().toString() + "; " + info.clientInfo().os() + "\n";
+        s += "\n" + info.userInfo().accessLevel().toString() + "; " + info.clientInfo().os() + "\n";
         s += info.clientInfo().toString("%n v%v; TeXSample v%t; BeQt v%b; Qt v%q") + "\n";
         s += tr("Connected at:", "message") + " "
-                + info.connectionDateTime().toLocalTime().toString("yyyy.MM.dd hh:mm:ss");
+                + info.connectionDateTime().toLocalTime().toString("yyyy.MM.dd hh:mm:ss") + "\n";
         s += tr("Uptime:", "message") + " " + msecsToString(info.uptime());
+        bWriteLine(s);
     }
     return true;
 }
@@ -404,12 +384,13 @@ void Application::initTerminal()
     BTerminal::installHandler(BTerminal::QuitCommand);
     BTerminal::installHandler(BTerminal::SetCommand);
     BTerminal::installHandler(BTerminal::HelpCommand);
+    BTerminal::installHandler(BTerminal::LastCommand);
     BTerminal::installDefaultHandler(&handleUnknownCommand);
     BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
     BTerminal::installHandler("start", &handleStartCommand);
     BTerminal::installHandler("stop", &handleStopCommand);
     BTerminal::installHandler("uptime", &handleUptimeCommand);
-    BTerminal::installHandler("user", &handleUserCommand);
+    BTerminal::installHandler("user-info", &handleUserInfoCommand);
     BSettingsNode *root = new BSettingsNode;
     BSettingsNode *n = new BSettingsNode("Mail", root);
     BSettingsNode *nn = new BSettingsNode("server_address", n);

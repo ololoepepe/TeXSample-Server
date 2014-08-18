@@ -94,7 +94,7 @@
         <location filename="../src/application.cpp" line="275"/>
         <location filename="../src/application.cpp" line="299"/>
         <location filename="../src/application.cpp" line="324"/>
-        <location filename="../src/application.cpp" line="359"/>
+        <location filename="../src/application.cpp" line="358"/>
         <source>No Application instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
@@ -151,31 +151,31 @@
     </message>
     <message>
         <location filename="../src/application.cpp" line="327"/>
-        <location filename="../src/application.cpp" line="396"/>
+        <location filename="../src/application.cpp" line="375"/>
         <source>Uptime:</source>
         <comment>message</comment>
         <translation type="unfinished">Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="353"/>
+        <location filename="../src/application.cpp" line="352"/>
         <source>Invalid pattern</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="385"/>
+        <location filename="../src/application.cpp" line="364"/>
         <source>No user matched. Total:</source>
         <comment>message</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="388"/>
+        <location filename="../src/application.cpp" line="367"/>
         <source>Matched users:</source>
         <comment>message</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="394"/>
+        <location filename="../src/application.cpp" line="373"/>
         <source>Connected at:</source>
         <comment>message</comment>
         <translation type="unfinished"></translation>
@@ -186,7 +186,7 @@
         <translation type="obsolete">Перечисляем подключенных пользователей</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="511"/>
+        <location filename="../src/application.cpp" line="492"/>
         <source>days</source>
         <translation type="unfinished">дней</translation>
     </message>
@@ -218,37 +218,37 @@
         <translation type="obsolete">Пароль, используемый для входа на сервер эл. почты</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="416"/>
+        <location filename="../src/application.cpp" line="397"/>
         <source>E-mail server address used for e-mail delivery.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="418"/>
+        <location filename="../src/application.cpp" line="399"/>
         <source>E-mail server port.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="420"/>
+        <location filename="../src/application.cpp" line="401"/>
         <source>Name of local host passed to the e-mail server.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="422"/>
+        <location filename="../src/application.cpp" line="403"/>
         <source>Determines wether the e-mail server requires SSL connection.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="425"/>
+        <location filename="../src/application.cpp" line="406"/>
         <source>Identifier used to log into the e-mail server.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="429"/>
+        <location filename="../src/application.cpp" line="410"/>
         <source>Password used to log into the e-mail server.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="434"/>
+        <location filename="../src/application.cpp" line="415"/>
         <source>Logging mode. Possible values:
   0 or less - don&apos;t log
   1 - log to console only
@@ -258,7 +258,7 @@
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="441"/>
+        <location filename="../src/application.cpp" line="422"/>
         <source>Logging the &quot;keep alive&quot; operations. Possible values:
   0 or less - don&apos;t log
   1 - log locally
@@ -296,12 +296,12 @@ The default is 0</source>
 <context>
     <name>BTerminalIOHandler</name>
     <message>
-        <location filename="../src/application.cpp" line="448"/>
+        <location filename="../src/application.cpp" line="429"/>
         <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
         <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="453"/>
+        <location filename="../src/application.cpp" line="434"/>
         <source>Show information about connected users matching &lt;match_pattern&gt;, which is to be a wildcard.
 &lt;match_type&gt; may be one of the following:
   login-and-unique-id|a - attempt to match both login and uinque id (default)
@@ -310,20 +310,20 @@ The default is 0</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="462"/>
+        <location filename="../src/application.cpp" line="443"/>
         <source>Start the server.
 If [address] is passed, server will listen on that address.
 Otherwise it will listen on all available addresses.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="467"/>
+        <location filename="../src/application.cpp" line="448"/>
         <source>Stop the server.
 Note: Users are not disconnected.</source>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="471"/>
+        <location filename="../src/application.cpp" line="452"/>
         <source>Set the latest version of an application along with the download URL.
 The parameters are:
   --client|-c=&lt;client&gt;, where &lt;client&gt; must be one of the following:
@@ -347,7 +347,7 @@ Example:
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="494"/>
+        <location filename="../src/application.cpp" line="475"/>
         <source>Show information about server state (uptime, listening state, etc.)</source>
         <translation type="unfinished"></translation>
     </message>
@@ -389,32 +389,45 @@ Example:
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="53"/>
+        <location filename="../src/connection.cpp" line="57"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="148"/>
-        <location filename="../src/connection.cpp" line="335"/>
-        <location filename="../src/connection.cpp" line="347"/>
+        <location filename="../src/connection.cpp" line="152"/>
+        <location filename="../src/connection.cpp" line="179"/>
+        <location filename="../src/connection.cpp" line="287"/>
+        <location filename="../src/connection.cpp" line="358"/>
+        <location filename="../src/connection.cpp" line="370"/>
+        <location filename="../src/connection.cpp" line="382"/>
         <source>Invalid Connection instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="150"/>
-        <location filename="../src/connection.cpp" line="337"/>
-        <location filename="../src/connection.cpp" line="349"/>
+        <location filename="../src/connection.cpp" line="154"/>
+        <location filename="../src/connection.cpp" line="289"/>
+        <location filename="../src/connection.cpp" line="360"/>
+        <location filename="../src/connection.cpp" line="372"/>
+        <location filename="../src/connection.cpp" line="384"/>
         <source>Not authorized</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="152"/>
-        <location filename="../src/connection.cpp" line="339"/>
-        <location filename="../src/connection.cpp" line="351"/>
+        <location filename="../src/connection.cpp" line="156"/>
+        <location filename="../src/connection.cpp" line="291"/>
+        <location filename="../src/connection.cpp" line="362"/>
+        <location filename="../src/connection.cpp" line="374"/>
+        <location filename="../src/connection.cpp" line="386"/>
         <source>Not enough rights</source>
         <comment>error</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="183"/>
+        <source>Already authorized</source>
+        <comment>message</comment>
         <translation type="unfinished"></translation>
     </message>
 </context>
@@ -625,109 +638,118 @@ Example:
 <context>
     <name>UserService</name>
     <message>
-        <location filename="../src/service/userservice.cpp" line="61"/>
-        <location filename="../src/service/userservice.cpp" line="104"/>
-        <location filename="../src/service/userservice.cpp" line="141"/>
+        <location filename="../src/service/userservice.cpp" line="68"/>
+        <location filename="../src/service/userservice.cpp" line="100"/>
+        <location filename="../src/service/userservice.cpp" line="140"/>
+        <location filename="../src/service/userservice.cpp" line="162"/>
+        <location filename="../src/service/userservice.cpp" line="185"/>
         <source>Invalid UserService instance</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="63"/>
-        <location filename="../src/service/userservice.cpp" line="106"/>
-        <location filename="../src/service/userservice.cpp" line="143"/>
+        <location filename="../src/service/userservice.cpp" line="70"/>
+        <location filename="../src/service/userservice.cpp" line="102"/>
+        <location filename="../src/service/userservice.cpp" line="142"/>
+        <location filename="../src/service/userservice.cpp" line="164"/>
         <source>Invalid data</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="65"/>
+        <location filename="../src/service/userservice.cpp" line="72"/>
         <source>Invalid user ID (internal error)</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="73"/>
-        <location filename="../src/service/userservice.cpp" line="76"/>
+        <location filename="../src/service/userservice.cpp" line="80"/>
+        <location filename="../src/service/userservice.cpp" line="83"/>
         <source>Repository operation failed (internal error)</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="116"/>
-        <location filename="../src/service/userservice.cpp" line="153"/>
+        <location filename="../src/service/userservice.cpp" line="106"/>
+        <source>Invalid login, e-mail, or password</source>
+        <comment>error</comment>
+        <translation type="unfinished"></translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="152"/>
+        <location filename="../src/service/userservice.cpp" line="174"/>
         <source>No such user</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="179"/>
+        <location filename="../src/service/userservice.cpp" line="202"/>
         <source>Can&apos;t create users in read-only mode</source>
         <comment>error</comment>
         <translation type="unfinished">Нельзя создать пользователя в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="181"/>
+        <location filename="../src/service/userservice.cpp" line="204"/>
         <source>Failed to delete outdated entries</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="184"/>
+        <location filename="../src/service/userservice.cpp" line="207"/>
         <source>Enter superuser login [default: &quot;root&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="189"/>
+        <location filename="../src/service/userservice.cpp" line="212"/>
         <source>Enter superuser e-mail:</source>
         <comment>prompt</comment>
         <translation type="unfinished">Введите электронную почту суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="192"/>
+        <location filename="../src/service/userservice.cpp" line="215"/>
         <source>Enter superuser password:</source>
         <comment>prompt</comment>
         <translation type="unfinished">Введите пароль сперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="195"/>
+        <location filename="../src/service/userservice.cpp" line="218"/>
         <source>Confirm password:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="196"/>
+        <location filename="../src/service/userservice.cpp" line="219"/>
         <source>Passwords does not match</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="197"/>
+        <location filename="../src/service/userservice.cpp" line="220"/>
         <source>Enter superuser name [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="200"/>
+        <location filename="../src/service/userservice.cpp" line="223"/>
         <source>Enter superuser patronymic [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="203"/>
+        <location filename="../src/service/userservice.cpp" line="226"/>
         <source>Enter superuser surname [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation type="unfinished"></translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="215"/>
+        <location filename="../src/service/userservice.cpp" line="238"/>
         <source>Creating superuser account...</source>
         <comment>message</comment>
         <translation type="unfinished">Создание аккаунта суперпользователя...</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="217"/>
+        <location filename="../src/service/userservice.cpp" line="240"/>
         <source>Failed to create superuser</source>
         <comment>error</comment>
         <translation type="unfinished"></translation>

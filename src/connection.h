@@ -109,6 +109,7 @@ private:
     bool handleGetUserAvatarRequest(BNetworkOperation *op);
     bool handleGetUserConnectionInfoListRequest(BNetworkOperation *op);
     bool handleGetUserInfoAdminRequest(BNetworkOperation *op);
+    bool handleGetUserInfoListAdminRequest(BNetworkOperation *op);
     bool handleGetUserInfoRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
     bool handleRegisterRequest(BNetworkOperation *op);
@@ -119,6 +120,7 @@ private:
     void initHandlers();
     bool sendReply(BNetworkOperation *op, const TReply &reply);
     bool sendReply(BNetworkOperation *op, const QString &message, bool success = false);
+    bool sendReply(BNetworkOperation *op, const QString &message, const QVariant &data);
 private slots:
     void keepAlive();
     void restartTimer(BNetworkOperation *op = 0);
