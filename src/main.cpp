@@ -1,5 +1,4 @@
 #include "application.h"
-#include "global.h"
 
 #include <BApplicationServer>
 #include <BTerminal>
@@ -19,13 +18,10 @@ int main(int argc, char *argv[])
     QString home = QDir::home().dirName();
     BApplicationServer s(9920 + qHash(home) % 10, AppName + home);
     int ret = 0;
-    QStringList args;
-    foreach (int i, bRangeD(1, argc - 1))
-        args << argv[i];
-    if (args.contains("--read-only") || !s.testServer()) {
+    if (!s.testServer()) {
         s.listen();
         Application app(argc, argv, AppName, "Andrey Bogdanov");
-        if ((!Global::noMail() && !Global::initMail()) || !app.initializeStorage())
+        if (!app.initializeEmail() || !app.initializeStorage())
             return 0;
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
         ret = app.exec();

@@ -31,9 +31,9 @@ SOURCES += \
     application.cpp \
     connection.cpp \
     datasource.cpp \
-    global.cpp \
     main.cpp \
     server.cpp \
+    settings.cpp \
     storage.cpp \
     temporarylocation.cpp \
     transactionholder.cpp
@@ -42,8 +42,8 @@ HEADERS += \
     application.h \
     connection.h \
     datasource.h \
-    global.h \
     server.h \
+    settings.h \
     storage.h \
     temporarylocation.h \
     transactionholder.h

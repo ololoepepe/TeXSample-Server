@@ -12,6 +12,8 @@
 #include <TAddGroupRequestData>
 #include <TAuthorizeReplyData>
 #include <TAuthorizeRequestData>
+#include <TGetSelfInfoReplyData>
+#include <TGetSelfInfoRequestData>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
 #include <TGetUserInfoListAdminReplyData>
@@ -63,7 +65,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QSt
     setCriticalBufferSize(3 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
     mtimer.setInterval(5 * BeQt::Minute);
-    connect(&mtimer, SIGNAL(timeout()), this, SLOT(keepAlive()));
+    connect(&mtimer, SIGNAL(timeout()), this, SLOT(ping()));
     connect(this, SIGNAL(requestSent(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(replyReceived(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
     connect(this, SIGNAL(incomingRequest(BNetworkOperation *)), this, SLOT(restartTimer(BNetworkOperation *)));
@@ -287,14 +289,20 @@ bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
         return sendReply(op, tr("Invalid Connection instance", "error"));
     if (!muserInfo.isValid())
         return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::ModeratorLevel))
+    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
         return sendReply(op, tr("Not enough rights", "error"));
     return sendReply(op, "dummy");
 }
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
 {
-    //
+    if (!isValid())
+        return sendReply(op, tr("Invalid Connection instance", "error"));
+    if (!muserInfo.isValid())
+        return sendReply(op, tr("Not authorized", "error"));
+    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
+        return sendReply(op, tr("Not enough rights", "error"));
+    return sendReply(op, "dummy");
 }
 
 bool Connection::handleGetLabDataRequest(BNetworkOperation *op)
@@ -334,7 +342,14 @@ bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
 {
-    //
+    if (!isValid())
+        return sendReply(op, tr("Invalid Connection instance", "error"));
+    if (!muserInfo.isValid())
+        return sendReply(op, tr("Not authorized", "error"));
+    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::UserLevel))
+        return sendReply(op, tr("Not enough rights", "error"));
+    RequestIn<TGetSelfInfoRequestData> in(op->variantData().value<TRequest>());
+    return sendReply(op, UserServ->getSelfInfo(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleGetServerStateRequest(BNetworkOperation *op)
@@ -386,6 +401,11 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
         return sendReply(op, tr("Not enough rights", "error"));
     RequestIn<TGetUserInfoRequestData> in(op->variantData().value<TRequest>());
     return sendReply(op, UserServ->getUserInfo(in).createReply());
+}
+
+bool Connection::handleNoopRequest(BNetworkOperation *op)
+{
+    op->reply();
 }
 
 bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
@@ -1255,6 +1275,7 @@ void Connection::initHandlers()
     installRequestHandler(TOperation::GetUserInfoAdmin, InternalHandler(&Connection::handleGetUserInfoAdminRequest));
     installRequestHandler(TOperation::GetUserInfoListAdmin,
                           InternalHandler(&Connection::handleGetUserInfoListAdminRequest));
+    installRequestHandler(operation(NoopOperation),InternalHandler(&Connection::handleNoopRequest));
     installRequestHandler(TOperation::RecoverAccount, InternalHandler(&Connection::handleRecoverAccountRequest));
     installRequestHandler(TOperation::Register, InternalHandler(&Connection::handleRegisterRequest));
     installRequestHandler(TOperation::RequestRecoveryCode,
@@ -1287,7 +1308,7 @@ bool Connection::sendReply(BNetworkOperation *op, const QString &message, const 
 
 /*============================== Private slots =============================*/
 
-void Connection::keepAlive()
+void Connection::ping()
 {
     if (!muserInfo.isValid() || !isConnected())
         return;
@@ -1299,12 +1320,12 @@ void Connection::keepAlive()
     else if (l > 1)
         log(s);
     BNetworkOperation *op = sendRequest(operation(NoopOperation));
+    op->setAutoDelete(true);
     bool b = op->waitForFinished(5 * BeQt::Minute);
     if (!b) {
         log("Connection response timeout");
         op->cancel();
     }
-    op->deleteLater();
     if (b)
         mtimer.start();
 }

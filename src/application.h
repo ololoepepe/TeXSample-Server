@@ -46,8 +46,11 @@ public:
     explicit Application(int &argc, char **argv, const QString &applicationName, const QString &organizationName);
     ~Application();
 public:
+    bool initializeEmail();
     bool initializeStorage();
     Server *server();
+    void updateLoggingMode();
+    void updateReadonly();
 protected:
     void timerEvent(QTimerEvent *e);
 private:

@@ -111,6 +111,7 @@ private:
     bool handleGetUserInfoAdminRequest(BNetworkOperation *op);
     bool handleGetUserInfoListAdminRequest(BNetworkOperation *op);
     bool handleGetUserInfoRequest(BNetworkOperation *op);
+    bool handleNoopRequest(BNetworkOperation *op);
     bool handleRecoverAccountRequest(BNetworkOperation *op);
     bool handleRegisterRequest(BNetworkOperation *op);
     bool handleRequestRecoveryCodeRequest(BNetworkOperation *op);
@@ -122,7 +123,7 @@ private:
     bool sendReply(BNetworkOperation *op, const QString &message, bool success = false);
     bool sendReply(BNetworkOperation *op, const QString &message, const QVariant &data);
 private slots:
-    void keepAlive();
+    void ping();
     void restartTimer(BNetworkOperation *op = 0);
     void sendLogRequestInternal(const QString &text, int lvl);
     void testAuthorization();

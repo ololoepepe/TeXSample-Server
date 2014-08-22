@@ -15,7 +15,7 @@ class TGroupInfoList;
 class TIdList;
 class TUserInfo;
 
-class QString;
+class QLocale;
 
 #include "requestin.h"
 #include "requestout.h"
@@ -24,6 +24,8 @@ class QString;
 #include <TAddGroupRequestData>
 #include <TAuthorizeReplyData>
 #include <TAuthorizeRequestData>
+#include <TGetSelfInfoReplyData>
+#include <TGetSelfInfoRequestData>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
 #include <TGetUserInfoListAdminReplyData>
@@ -31,7 +33,11 @@ class QString;
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
 
+#include <BProperties>
+
 #include <QCoreApplication>
+#include <QMap>
+#include <QString>
 
 /*============================================================================
 ================================ UserService =================================
@@ -55,12 +61,16 @@ public:
     RequestOut<TAuthorizeReplyData> authorize(const RequestIn<TAuthorizeRequestData> &in);
     bool checkOutdatedEntries();
     DataSource *dataSource() const;
+    RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);
     RequestOut<TGetUserInfoReplyData> getUserInfo(const RequestIn<TGetUserInfoRequestData> &in);
     RequestOut<TGetUserInfoAdminReplyData> getUserInfoAdmin(const RequestIn<TGetUserInfoAdminRequestData> &in);
     RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(const RequestIn<TGetUserInfoListAdminRequestData> &in);
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;
+private:
+    static bool sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
+                          const BProperties &replace = BProperties());
 private:
     TGroupInfoList getGroups(const TIdList &ids);
     TGroupInfoList getGroups(quint64 userId);

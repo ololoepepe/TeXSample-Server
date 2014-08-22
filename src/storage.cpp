@@ -1,5 +1,4 @@
 #include "storage.h"
-#include "global.h"
 #include "application.h"
 
 //#include <TOperationResult>
@@ -54,89 +53,6 @@
 /*============================== Static public methods =====================*/
 
 /*
-
-bool Storage::initStorage(QString *errs)
-{
-    static bool initialized = false;
-    if (initialized)
-    {
-        //bWriteLine(tr("Storage already initialized"));
-        return true;
-    }
-    //bWriteLine(tr("Initializing storage..."));
-    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
-    sty = BDirTools::readTextFile(sty, "UTF-8");
-    if (sty.isEmpty())
-        return bRet(errs, tr("Failed to load texsample.sty"), false);
-    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
-    tex = BDirTools::readTextFile(tex, "UTF-8");
-    if (tex.isEmpty())
-        return bRet(errs, tr("Failed to load texsample.tex"), false);
-    BSqlDatabase db("QSQLITE", QUuid::createUuid().toString());
-    db.setDatabaseName(rootDir() + "/texsample.sqlite");
-    db.setOpenOnDemand(true);
-    db.setOnOpenQuery("PRAGMA foreign_keys = ON");
-    QString fn = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
-    QStringList list = BSqlDatabase::schemaFromFile(fn, "UTF-8");
-    if (list.isEmpty())
-        return bRet(errs, tr("Failed to load database schema"), false);
-    if (Global::readOnly())
-    {
-        foreach (const QString &qs, list)
-        {
-            QString table;
-            if (qs.startsWith("CREATE TABLE IF NOT EXISTS"))
-                table = qs.section(QRegExp("\\s+"), 5, 5);
-            else if (qs.startsWith("CREATE TABLE"))
-                table = qs.section(QRegExp("\\s+"), 2, 2);
-            if (table.isEmpty())
-                continue;
-            if (!db.tableExists(table))
-                return bRet(errs, tr("Can't create tables in read-only mode"), false);
-        }
-    }
-    BSqlWhere w("access_level = :access_level", ":access_level", TAccessLevel::SuperuserLevel);
-    bool users = !db.select("users", "id", w).values().isEmpty();
-    if (Global::readOnly() && !users)
-        return bRet(errs, tr("Can't create users in read-only mode"), false);
-    if (!Global::readOnly() && !db.initializeFromSchema(list))
-        return bRet(errs, tr("Database initialization failed"), false);
-    Storage s;
-    if (!s.isValid())
-        return bRet(errs, tr("Invalid storage instance"), false);
-    if (!Global::readOnly() && !s.testInvites())
-        return bRet(errs, tr("Failed to test invite codes"), false);
-    if (!Global::readOnly() && !s.testRecoveryCodes())
-        return bRet(errs, tr("Failed to test recovery codes"), false);
-    if (!users)
-    {
-        QString login = bReadLine(tr("Enter superuser login:") + " ");
-        if (login.isEmpty())
-            return bRet(errs, tr("Operation aborted"), false);
-        QString mail = bReadLine(tr("Enter superuser e-mail:") + " ");
-        if (mail.isEmpty())
-            return bRet(errs, tr("Operation aborted"), false);
-        QString pwd = bReadLineSecure(tr("Enter superuser password:") + " ");
-        if (pwd.isEmpty())
-            return bRet(errs, tr("Operation aborted"), false);
-        TUserInfo info(TUserInfo::AddContext);
-        info.setLogin(login);
-        info.setEmail(mail);
-        info.setPassword(pwd);
-        info.setAccessLevel(TAccessLevel::SuperuserLevel);
-        info.setServices(TServiceList::allServices());
-        bWriteLine(tr("Creating superuser account..."));
-        TOperationResult r = s.addUser(info, BCoreApplication::locale());
-        if (!r)
-            return bRet(errs, r.messageString(), false);
-    }
-    mtexsampleSty = sty;
-    mtexsampleTex = tex;
-    initialized = true;
-    bWriteLine(tr("Done!"));
-    return true;
-}
-
 bool Storage::copyTexsample(const QString &path, const QString &codecName)
 {
     if (!QDir(path).exists() || mtexsampleSty.isEmpty() || mtexsampleTex.isEmpty())
@@ -149,21 +65,6 @@ bool Storage::copyTexsample(const QString &path, const QString &codecName)
 bool Storage::removeTexsample(const QString &path)
 {
     return BDirTools::removeFilesInDir(path, QStringList() << "texsample.sty" << "texsample.tex");
-}*/
-
-/*============================== Public constructors =======================*/
-
-/*Storage::Storage()
-{
-    mdb = new BSqlDatabase("QSQLITE", QUuid::createUuid().toString());
-    mdb->setDatabaseName(BDirTools::findResource("texsample.sqlite", BDirTools::UserOnly));
-    mdb->setOnOpenQuery("PRAGMA foreign_keys = ON");
-    mdb->open();
-}
-
-Storage::~Storage()
-{
-    delete mdb;
 }*/
 
 /*============================== Public methods ============================*/
@@ -1638,39 +1539,4 @@ TOperationResult Storage::editUserInternal(const TUserInfo &info, bool editClab,
         return TOperationResult(TMessage::InternalDatabaseError);
     }
     return TOperationResult(true);
-}
-
-bool Storage::saveUserAvatar(quint64 userId, const QByteArray &data) const
-{
-    if (!isValid() || !userId)
-        return false;
-    QString path = rootDir() + "/users/" + QString::number(userId);
-    if (!BDirTools::mkpath(path))
-        return false;
-    if (!data.isEmpty())
-    {
-        return BDirTools::writeFile(path + "/avatar.dat", data);
-    }
-    else
-    {
-        QFileInfo fi(path + "/avatar.dat");
-        return !fi.isFile() || QFile(fi.filePath()).remove();
-    }
-}
-
-QByteArray Storage::loadUserAvatar(quint64 userId, bool *ok) const
-{
-    if (!isValid() || !userId)
-        return bRet(ok, false, QByteArray());
-    QString path = rootDir() + "/users/" + QString::number(userId);
-    if (!QFileInfo(path).isDir())
-        return bRet(ok, false, QByteArray());
-    if (!QFileInfo(path + "/avatar.dat").exists())
-        return bRet(ok, true, QByteArray());
-    return BDirTools::readFile(path + "/avatar.dat", -1, ok);
 }*/
-
-/*============================== Static private members ====================*/
-
-//QString Storage::mtexsampleSty;
-//QString Storage::mtexsampleTex;

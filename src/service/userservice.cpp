@@ -3,7 +3,6 @@
 #include "datasource.h"
 #include "entity/group.h"
 #include "entity/user.h"
-#include "global.h"
 #include "repository/accountrecoverycoderepository.h"
 #include "repository/grouprepository.h"
 #include "repository/invitecoderepository.h"
@@ -11,6 +10,7 @@
 #include "repository/userrepository.h"
 #include "requestin.h"
 #include "requestout.h"
+#include "settings.h"
 
 #include <TAccessLevel>
 #include <TAddGroupReplyData>
@@ -19,6 +19,8 @@
 #include <TAuthorizeRequestData>
 #include <TClientInfo>
 #include <TeXSample>
+#include <TGetSelfInfoReplyData>
+#include <TGetSelfInfoRequestData>
 #include <TGetUserInfoAdminReplyData>
 #include <TGetUserInfoAdminRequestData>
 #include <TGetUserInfoListAdminReplyData>
@@ -32,11 +34,18 @@
 #include <TUserInfo>
 #include <TUserInfoList>
 
+#include <BDirTools>
+#include <BEmail>
+#include <BGenericSocket>
+#include <BProperties>
+#include <BSmtpSender>
 #include <BTerminal>
 
 #include <QDateTime>
 #include <QDebug>
+#include <QFileInfo>
 #include <QImage>
+#include <QLocale>
 #include <QString>
 
 /*============================================================================
@@ -133,6 +142,28 @@ DataSource *UserService::dataSource() const
     return Source;
 }
 
+RequestOut<TGetSelfInfoReplyData> UserService::getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in,
+                                                           quint64 userId)
+{
+    typedef RequestOut<TGetSelfInfoReplyData> Out;
+    if (!isValid())
+        return Out(tr("Invalid UserService instance", "error"));
+    if (!userId)
+        return Out(tr("Invalid user ID", "error"));
+    if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
+        QDateTime dt = QDateTime::currentDateTime();
+        if (in.lastRequestDateTime() >= UserRepo->findLastModificationDateTime(userId))
+            return Out(dt);
+    }
+    QDateTime dt = QDateTime::currentDateTime();
+    User entity = UserRepo->findOne(userId);
+    if (!entity.isValid())
+        return Out(tr("No such user", "error"));
+    TGetSelfInfoReplyData replyData;
+    replyData.setUserInfo(userToUserInfo(entity, true, true));
+    return Out(replyData, dt);
+}
+
 RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetUserInfoRequestData> &in)
 {
     typedef RequestOut<TGetUserInfoReplyData> Out;
@@ -198,9 +229,9 @@ RequestOut<TGetUserInfoListAdminReplyData> UserService::getUserInfoListAdmin(
 bool UserService::initializeRoot(QString *error)
 {
     bool users = UserRepo->countByAccessLevel(TAccessLevel::SuperuserLevel);
-    if (Global::readOnly() && !users)
+    if (Settings::Server::readonly() && !users)
         return bRet(error, tr("Can't create users in read-only mode", "error"), false);
-    if (!Global::readOnly() && !checkOutdatedEntries())
+    if (!Settings::Server::readonly() && !checkOutdatedEntries())
         return bRet(error, tr("Failed to delete outdated entries", "error"), false);
     if (users)
         return bRet(error, QString(), true);
@@ -250,6 +281,45 @@ bool UserService::isValid() const
 {
     return Source && Source->isValid() && AccountRecoveryCodeRepo->isValid() && GroupRepo->isValid()
             && InviteCodeRepo->isValid() && RegistrationConfirmationCodeRepo->isValid() && UserRepo->isValid();
+}
+
+/*============================== Static private methods ====================*/
+
+bool UserService::sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
+                            const BProperties &replace)
+{
+    if (receiver.isEmpty() || templateName.isEmpty())
+        return false;
+    QString templatePath = BDirTools::findResource("templates/" + templateName, BDirTools::GlobalOnly);
+    if (!QFileInfo(templatePath).isDir())
+        return false;
+    QString subject = BDirTools::localeBasedFileName(templatePath + "/subject.txt", locale);
+    QString body = BDirTools::localeBasedFileName(templatePath + "/body.txt", locale);
+    bool ok = false;
+    subject = BDirTools::readTextFile(subject, "UTF-8", &ok);
+    if (!ok)
+        return false;
+    body = BDirTools::readTextFile(body, "UTF-8", &ok);
+    if (!ok)
+        return false;
+    foreach (const QString &k, replace.keys()) {
+        QString v = replace.value(k);
+        subject.replace(k, v);
+        body.replace(k, v);
+    }
+    BSmtpSender sender;
+    sender.setServer(Settings::Email::serverAddress(), Settings::Email::serverPort());
+    sender.setLocalHostName(Settings::Email::localHostName());
+    sender.setSocketType(Settings::Email::sslRequired() ? BGenericSocket::SslSocket : BGenericSocket::TcpSocket);
+    sender.setUser(Settings::Email::login(), Settings::Email::password());
+    BEmail email;
+    email.setSender("TeXSample Team");
+    email.setReceiver(receiver);
+    email.setSubject(subject);
+    email.setBody(body);
+    sender.setEmail(email);
+    sender.send();
+    return sender.waitForFinished();
 }
 
 /*============================== Private methods ===========================*/

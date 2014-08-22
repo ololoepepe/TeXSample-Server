@@ -4,7 +4,7 @@
 
 Homepage: https://github.com/ololoepepe/TeXSample-Server
 
-Author: TeXSample Team
+Author: Andrey Bogdanov (ololoepepe@gmail.com)
 
 License: GNU GPLv3 (see COPYING.txt)
 

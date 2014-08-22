@@ -2,10 +2,10 @@
 
 #include "connection.h"
 #include "datasource.h"
-#include "global.h"
 #include "server.h"
 #include "service/applicationversionservice.h"
 #include "service/userservice.h"
+#include "settings.h"
 
 #include <TAccessLevel>
 #include <TClientInfo>
@@ -61,7 +61,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    setApplicationVersion("2.2.2-beta");
+    setApplicationVersion("3.0.0-a");
     setOrganizationDomain("https://github.com/ololoepepe/TeXSample-Server");
     setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
@@ -73,17 +73,14 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     installBeqtTranslator("texsample");
     installBeqtTranslator("texsample-server");
     initTerminal();
-    QString title = Application::applicationName() + " v" + applicationVersion();
-    if (Global::readOnly())
-        title += " (" + translate("main", "read-only mode") + ")";
-    BTerminal::setTitle(title);
-    bWriteLine(translate("main", "This is") + " " + title);
+    updateReadonly();
+    bWriteLine(tr("This is") + " " + Application::applicationName() + " v" + applicationVersion());
     logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
-    Global::resetLoggingMode();
+    updateLoggingMode();
     QString logfn = location(DataPath, UserResource) + "/logs/";
     logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
     logger()->setFileName(logfn);
-    mserver = new Server(location(DataPath, UserResource), this);
+    mserver = new Server(location(DataPath, UserResource));
     melapsedTimer.start();
     timerId = startTimer(BeQt::Hour);
 }
@@ -110,7 +107,7 @@ bool Application::initializeStorage()
     QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
     sty = BDirTools::readTextFile(sty, "UTF-8");
     if (sty.isEmpty()) {
-        bWriteLine(tr("Error: Failed to load texsample.sty", "error"));
+        bWriteLine(tr("Failed to load texsample.sty", "error"));
         return false;
     }
     QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
@@ -139,9 +136,97 @@ bool Application::initializeStorage()
     return true;
 }
 
+bool Application::initializeEmail()
+{
+    static bool initialized = false;
+    if (initialized) {
+        bWriteLine(tr("E-mail already initialized"));
+        return true;
+    }
+    bWriteLine(tr("Initializing e-mail..."));
+    QString address = Settings::Email::serverAddress();
+    if (address.isEmpty()) {
+        address = bReadLine(tr("Enter e-mail server address:") + " ");
+        if (address.isEmpty()) {
+            bWriteLine(tr("Invalid address"));
+            return false;
+        }
+    }
+    QString port;
+    if (!Settings::Email::hasServerPort())
+        port = bReadLine(tr("Enter e-mail server port (default 25):") + " ");
+    QVariant vport(!port.isEmpty() ? port : QString::number(Settings::Email::serverPort()));
+    if (!vport.convert(QVariant::UInt)) {
+        bWriteLine(tr("Invalid port"));
+        return false;
+    }
+    QString name;
+    if (!Settings::Email::hasLocalHostName())
+        name = bReadLine(tr("Enter local host name or empty string:") + " ");
+    else
+        name = Settings::Email::localHostName();
+    QString ssl;
+    if (!Settings::Email::hasSslRequired())
+        ssl = bReadLine(tr("Enter SSL mode [true|false] (default false):") + " ");
+    QVariant vssl(!ssl.isEmpty() ? ssl : (Settings::Email::sslRequired() ? "true" : "false"));
+    if (!vssl.convert(QVariant::Bool)) {
+        bWriteLine(tr("Invalid value"));
+        return false;
+    }
+    QString login = Settings::Email::login();
+    if (login.isEmpty()) {
+        login = bReadLine(tr("Enter e-mail login:") + " ");
+        if (login.isEmpty()) {
+            bWriteLine(tr("Invalid login"));
+            return false;
+        }
+    }
+    QString password = bReadLineSecure(tr("Enter e-mail password:") + " ");
+    if (password.isEmpty()) {
+        bWriteLine(tr("Invalid password"));
+        return false;
+    }
+    Settings::Email::setServerAddress(address);
+    Settings::Email::setServerPort(vport.toUInt());
+    Settings::Email::setLocalHostName(name);
+    Settings::Email::setSslRequired(vssl.toBool());
+    Settings::Email::setLogin(login);
+    Settings::Email::setPassword(password);
+    initialized = true;
+    bWriteLine(tr("Done!"));
+    return true;
+}
+
 Server *Application::server()
 {
     return mserver;
+}
+
+void Application::updateLoggingMode()
+{
+    int m = Settings::Log::loggingMode();
+    if (m <= 0) {
+        bLogger->setLogToConsoleEnabled(false);
+        bLogger->setLogToFileEnabled(false);
+    } else if (1 == m) {
+        bLogger->setLogToConsoleEnabled(true);
+        bLogger->setLogToFileEnabled(false);
+    } else if (2 == m) {
+        bLogger->setLogToConsoleEnabled(false);
+        bLogger->setLogToFileEnabled(true);
+    } else if (m >= 3)
+    {
+        bLogger->setLogToConsoleEnabled(true);
+        bLogger->setLogToFileEnabled(true);
+    }
+}
+
+void Application::updateReadonly()
+{
+    QString title = applicationName() + " v" + applicationVersion();
+    if (Settings::Server::readonly())
+        title += " (" + tr("read-only mode") + ")";
+    BTerminal::setTitle(title);
 }
 
 /*============================== Protected methods =========================*/
@@ -392,39 +477,44 @@ void Application::initTerminal()
     BTerminal::installHandler("uptime", &handleUptimeCommand);
     BTerminal::installHandler("user-info", &handleUserInfoCommand);
     BSettingsNode *root = new BSettingsNode;
-    BSettingsNode *n = new BSettingsNode("Mail", root);
-    BSettingsNode *nn = new BSettingsNode("server_address", n);
+    BSettingsNode *n = new BSettingsNode(Settings::Email::RootPath, root);
+    BSettingsNode *nn = new BSettingsNode(Settings::Email::ServerAddressSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server address used for e-mail delivery."));
-    nn = new BSettingsNode(QVariant::UInt, "server_port", n);
+    nn = new BSettingsNode(QVariant::UInt, Settings::Email::ServerPortSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port."));
-    nn = new BSettingsNode("local_host_name", n);
+    nn = new BSettingsNode(Settings::Email::LocalHostNameSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode", "Name of local host passed to the e-mail server."));
-    nn = new BSettingsNode("ssl_required", n);
+    nn = new BSettingsNode(QVariant::Bool, Settings::Email::SslRequiredSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode",
                                                "Determines wether the e-mail server requires SSL connection."));
-    nn = new BSettingsNode("login", n);
+    nn = new BSettingsNode(Settings::Email::LoginSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode", "Identifier used to log into the e-mail server."));
-    nn = new BSettingsNode("password", n);
-    nn->setUserSetFunction(&Global::setMailPassword);
-    nn->setUserShowFunction(&Global::showMailPassword);
+    nn = new BSettingsNode(Settings::Email::PasswordSubpath, n);
+    nn->setUserSetFunction(&Settings::Email::setPassword);
+    nn->setUserShowFunction(&Settings::Email::showPassword);
     nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server."));
     BTerminal::createBeQtSettingsNode(root);
-    n = new BSettingsNode("Log", root);
-    nn = new BSettingsNode("mode", n);
-    nn->setUserSetFunction(&Global::setLoggingMode);
+    n = new BSettingsNode(Settings::Log::RootPath, root);
+    nn = new BSettingsNode(QVariant::Int, Settings::Log::LoggingModeSubpath, n);
+    nn->setUserSetFunction(&Settings::Log::setLoggingMode);
     nn->setDescription(BTranslation::translate("BSettingsNode", "Logging mode. Possible values:\n"
                                                "  0 or less - don't log\n"
                                                "  1 - log to console only\n"
                                                "  2 - log to file only\n"
                                                "  3 and more - log to console and file\n"
                                                "  The default is 2"));
-    nn = new BSettingsNode("noop", n);
+    nn = new BSettingsNode(QVariant::Int, Settings::Log::LogNoopSubpath, n);
     nn->setDescription(BTranslation::translate("BSettingsNode", "Logging the \"keep alive\" operations. "
                                                "Possible values:\n"
                                                "  0 or less - don't log\n"
                                                "  1 - log locally\n"
                                                "  2 and more - log loaclly and remotely\n"
                                                "  The default is 0"));
+    n = new BSettingsNode(Settings::Server::RootPath, root);
+    nn = new BSettingsNode(QVariant::Bool, Settings::Server::ReadonlySubpath, n);
+    nn->setDescription(BTranslation::translate("BSettingsNode", "Read-only mode. Possible values:\n"
+                                               "  true - read-only mode\n"
+                                               "  false - normal mode (read and write)"));
     BTerminal::setRootSettingsNode(root);
     BTerminal::setHelpDescription(BTranslation::translate("BTerminalIOHandler",
         "This is TeXSample Server. Enter \"help --all\" to see full Help"));
@@ -496,25 +586,5 @@ QString Application::msecsToString(qint64 msecs)
 
 void Application::compatibility()
 {
-    //Compatibility
-    if (bSettings->value("Global/version").value<BVersion>() < BVersion("2.2.1-beta")) {
-        const QStringList Names = QStringList() << "cloudlab-client" << "tex-creator" << "texsample-console";
-        const QStringList Platforms = QStringList() << "lin" << "mac" << "win";
-        foreach (const QString &name, Names) {
-            QString s = "AppVersion/" + name + "/";
-            foreach (const QString &pl, Platforms) {
-                QString ss = s + pl + "/";
-                QVariant ver = bSettings->value(ss + "version");
-                QVariant url = bSettings->value(ss + "url");
-                bSettings->remove(ss + "version");
-                bSettings->remove(ss + "url");
-                if (ver.isNull() || url.isNull())
-                    continue;
-                ss += "normal/";
-                bSettings->setValue(ss + "version", ver);
-                bSettings->setValue(ss + "url", url.toString());
-            }
-        }
-    }
     bSettings->setValue("Global/version", BVersion(applicationVersion()));
 }

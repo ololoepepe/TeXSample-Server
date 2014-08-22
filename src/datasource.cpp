@@ -1,6 +1,6 @@
 #include "datasource.h"
 
-#include "global.h"
+#include "settings.h"
 #include "transactionholder.h"
 
 #include <BDirTools>
@@ -56,11 +56,8 @@ bool DataSource::commit()
 {
     if (!isValid() || !trans)
         return false;
-    //TODO: Commit FS
-    if (!db->commit()) {
-        //TODO: Do not commit FS
+    if (!db->commit())
         return false;
-    }
     trans = false;
     return true;
 }
@@ -121,7 +118,7 @@ bool DataSource::initialize(QString *error)
     QStringList list = BSqlDatabase::schemaFromFile(fn, "UTF-8");
     if (list.isEmpty())
         return bRet(error, tr("Failed to load database schema", "error"), false);
-    if (Global::readOnly()) {
+    if (Settings::Server::readonly()) {
         foreach (const QString &qs, list) {
             QString table;
             if (qs.startsWith("CREATE TABLE IF NOT EXISTS"))
@@ -135,7 +132,7 @@ bool DataSource::initialize(QString *error)
         }
     }
     TransactionHolder holder(this);
-    if (!Global::readOnly() && !db->initializeFromSchema(list, false))
+    if (!Settings::Server::readonly() && !db->initializeFromSchema(list, false))
         return bRet(error, tr("Database initialization failed", "error"), false);
     holder.setSuccess(true);
     return bRet(error, QString(), true);
@@ -175,10 +172,8 @@ bool DataSource::rollback()
 {
     if (!isValid() || !trans)
         return false;
-    //TODO: Rollback FS
-    if (!db->rollback()) {
-        //TODO: Do not rollback FS
-    }
+    if (!db->rollback())
+        return false;
     trans = false;
     return true;
 }
