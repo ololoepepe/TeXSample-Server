@@ -185,10 +185,13 @@ bool Application::initializeEmail()
             return false;
         }
     }
-    QString password = bReadLineSecure(tr("Enter e-mail password:") + " ");
+    QString password = Settings::Email::password();
     if (password.isEmpty()) {
-        bWriteLine(tr("Invalid password"));
-        return false;
+        password = bReadLineSecure(tr("Enter e-mail password:") + " ");
+        if (password.isEmpty()) {
+            bWriteLine(tr("Invalid password"));
+            return false;
+        }
     }
     Settings::Email::setServerAddress(address);
     Settings::Email::setServerPort(vport.toUInt());
@@ -483,32 +486,35 @@ void Application::initTerminal()
     BSettingsNode *root = new BSettingsNode;
     BSettingsNode *n = new BSettingsNode(Settings::Email::RootPath, root);
     BSettingsNode *nn = new BSettingsNode(Settings::Email::ServerAddressSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server address used for e-mail delivery."));
+    nn->setDescription(BTranslation::translate("Application", "E-mail server address used for e-mail delivery."));
     nn = new BSettingsNode(QVariant::UInt, Settings::Email::ServerPortSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "E-mail server port."));
+    nn->setDescription(BTranslation::translate("Application", "E-mail server port."));
     nn = new BSettingsNode(Settings::Email::LocalHostNameSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Name of local host passed to the e-mail server."));
+    nn->setDescription(BTranslation::translate("Application", "Name of local host passed to the e-mail server."));
     nn = new BSettingsNode(QVariant::Bool, Settings::Email::SslRequiredSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode",
+    nn->setDescription(BTranslation::translate("Application",
                                                "Determines wether the e-mail server requires SSL connection."));
     nn = new BSettingsNode(Settings::Email::LoginSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Identifier used to log into the e-mail server."));
+    nn->setDescription(BTranslation::translate("Application", "Identifier used to log into the e-mail server."));
     nn = new BSettingsNode(Settings::Email::PasswordSubpath, n);
     nn->setUserSetFunction(&Settings::Email::setPassword);
     nn->setUserShowFunction(&Settings::Email::showPassword);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Password used to log into the e-mail server."));
+    nn->setDescription(BTranslation::translate("Application", "Password used to log into the e-mail server."));
+    nn = new BSettingsNode(Settings::Email::StorePasswordSubpath, n);
+    nn->setUserSetFunction(&Settings::Email::setStorePassword);
+    nn->setDescription(BTranslation::translate("Application", "Determines wether e-mail password is stored on disk."));
     BTerminal::createBeQtSettingsNode(root);
     n = new BSettingsNode(Settings::Log::RootPath, root);
     nn = new BSettingsNode(QVariant::Int, Settings::Log::LoggingModeSubpath, n);
     nn->setUserSetFunction(&Settings::Log::setLoggingMode);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Logging mode. Possible values:\n"
+    nn->setDescription(BTranslation::translate("Application", "Logging mode. Possible values:\n"
                                                "  0 or less - don't log\n"
                                                "  1 - log to console only\n"
                                                "  2 - log to file only\n"
                                                "  3 and more - log to console and file\n"
                                                "  The default is 2"));
     nn = new BSettingsNode(QVariant::Int, Settings::Log::LogNoopSubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Logging the \"keep alive\" operations. "
+    nn->setDescription(BTranslation::translate("Application", "Logging the \"keep alive\" operations. "
                                                "Possible values:\n"
                                                "  0 or less - don't log\n"
                                                "  1 - log locally\n"
@@ -516,7 +522,7 @@ void Application::initTerminal()
                                                "  The default is 0"));
     n = new BSettingsNode(Settings::Server::RootPath, root);
     nn = new BSettingsNode(QVariant::Bool, Settings::Server::ReadonlySubpath, n);
-    nn->setDescription(BTranslation::translate("BSettingsNode", "Read-only mode. Possible values:\n"
+    nn->setDescription(BTranslation::translate("Application", "Read-only mode. Possible values:\n"
                                                "  true - read-only mode\n"
                                                "  false - normal mode (read and write)"));
     BTerminal::setRootSettingsNode(root);

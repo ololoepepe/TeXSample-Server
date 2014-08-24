@@ -19,6 +19,7 @@ const QString PasswordSubpath = "password";
 const QString ServerAddressSubpath = "server_address";
 const QString ServerPortSubpath = "server_port";
 const QString SslRequiredSubpath = "ssl_required";
+const QString StorePasswordSubpath = "store_password";
 
 bool hasLocalHostName();
 bool hasServerPort();
@@ -35,8 +36,11 @@ bool setPassword(const BSettingsNode *n, const QVariant &v = QVariant());
 void setServerAddress(const QString &address);
 void setServerPort(quint16 port);
 void setSslRequired(bool required);
+void setStorePassword(bool store);
+bool setStorePassword(const BSettingsNode *n, const QVariant &v = QVariant());
 bool showPassword(const BSettingsNode *n, const QVariant &);
 bool sslRequired();
+bool storePassword();
 
 }
 

@@ -6,6 +6,7 @@ class BSettingsNode;
 
 #include <BTerminal>
 
+#include <QDebug>
 #include <QSettings>
 #include <QString>
 #include <QVariant>
@@ -20,10 +21,11 @@ namespace Email
 
 static const QString LocalHostNamePath = RootPath + "/" + LocalHostNameSubpath;
 static const QString LoginPath = RootPath + "/" + LoginSubpath;
+static const QString PasswordPath = RootPath + "/" + PasswordSubpath;
 static const QString ServerAddressPath = RootPath + "/" + ServerAddressSubpath;
 static const QString ServerPortPath = RootPath + "/" + ServerPortSubpath;
 static const QString SslRequiredPath = RootPath + "/" + SslRequiredSubpath;
-
+static const QString StorePasswordPath = RootPath + "/" + StorePasswordSubpath;
 QString mpassword;
 
 bool hasLocalHostName()
@@ -53,7 +55,7 @@ QString login()
 
 QString password()
 {
-    return mpassword;
+    return storePassword() ? bSettings->value(PasswordPath).toString() : mpassword;
 }
 
 QString serverAddress()
@@ -78,7 +80,10 @@ void setLogin(const QString &login)
 
 void setPassword(const QString &password)
 {
-    mpassword = password;
+    if (storePassword())
+        bSettings->setValue(PasswordPath, password);
+    else
+        mpassword = password;
 }
 
 bool setPassword(const BSettingsNode *, const QVariant &v)
@@ -103,6 +108,32 @@ void setSslRequired(bool required)
     bSettings->setValue(SslRequiredPath, required);
 }
 
+void setStorePassword(bool store)
+{
+    bool bstore = storePassword();
+    bSettings->setValue(StorePasswordPath, store);
+    if (bstore != store) {
+        if (store) {
+            bSettings->setValue(PasswordPath, mpassword);
+        } else {
+            mpassword = bSettings->value(PasswordPath).toString();
+            bSettings->remove(PasswordPath);
+        }
+    }
+}
+
+bool setStorePassword(const BSettingsNode *, const QVariant &v)
+{
+    bool store = false;
+    if (!v.isNull())
+        store = v.toBool();
+    else
+        store = (bReadLine(translate("Settings::Email", "Enter value for \"store_password\" [true|false]:") + " ")
+                 == "true");
+    setStorePassword(store);
+    return true;
+}
+
 bool showPassword(const BSettingsNode *, const QVariant &)
 {
     if (!QVariant(bReadLine(translate("Settings::Email", "Printing password is unsecure! Do you want to continue?")
@@ -115,6 +146,11 @@ bool showPassword(const BSettingsNode *, const QVariant &)
 bool sslRequired()
 {
     return bSettings->value(SslRequiredPath, true).toBool();
+}
+
+bool storePassword()
+{
+    return bSettings->value(StorePasswordPath, false).toBool();
 }
 
 }
