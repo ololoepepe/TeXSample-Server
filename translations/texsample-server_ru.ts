@@ -430,52 +430,39 @@ Example:
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="59"/>
+        <location filename="../src/connection.cpp" line="76"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="154"/>
-        <location filename="../src/connection.cpp" line="181"/>
-        <location filename="../src/connection.cpp" line="289"/>
-        <location filename="../src/connection.cpp" line="300"/>
-        <location filename="../src/connection.cpp" line="346"/>
-        <location filename="../src/connection.cpp" line="373"/>
-        <location filename="../src/connection.cpp" line="385"/>
-        <location filename="../src/connection.cpp" line="397"/>
-        <source>Invalid Connection instance</source>
+        <location filename="../src/connection.cpp" line="193"/>
+        <source>Invalid Connection instance (internal)</source>
         <comment>error</comment>
-        <translation type="unfinished"></translation>
+        <translation>Недействительный экземпляр Connection (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="156"/>
-        <location filename="../src/connection.cpp" line="291"/>
-        <location filename="../src/connection.cpp" line="302"/>
-        <location filename="../src/connection.cpp" line="348"/>
-        <location filename="../src/connection.cpp" line="375"/>
-        <location filename="../src/connection.cpp" line="387"/>
-        <location filename="../src/connection.cpp" line="399"/>
+        <location filename="../src/connection.cpp" line="197"/>
         <source>Not authorized</source>
         <comment>error</comment>
-        <translation type="unfinished"></translation>
+        <translation>Не авторизован</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="158"/>
-        <location filename="../src/connection.cpp" line="293"/>
-        <location filename="../src/connection.cpp" line="304"/>
-        <location filename="../src/connection.cpp" line="350"/>
-        <location filename="../src/connection.cpp" line="377"/>
-        <location filename="../src/connection.cpp" line="389"/>
-        <location filename="../src/connection.cpp" line="401"/>
+        <location filename="../src/connection.cpp" line="199"/>
         <source>Not enough rights</source>
         <comment>error</comment>
-        <translation type="unfinished"></translation>
+        <translation>Недостаточно прав</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="185"/>
+        <location filename="../src/connection.cpp" line="201"/>
+        <source>No access to service</source>
+        <comment>error</comment>
+        <translation>Нет доступа к сервису</translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="256"/>
         <source>Already authorized</source>
         <comment>message</comment>
-        <translation type="unfinished"></translation>
+        <translation>Уже авторизован</translation>
     </message>
 </context>
 <context>
@@ -602,179 +589,232 @@ Example:
 <context>
     <name>UserService</name>
     <message>
-        <location filename="../src/service/userservice.cpp" line="90"/>
-        <location filename="../src/service/userservice.cpp" line="118"/>
-        <location filename="../src/service/userservice.cpp" line="166"/>
-        <location filename="../src/service/userservice.cpp" line="199"/>
-        <location filename="../src/service/userservice.cpp" line="258"/>
-        <location filename="../src/service/userservice.cpp" line="281"/>
+        <location filename="../src/service/userservice.h" line="104"/>
         <source>Invalid data</source>
         <comment>error</comment>
         <translation>Некорректные данные</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="170"/>
+        <location filename="../src/service/userservice.cpp" line="160"/>
         <source>Invalid login, e-mail, or password</source>
         <comment>error</comment>
         <translation>Некорректные логин, эл. почта или пароль</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="88"/>
-        <location filename="../src/service/userservice.cpp" line="116"/>
-        <location filename="../src/service/userservice.cpp" line="164"/>
-        <location filename="../src/service/userservice.cpp" line="197"/>
-        <location filename="../src/service/userservice.cpp" line="234"/>
-        <location filename="../src/service/userservice.cpp" line="256"/>
-        <location filename="../src/service/userservice.cpp" line="279"/>
-        <location filename="../src/service/userservice.cpp" line="303"/>
-        <location filename="../src/service/userservice.cpp" line="319"/>
+        <location filename="../src/service/userservice.cpp" line="357"/>
+        <location filename="../src/service/userservice.cpp" line="529"/>
         <source>Invalid UserService instance (internal)</source>
         <comment>error</comment>
         <translation>Некорректный экземпляр UserService (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="92"/>
-        <location filename="../src/service/userservice.cpp" line="236"/>
+        <location filename="../src/service/userservice.cpp" line="100"/>
+        <location filename="../src/service/userservice.cpp" line="216"/>
+        <location filename="../src/service/userservice.cpp" line="255"/>
+        <location filename="../src/service/userservice.cpp" line="275"/>
         <source>Invalid user ID (internal)</source>
         <comment>error</comment>
         <translation>Некорректный идентификатор пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="99"/>
+        <location filename="../src/service/userservice.cpp" line="107"/>
         <source>Failed to add group (internal)</source>
         <comment>error</comment>
         <translation>Не удалось добавить группу (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="102"/>
+        <location filename="../src/service/userservice.cpp" line="110"/>
         <source>Failed to get group (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить группу (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="104"/>
-        <location filename="../src/service/userservice.cpp" line="152"/>
-        <location filename="../src/service/userservice.cpp" line="218"/>
+        <location filename="../src/service/userservice.cpp" line="112"/>
+        <location filename="../src/service/userservice.cpp" line="143"/>
+        <location filename="../src/service/userservice.cpp" line="196"/>
+        <location filename="../src/service/userservice.cpp" line="237"/>
+        <location filename="../src/service/userservice.cpp" line="407"/>
+        <location filename="../src/service/userservice.cpp" line="451"/>
         <source>Failed to commit (internal)</source>
         <comment>error</comment>
         <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="135"/>
+        <location filename="../src/service/userservice.cpp" line="230"/>
+        <source>Failed to add invite code (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось добавить инвайт-код (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="233"/>
+        <source>Failed to get invite code (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить инвайт-код (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="402"/>
+        <source>Confirmation code is empty</source>
+        <comment>error</comment>
+        <translation>Код подтверждаения пуст</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="432"/>
+        <source>Invalid invite code</source>
+        <comment>error</comment>
+        <translation>Некорректный инвайт-код</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="435"/>
+        <source>Failed to remove invite code (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось удалить инвайт-код (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="503"/>
+        <source>Invalid User entity instance (internal)</source>
+        <comment>error</comment>
+        <translation>Недействительный экземпляр сущности User (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="506"/>
         <source>Failed to add add user (internal)</source>
         <comment>error</comment>
         <translation>Не удалось добавить пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="138"/>
-        <location filename="../src/service/userservice.cpp" line="209"/>
+        <location filename="../src/service/userservice.cpp" line="509"/>
+        <location filename="../src/service/userservice.cpp" line="544"/>
         <source>Failed to get user (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="145"/>
+        <location filename="../src/service/userservice.cpp" line="516"/>
         <source>Failed to add registration confirmation code (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить код подтверждения регистрации (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="150"/>
+        <location filename="../src/service/userservice.cpp" line="522"/>
         <source>Failed to send e-mail message</source>
         <comment>error</comment>
         <translation>Не удалось отправить сообщение по эл. почте</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="214"/>
+        <location filename="../src/service/userservice.cpp" line="538"/>
+        <source>Invalid registration confirmation code</source>
+        <comment>error</comment>
+        <translation>Некорректный код подтверждения регистрации</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="541"/>
+        <source>No such code</source>
+        <comment>error</comment>
+        <translation>Нет такого кода</translation>
+    </message>
+    <message>
+        <location filename="../src/service/userservice.cpp" line="548"/>
         <source>Failed to edit user (internal)</source>
         <comment>error</comment>
         <translation>Не удалось изменить пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="216"/>
+        <location filename="../src/service/userservice.cpp" line="550"/>
         <source>Failed to remove registration confirmation code (internal)</source>
         <comment>error</comment>
         <translation>Не удалось удалить код подтверждения регистрации (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="245"/>
-        <location filename="../src/service/userservice.cpp" line="268"/>
-        <location filename="../src/service/userservice.cpp" line="291"/>
+        <location filename="../src/service/userservice.cpp" line="284"/>
+        <location filename="../src/service/userservice.cpp" line="306"/>
+        <location filename="../src/service/userservice.cpp" line="328"/>
         <source>No such user</source>
         <comment>error</comment>
         <translation>Нет такого пользователя</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="322"/>
+        <location filename="../src/service/userservice.cpp" line="360"/>
         <source>Can&apos;t create users in read-only mode</source>
         <comment>error</comment>
         <translation>Нельзя создать пользователя в режиме только чтения</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="325"/>
+        <location filename="../src/service/userservice.cpp" line="363"/>
         <source>Enter superuser login [default: &quot;root&quot;]:</source>
         <comment>prompt</comment>
         <translation>Введите логин суперпользователя [по умолчанию &quot;root&quot;]:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="330"/>
+        <location filename="../src/service/userservice.cpp" line="368"/>
         <source>Enter superuser e-mail:</source>
         <comment>prompt</comment>
         <translation>Введите электронную почту суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="333"/>
+        <location filename="../src/service/userservice.cpp" line="371"/>
         <source>Enter superuser password:</source>
         <comment>prompt</comment>
         <translation>Введите пароль суперпользователя:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="336"/>
+        <location filename="../src/service/userservice.cpp" line="374"/>
         <source>Confirm password:</source>
         <comment>prompt</comment>
         <translation>Подтвердите пароль:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="337"/>
+        <location filename="../src/service/userservice.cpp" line="375"/>
         <source>Passwords does not match</source>
         <comment>error</comment>
         <translation>Пароли не совпадают</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="338"/>
+        <location filename="../src/service/userservice.cpp" line="376"/>
         <source>Enter superuser name [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation>Введите имя суперпользователя [по умолчанию &quot;&quot;]:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="341"/>
+        <location filename="../src/service/userservice.cpp" line="379"/>
         <source>Enter superuser middlename [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation>Введите отчество суперпользователя [по умолчанию &quot;&quot;]:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="344"/>
+        <location filename="../src/service/userservice.cpp" line="382"/>
         <source>Enter superuser surname [default: &quot;&quot;]:</source>
         <comment>prompt</comment>
         <translation>Введите фамилию суперпользователя [по умолчанию &quot;&quot;]:</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="355"/>
+        <location filename="../src/service/userservice.cpp" line="395"/>
         <source>Creating superuser account...</source>
         <comment>message</comment>
         <translation>Создание аккаунта суперпользователя...</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="362"/>
+        <location filename="../src/service/userservice.cpp" line="398"/>
         <source>Superuser account was created. Please, check your e-mail for the confirmation code.</source>
         <comment>message</comment>
         <translation>Аккаунт суперпользователя был создан. Пожалуйста, проверьте свою эл. почту - на нее должен придти код подтверждения.</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="363"/>
+        <location filename="../src/service/userservice.cpp" line="399"/>
         <source>Enter confirmation code (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx):</source>
         <comment>message</comment>
         <translation>Введите код подтверждаения (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx):</translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="173"/>
+        <source>No access to service</source>
+        <comment>error</comment>
+        <translation>Нет доступа к сервису</translation>
+    </message>
+    <message>
+        <location filename="../src/connection.cpp" line="177"/>
+        <source>No access to group</source>
+        <comment>error</comment>
+        <translation>Нет доступа к группе</translation>
     </message>
 </context>
 <context>

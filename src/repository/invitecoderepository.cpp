@@ -14,6 +14,7 @@
 #include <BUuid>
 
 #include <QDateTime>
+#include <QDebug>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -48,7 +49,7 @@ quint64 InviteCodeRepository::add(const InviteCode &entity)
     values.insert("code", entity.code().toString(true));
     values.insert("creation_date_time", dt.toMSecsSinceEpoch());
     values.insert("expiration_date_time", entity.expirationDateTime().toUTC().toMSecsSinceEpoch());
-    BSqlResult result = Source->insert("groups", values);
+    BSqlResult result = Source->insert("invite_codes", values);
     if (!result.success())
         return 0;
     quint64 id = result.lastInsertId().toULongLong();
@@ -73,10 +74,21 @@ bool InviteCodeRepository::deleteExpired()
                                                      QDateTime::currentDateTimeUtc().toMSecsSinceEpoch()));
 }
 
+bool InviteCodeRepository::deleteOne(quint64 id)
+{
+    if (!id)
+        return false;
+    TIdList list;
+    list << id;
+    return deleteSome(list);
+}
+
 bool InviteCodeRepository::deleteSome(const TIdList &ids)
 {
-    if (!isValid() || !ids.isEmpty())
+    if (!isValid())
         return false;
+    if (ids.isEmpty())
+        return true;
     QString ws = "id IN (";
     QVariantMap values;
     foreach (int i, bRangeD(0, ids.size() - 1)) {
@@ -120,6 +132,62 @@ QList<InviteCode> InviteCodeRepository::findAllByOwnerId(quint64 ownerId)
         list << entity;
     }
     return list;
+}
+
+InviteCode InviteCodeRepository::findOne(quint64 id)
+{
+    InviteCode entity(this);
+    if (!isValid() || !id)
+        return entity;
+    BSqlResult result = Source->select("invite_codes", QStringList() << "owner_id" << "access_level" << "code"
+                                       << "creation_date_time" << "expiration_date_time",
+                                       BSqlWhere("id = :id", ":id", id));
+    if (!result.success() || result.values().isEmpty())
+        return entity;
+    entity.mid = id;
+    entity.mownerId = result.value("owner_id").toULongLong();
+    entity.maccessLevel = result.value("access_level").toInt();
+    entity.mcreationDateTime.setMSecsSinceEpoch(result.value("creation_date_time").toLongLong());
+    entity.mexpirationDateTime.setMSecsSinceEpoch(result.value("expiration_date_time").toLongLong());
+    entity.mcode = BUuid(result.value("code").toString());
+    bool ok = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "invite_code_groups", "invite_code_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.mavailableServices = RepositoryTools::getServices(Source, "invite_code_services", "invite_code_id",
+                                                             entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.valid = true;
+    return entity;
+}
+
+InviteCode InviteCodeRepository::findOneByCode(const BUuid &code)
+{
+    InviteCode entity(this);
+    if (!isValid() || code.isNull())
+        return entity;
+    BSqlResult result = Source->select("invite_codes", QStringList() << "id" << "owner_id" << "access_level"
+                                       << "creation_date_time" << "expiration_date_time",
+                                       BSqlWhere("code = :code", ":code", code.toString(true)));
+    if (!result.success() || result.values().isEmpty())
+        return entity;
+    entity.mid = result.value("id").toULongLong();
+    entity.mownerId = result.value("owner_id").toULongLong();
+    entity.maccessLevel = result.value("access_level").toInt();
+    entity.mcreationDateTime.setMSecsSinceEpoch(result.value("creation_date_time").toLongLong());
+    entity.mexpirationDateTime.setMSecsSinceEpoch(result.value("expiration_date_time").toLongLong());
+    entity.mcode = code;
+    bool ok = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "invite_code_groups", "invite_code_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.mavailableServices = RepositoryTools::getServices(Source, "invite_code_services", "invite_code_id",
+                                                             entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.valid = true;
+    return entity;
 }
 
 bool InviteCodeRepository::isValid() const

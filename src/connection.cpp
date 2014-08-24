@@ -6,12 +6,21 @@
 #include "service/requestin.h"
 #include "service/requestout.h"
 #include "service/userservice.h"
+#include "translator.h"
 
 #include <TAccessLevel>
 #include <TAddGroupReplyData>
 #include <TAddGroupRequestData>
+#include <TAddUserReplyData>
+#include <TAddUserRequestData>
 #include <TAuthorizeReplyData>
 #include <TAuthorizeRequestData>
+#include <TConfirmRegistrationReplyData>
+#include <TConfirmRegistrationRequestData>
+#include <TGenerateInvitesReplyData>
+#include <TGenerateInvitesRequestData>
+#include <TGetInviteInfoListReplyData>
+#include <TGetInviteInfoListRequestData>
 #include <TGetSelfInfoReplyData>
 #include <TGetSelfInfoRequestData>
 #include <TGetUserInfoAdminReplyData>
@@ -20,11 +29,18 @@
 #include <TGetUserInfoListAdminRequestData>
 #include <TGetUserInfoReplyData>
 #include <TGetUserInfoRequestData>
+#include <TGroupInfo>
+#include <TGroupInfoList>
+#include <TIdList>
 #include <TLogRequestData>
 #include <TOperation>
+#include <TRegisterReplyData>
+#include <TRegisterRequestData>
 #include <TReply>
 #include <TRequest>
 #include <TServerState>
+#include <TService>
+#include <TServiceList>
 #include <TUserConnectionInfo>
 #include <TUserConnectionInfoList>
 #include <TUserInfo>
@@ -38,6 +54,7 @@
 #include <QAbstractSocket>
 #include <QDateTime>
 #include <QDebug>
+#include <QLocale>
 #include <QMetaObject>
 #include <QObject>
 #include <QSettings>
@@ -148,15 +165,57 @@ void Connection::logRemote(const QString &text, BLogger::Level lvl)
 
 /*============================== Private methods ===========================*/
 
-bool Connection::handleAddGroupRequest(BNetworkOperation *op)
+bool Connection::accessCheck(const Translator &translator, QString *error, const TServiceList &services,
+                             const TIdList &groups)
+{
+    foreach (const TService &s, services) {
+        if (!muserInfo.availableServices().contains(s))
+            return bRet(error, translator.translate("UserService", "No access to service", "error"), false);
+    }
+    foreach (quint64 groupId, groups) {
+        if (!muserInfo.groups().contains(groupId))
+            return bRet(error, translator.translate("UserService", "No access to group", "error"), false);
+    }
+    return bRet(error, QString(), true);
+}
+
+bool Connection::accessCheck(const QLocale &locale, QString *error, const TServiceList &services, const
+                             TIdList &groups)
+{
+    Translator t(locale);
+    return accessCheck(t, error, services, groups);
+}
+
+bool Connection::commonCheck(const Translator &translator, QString *error, const TAccessLevel &accessLevel,
+                             const TService &service)
 {
     if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    RequestIn<TAddGroupRequestData> in(op->variantData().value<TRequest>());
+        return bRet(error, translator.translate("Connection", "Invalid Connection instance (internal)", "error"), false);
+    bool alvl = (TAccessLevel(TAccessLevel::NoLevel) != accessLevel);
+    bool srv = (TService(TService::NoService) != service);
+    if (alvl && srv && !muserInfo.isValid())
+        return bRet(error, translator.translate("Connection", "Not authorized", "error"), false);
+    if (alvl && muserInfo.accessLevel() < accessLevel)
+        return bRet(error, translator.translate("Connection", "Not enough rights", "error"), false);
+    if (srv && !muserInfo.availableServices().contains(service))
+        return bRet(error, translator.translate("Connection", "No access to service", "error"), false);
+    return bRet(error, QString(), true);
+}
+
+bool Connection::commonCheck(const QLocale &locale, QString *error, const TAccessLevel &accessLevel,
+                             const TService &service)
+{
+    Translator t(locale);
+    return commonCheck(t, error, accessLevel, service);
+}
+
+bool Connection::handleAddGroupRequest(BNetworkOperation *op)
+{
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    RequestIn<TAddGroupRequestData> in(request);
     return sendReply(op, UserServ->addGroup(in, muserInfo.id()).createReply());
 }
 
@@ -172,19 +231,31 @@ bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    Translator t(request.locale());
+    QString error;
+    TAddUserRequestData requestData = request.data().value<TAddUserRequestData>();
+    if (!commonCheck(t, &error, qMin(TAccessLevel::AdminLevel, requestData.accessLevel().level())))
+        return sendReply(op, error);
+    if (!accessCheck(t, &error, requestData.availableServices(), requestData.groups()))
+        return sendReply(op, error);
+    RequestIn<TAddUserRequestData> in(request);
+    return sendReply(op, UserServ->addUser(in).createReply());
 }
 
 bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
+    TRequest request = op->variantData().value<TRequest>();
+    Translator t(request.locale());
+    QString error;
+    if (!commonCheck(t, &error))
+        return sendReply(op, error);
     if (muserInfo.isValid()) {
         TAuthorizeReplyData data;
         data.setUserInfo(muserInfo);
-        return sendReply(op, tr("Already authorized", "message"), data);
+        return sendReply(op, t.translate("Connection", "Already authorized", "message"), data);
     }
-    RequestIn<TAuthorizeRequestData> in(op->variantData().value<TRequest>());
+    RequestIn<TAuthorizeRequestData> in(request);
     RequestOut<TAuthorizeReplyData> out = UserServ->authorize(in);
     if (!out.success())
         return sendReply(op, out.createReply());
@@ -220,7 +291,12 @@ bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
 
 bool Connection::handleConfirmRegistrationRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error))
+        return sendReply(op, error);
+    RequestIn<TConfirmRegistrationRequestData> in(request);
+    return sendReply(op, UserServ->confirmRegistration(in).createReply());
 }
 
 bool Connection::handleDeleteGroupRequest(BNetworkOperation *op)
@@ -280,29 +356,35 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
 
 bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    Translator t(request.locale());
+    QString error;
+    TGenerateInvitesRequestData requestData = request.data().value<TGenerateInvitesRequestData>();
+    if (!commonCheck(t, &error, qMin(TAccessLevel::AdminLevel, requestData.accessLevel().level())))
+        return sendReply(op, error);
+    if (!accessCheck(t, &error, requestData.services(), requestData.groups()))
+        return sendReply(op, error);
+    RequestIn<TGenerateInvitesRequestData> in(request);
+    return sendReply(op, UserServ->generateInvites(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    return sendReply(op, "dummy");
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    return sendReply(op, "dummy"); //TODO
 }
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    return sendReply(op, "dummy");
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    RequestIn<TGetInviteInfoListRequestData> in(request);
+    return sendReply(op, UserServ->getInviteInfoList(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleGetLabDataRequest(BNetworkOperation *op)
@@ -342,13 +424,11 @@ bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::UserLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    RequestIn<TGetSelfInfoRequestData> in(op->variantData().value<TRequest>());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
+        return sendReply(op, error);
+    RequestIn<TGetSelfInfoRequestData> in(request);
     return sendReply(op, UserServ->getSelfInfo(in, muserInfo.id()).createReply());
 }
 
@@ -369,37 +449,31 @@ bool Connection::handleGetUserConnectionInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    RequestIn<TGetUserInfoAdminRequestData> in(op->variantData().value<TRequest>());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    RequestIn<TGetUserInfoAdminRequestData> in(request);
     return sendReply(op, UserServ->getUserInfoAdmin(in).createReply());
 }
 
 bool Connection::handleGetUserInfoListAdminRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::AdminLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    RequestIn<TGetUserInfoListAdminRequestData> in(op->variantData().value<TRequest>());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    RequestIn<TGetUserInfoListAdminRequestData> in(request);
     return sendReply(op, UserServ->getUserInfoListAdmin(in).createReply());
 }
 
 bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
-    if (!isValid())
-        return sendReply(op, tr("Invalid Connection instance", "error"));
-    if (!muserInfo.isValid())
-        return sendReply(op, tr("Not authorized", "error"));
-    if (muserInfo.accessLevel() < TAccessLevel(TAccessLevel::UserLevel))
-        return sendReply(op, tr("Not enough rights", "error"));
-    RequestIn<TGetUserInfoRequestData> in(op->variantData().value<TRequest>());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
+        return sendReply(op, error);
+    RequestIn<TGetUserInfoRequestData> in(request);
     return sendReply(op, UserServ->getUserInfo(in).createReply());
 }
 
@@ -415,7 +489,12 @@ bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
 
 bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error))
+        return sendReply(op, error);
+    RequestIn<TRegisterRequestData> in(request);
+    return sendReply(op, UserServ->registerUser(in).createReply());
 }
 
 bool Connection::handleRequestRecoveryCodeRequest(BNetworkOperation *op)

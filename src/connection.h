@@ -2,6 +2,7 @@
 #define CONNECTION_H
 
 class DataSource;
+class Translator;
 class UserService;
 
 class TReply;
@@ -12,7 +13,13 @@ class BNetworkOperation;
 
 class QString;
 
+#include "application.h"
+
+#include <TAccessLevel>
 #include <TClientInfo>
+#include <TIdList>
+#include <TService>
+#include <TServiceList>
 #include <TUserInfo>
 
 #include <BLogger>
@@ -72,6 +79,16 @@ protected:
     void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logRemote(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
+    bool accessCheck(const Translator &translator, QString *error = 0, const TServiceList &services = TServiceList(),
+                     const TIdList &groups = TIdList());
+    bool accessCheck(const QLocale &locale = Application::locale(), QString *error = 0,
+                     const TServiceList &services = TServiceList(), const TIdList &groups = TIdList());
+    bool commonCheck(const Translator &translator, QString *error = 0,
+                     const TAccessLevel &accessLevel = TAccessLevel::NoLevel,
+                     const TService &service = TService::NoService);
+    bool commonCheck(const QLocale &locale = Application::locale(), QString *error = 0,
+                     const TAccessLevel &accessLevel = TAccessLevel::NoLevel,
+                     const TService &service = TService::NoService);
     bool handleAddGroupRequest(BNetworkOperation *op);
     bool handleAddLabRequest(BNetworkOperation *op);
     bool handleAddSampleRequest(BNetworkOperation *op);
