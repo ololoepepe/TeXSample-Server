@@ -3,7 +3,6 @@
 #include "datasource.h"
 #include "entity/invitecode.h"
 #include "repositorytools.h"
-#include "transactionholder.h"
 
 #include <TAccessLevel>
 #include <TIdList>
@@ -49,7 +48,6 @@ quint64 InviteCodeRepository::add(const InviteCode &entity)
     values.insert("code", entity.code().toString(true));
     values.insert("creation_date_time", dt.toMSecsSinceEpoch());
     values.insert("expiration_date_time", entity.expirationDateTime().toUTC().toMSecsSinceEpoch());
-    TransactionHolder holder(Source);
     BSqlResult result = Source->insert("groups", values);
     if (!result.success())
         return 0;
@@ -60,8 +58,6 @@ quint64 InviteCodeRepository::add(const InviteCode &entity)
                                       entity.availableServices())) {
         return 0;
     }
-    if (!holder.doCommit())
-        return 0;
     return id;
 }
 
@@ -81,7 +77,6 @@ bool InviteCodeRepository::deleteSome(const TIdList &ids)
 {
     if (!isValid() || !ids.isEmpty())
         return false;
-    TransactionHolder holder(Source);
     QString ws = "id IN (";
     QVariantMap values;
     foreach (int i, bRangeD(0, ids.size() - 1)) {
@@ -91,9 +86,7 @@ bool InviteCodeRepository::deleteSome(const TIdList &ids)
         values.insert(":id" + QString::number(i), ids.at(i));
     }
     ws += ")";
-    if (!Source->deleteFrom("invite_codes", BSqlWhere(ws, values)).success())
-        return false;
-    return holder.doCommit();
+    return Source->deleteFrom("invite_codes", BSqlWhere(ws, values)).success();
 }
 
 QList<InviteCode> InviteCodeRepository::findAllByOwnerId(quint64 ownerId)

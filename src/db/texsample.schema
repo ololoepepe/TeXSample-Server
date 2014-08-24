@@ -155,6 +155,11 @@ CREATE TABLE IF NOT EXISTS sample_sources (
   source                        BLOB NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS sample_previews (
+  sample_id                     INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  main_file                     BLOB NOT NULL
+);
+
 /*============================== CloudLab ==================================*/
 
 CREATE TABLE IF NOT EXISTS labs (

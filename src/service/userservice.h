@@ -22,8 +22,12 @@ class QLocale;
 
 #include <TAddGroupReplyData>
 #include <TAddGroupRequestData>
+#include <TAddUserReplyData>
+#include <TAddUserRequestData>
 #include <TAuthorizeReplyData>
 #include <TAuthorizeRequestData>
+#include <TConfirmRegistrationReplyData>
+#include <TConfirmRegistrationRequestData>
 #include <TGetSelfInfoReplyData>
 #include <TGetSelfInfoRequestData>
 #include <TGetUserInfoAdminReplyData>
@@ -58,13 +62,17 @@ public:
     ~UserService();
 public:
     RequestOut<TAddGroupReplyData> addGroup(const RequestIn<TAddGroupRequestData> &in, quint64 userId);
+    RequestOut<TAddUserReplyData> addUser(const RequestIn<TAddUserRequestData> &in);
     RequestOut<TAuthorizeReplyData> authorize(const RequestIn<TAuthorizeRequestData> &in);
     bool checkOutdatedEntries();
+    RequestOut<TConfirmRegistrationReplyData> confirmRegistration(
+            const RequestIn<TConfirmRegistrationRequestData> &in);
     DataSource *dataSource() const;
     RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);
     RequestOut<TGetUserInfoReplyData> getUserInfo(const RequestIn<TGetUserInfoRequestData> &in);
     RequestOut<TGetUserInfoAdminReplyData> getUserInfoAdmin(const RequestIn<TGetUserInfoAdminRequestData> &in);
-    RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(const RequestIn<TGetUserInfoListAdminRequestData> &in);
+    RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(
+            const RequestIn<TGetUserInfoListAdminRequestData> &in);
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;

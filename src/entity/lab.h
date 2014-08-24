@@ -72,7 +72,6 @@ public:
     bool saveData() const;
     quint64 senderId() const;
     void setAuthors(const TAuthorInfoList &authors);
-    void setCreationDateTime(const QDateTime &dt);
     void setDataList(const TLabDataList &list);
     void setDeleted(bool deleted);
     void setDeletedExtraFiles(const QStringList &fileNames);

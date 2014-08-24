@@ -3,7 +3,6 @@
 #include "datasource.h"
 #include "entity/lab.h"
 #include "repositorytools.h"
-#include "transactionholder.h"
 
 #include <TAuthorInfo>
 #include <TAuthorInfoList>
@@ -51,7 +50,6 @@ quint64 LabRepository::add(const Lab &entity)
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
-    TransactionHolder holder(Source);
     BSqlResult result = Source->insert("labs", values);
     if (!result.success())
         return 0;
@@ -62,7 +60,7 @@ quint64 LabRepository::add(const Lab &entity)
         return 0;
     if (!RepositoryTools::setTags(Source, "lab_tags", "lab_id", id, entity.tags()))
         return 0;
-    if (!createData(id, entity.labDataList()) || !createExtraFiles(id, entity.extraFiles()) || !holder.doCommit())
+    if (!createData(id, entity.labDataList()) || !createExtraFiles(id, entity.extraFiles()))
         return 0;
     return id;
 }
@@ -84,7 +82,6 @@ bool LabRepository::edit(const Lab &entity)
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
-    TransactionHolder holder(Source);
     BSqlResult result = Source->update("labs", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
         return false;
@@ -104,7 +101,7 @@ bool LabRepository::edit(const Lab &entity)
         return false;
     if (!createExtraFiles(entity.id(), entity.extraFiles()))
         return false;
-    return holder.doCommit();
+    return true;
 }
 
 QList<Lab> LabRepository::findAllNewerThan(const TIdList &groups)

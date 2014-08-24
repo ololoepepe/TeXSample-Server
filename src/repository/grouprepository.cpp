@@ -2,7 +2,6 @@
 
 #include "datasource.h"
 #include "entity/group.h"
-#include "transactionholder.h"
 
 #include <TIdList>
 
@@ -45,14 +44,10 @@ quint64 GroupRepository::add(const Group &entity)
     values.insert("creation_date_time", dt.toMSecsSinceEpoch());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("name", entity.name());
-    TransactionHolder holder(Source);
     BSqlResult result = Source->insert("groups", values);
     if (!result.success())
         return 0;
-    quint64 id = result.lastInsertId().toULongLong();
-    if (!holder.doCommit())
-        return 0;
-    return id;
+    return result.lastInsertId().toULongLong();
 }
 
 DataSource *GroupRepository::dataSource() const
@@ -64,14 +59,8 @@ bool GroupRepository::deleteOne(quint64 id)
 {
     if (!isValid() || !id)
         return false;
-    TransactionHolder holder(Source);
     BSqlWhere where("id = :id", ":id", id);
-    BSqlResult result = Source->deleteFrom("groups", where);
-    if (!result.success())
-        return false;
-    if (!result.success() || !holder.doCommit())
-        return false;
-    return true;
+    return Source->deleteFrom("groups", where).success();
 }
 
 bool GroupRepository::edit(const Group &entity)
@@ -82,10 +71,7 @@ bool GroupRepository::edit(const Group &entity)
     values.insert("owner_id", entity.ownerId());
     values.insert("last_modification_date_time", entity.lastModificationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("name", entity.name());
-    TransactionHolder holder(Source);
-    if (!Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success())
-        return false;
-    return holder.doCommit();
+    return Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success();
 }
 
 QList<Group> GroupRepository::findAll(const TIdList &ids)

@@ -4,6 +4,7 @@
 #include <TRequest>
 
 #include <QDateTime>
+#include <QLocale>
 #include <QVariant>
 
 /*============================================================================
@@ -16,12 +17,14 @@ private:
     bool mcachingEnabled;
     T mdata;
     QDateTime mlastRequestDateTime;
+    QLocale mlocale;
 public:
     explicit RequestIn(const TRequest &request)
     {
         mdata = request.data().value<T>();
         mcachingEnabled = request.cachingEnabled();
         mlastRequestDateTime = request.lastRequestDateTime().toUTC();
+        mlocale = request.locale();
     }
     RequestIn(const RequestIn &other)
     {
@@ -44,12 +47,17 @@ public:
     {
         return mlastRequestDateTime;
     }
+    QLocale locale() const
+    {
+        return mlocale;
+    }
 public:
     RequestIn &operator =(const RequestIn &other)
     {
         mdata = other.mdata;
         mcachingEnabled = other.mcachingEnabled;
         mlastRequestDateTime = other.mlastRequestDateTime;
+        mlocale = other.mlocale;
         return *this;
     }
 };

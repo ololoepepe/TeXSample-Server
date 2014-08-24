@@ -32,6 +32,7 @@ public:
     quint64 add(const User &entity);
     long countByAccessLevel(const TAccessLevel &accessLevel);
     DataSource *dataSource() const;
+    bool deleteOne(quint64 userId);
     bool edit(const User &entity);
     bool exists(const TUserIdentifier &id);
     QList<User> findAllNewerThan(const QDateTime &newerThan);
@@ -42,6 +43,7 @@ public:
     QDateTime findLastModificationDateTime(const TUserIdentifier &id);
 private:
     bool createAvatar(quint64 userId, const QImage &avatar);
+    bool deleteAvatar(quint64 userId);
     QImage fetchAvatar(quint64 userId, bool *ok = 0);
     bool updateAvatar(quint64 userId, const QImage &avatar);
 private:

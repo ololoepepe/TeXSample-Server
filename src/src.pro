@@ -36,7 +36,8 @@ SOURCES += \
     settings.cpp \
     storage.cpp \
     temporarylocation.cpp \
-    transactionholder.cpp
+    transactionholder.cpp \
+    translator.cpp
 
 HEADERS += \
     application.h \
@@ -46,7 +47,8 @@ HEADERS += \
     settings.h \
     storage.h \
     temporarylocation.h \
-    transactionholder.h
+    transactionholder.h \
+    translator.h
 
 include(entity/entity.pri)
 include(repository/repository.pri)

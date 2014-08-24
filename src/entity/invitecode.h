@@ -52,7 +52,6 @@ public:
     void setAccessLevel(const TAccessLevel &accessLevel);
     void setAvailableServices(const TServiceList &services);
     void setCode(const BUuid &code);
-    void setCreationDateTime(const QDateTime &dt);
     void setExpirationDateTime(const QDateTime &dt);
     void setGroups(const TIdList &ids);
     void setId(quint64 id);

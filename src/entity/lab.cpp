@@ -156,11 +156,6 @@ void Lab::setAuthors(const TAuthorInfoList &authors)
     mauthors = authors;
 }
 
-void Lab::setCreationDateTime(const QDateTime &dt)
-{
-    mcreationDateTime = dt.toUTC();
-}
-
 void Lab::setDataList(const TLabDataList &list)
 {
     mdataList = list;

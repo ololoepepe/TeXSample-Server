@@ -66,7 +66,6 @@ public:
     quint64 senderId() const;
     void setAdminRemark(const QString &remark);
     void setAuthors(const TAuthorInfoList &authors);
-    void setCreationDateTime(const QDateTime &dt);
     void setDeleted(bool deleted);
     void setDescription(const QString &description);
     void setId(quint64 id);
@@ -86,7 +85,6 @@ public:
     Sample &operator =(const Sample &other);
 private:
     void init();
-    bool fetchPreview();
 private:
     friend class SampleRepository;
 };

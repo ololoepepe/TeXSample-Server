@@ -1,0 +1,5 @@
+Hello, %username%! You have registered in TeXSample.
+
+Please, confirm your registration by entering the following code in your client application:
+
+%code%

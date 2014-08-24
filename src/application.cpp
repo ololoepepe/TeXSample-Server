@@ -121,6 +121,10 @@ bool Application::initializeStorage()
         bWriteLine(tr("Error:", "error") + " " + err);
         return false;
     }
+    if (!UserServ->checkOutdatedEntries()) {
+        bWriteLine(tr("Failed to check for (or delete) outdated entries", "error"));
+        return false;
+    }
     if (UserServ->isRootInitialized()) {
         bWriteLine(tr("Done!", "message"));
         return true;

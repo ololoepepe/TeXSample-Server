@@ -91,11 +91,6 @@ GroupRepository *Group::repository() const
     return repo;
 }
 
-void Group::setCreationDateTime(const QDateTime &dt)
-{
-    mcreationDateTime = dt.toUTC();
-}
-
 void Group::setId(quint64 id)
 {
     mid = id;

@@ -110,8 +110,13 @@ const TBinaryFile &Sample::previewMainFile() const
     static const TBinaryFile Default;
     if (!createdByRepo || previewFetched)
         return mpreviewMainFile;
-    if (!const_cast<Sample *>(this)->fetchPreview())
+    if (!repo || !repo->isValid())
         return Default;
+    bool ok = false;
+    *const_cast<TBinaryFile *>(&mpreviewMainFile) = const_cast<SampleRepository *>(repo)->fetchPreview(mid, &ok);
+    if (!ok)
+        return Default;
+    *const_cast<bool *>(&previewFetched) = true;
     return mpreviewMainFile;
 }
 
@@ -148,11 +153,6 @@ void Sample::setAdminRemark(const QString &remark)
 void Sample::setAuthors(const TAuthorInfoList &authors)
 {
     mauthors = authors;
-}
-
-void Sample::setCreationDateTime(const QDateTime &dt)
-{
-    mcreationDateTime = dt.toUTC();
 }
 
 void Sample::setDeleted(bool deleted)
@@ -284,14 +284,4 @@ void Sample::init()
     repo = 0;
     sourceFetched = false;
     valid = false;
-}
-
-bool Sample::fetchPreview()
-{
-    if (previewFetched)
-        return true;
-    if (!repo || repo->isValid() || !repo->fetchPreview(mid, mpreviewMainFile))
-        return false;
-    previewFetched = true;
-    return true;
 }

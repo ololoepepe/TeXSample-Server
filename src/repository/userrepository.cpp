@@ -3,7 +3,6 @@
 #include "datasource.h"
 #include "entity/user.h"
 #include "repositorytools.h"
-#include "transactionholder.h"
 
 #include <TAccessLevel>
 #include <TIdList>
@@ -47,7 +46,6 @@ quint64 UserRepository::add(const User &entity)
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
         return 0;
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    TransactionHolder holder(Source);
     QVariantMap values;
     values.insert("access_level", int(entity.accessLevel()));
     values.insert("active", int(entity.active()));
@@ -69,8 +67,6 @@ quint64 UserRepository::add(const User &entity)
         return 0;
     if (!createAvatar(id, entity.avatar()))
         return 0;
-    if (!holder.doCommit())
-        return 0;
     return id;
 }
 
@@ -78,16 +74,23 @@ long UserRepository::countByAccessLevel(const TAccessLevel &accessLevel)
 {
     if (!isValid())
         return 0;
-    TransactionHolder holder(Source);
     BSqlResult result = Source->select("users", "COUNT(id)",
                                        BSqlWhere("access_level = :access_level", ":access_level", int(accessLevel)));
-    holder.setSuccess(result.success());
+    if (!result.success())
+        return 0;
     return result.value("COUNT(id)").toLongLong();
 }
 
 DataSource *UserRepository::dataSource() const
 {
     return Source;
+}
+
+bool UserRepository::deleteOne(quint64 userId)
+{
+    if (!isValid() || !userId)
+        return false;
+    return deleteAvatar(userId) && Source->deleteFrom("users", BSqlWhere("user_id = :user_id", ":user_id", userId));
 }
 
 bool UserRepository::edit(const User &entity)
@@ -105,7 +108,6 @@ bool UserRepository::edit(const User &entity)
     values.insert("password", entity.password());
     values.insert("patronymic", entity.patronymic());
     values.insert("surname", entity.surname());
-    TransactionHolder holder(Source);
     BSqlResult result = Source->update("users", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
         return false;
@@ -119,7 +121,7 @@ bool UserRepository::edit(const User &entity)
         return false;
     if (entity.saveAvatar() && !updateAvatar(entity.id(), entity.avatar()))
         return false;
-    return holder.doCommit();
+    return true;
 }
 
 bool UserRepository::exists(const TUserIdentifier &id)
@@ -300,6 +302,13 @@ bool UserRepository::createAvatar(quint64 userId, const QImage &avatar)
         buff.close();
     }
     return Source->insert("user_avatars", "user_id", userId, "avatar", data).success();
+}
+
+bool UserRepository::deleteAvatar(quint64 userId)
+{
+    if (!isValid() || !userId)
+        return false;
+    return Source->deleteFrom("user_avatars", BSqlWhere("user_id = :user_id", ":user_id", userId)).success();
 }
 
 QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)

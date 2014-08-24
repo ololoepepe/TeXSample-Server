@@ -2,7 +2,6 @@
 
 #include "datasource.h"
 #include "entity/applicationversion.h"
-#include "transactionholder.h"
 
 #include <TeXSample>
 
@@ -47,8 +46,7 @@ bool ApplicationVersionRepository::add(const ApplicationVersion &entity)
     values.insert("processor_architecture_type", int(entity.processorArchitecture()));
     values.insert("download_url", entity.downloadUrl().toString());
     values.insert("version", entity.version().toString());
-    TransactionHolder holder(Source);
-    return Source->insert("application_versions", values).success() && holder.doCommit();
+    return Source->insert("application_versions", values).success();
 }
 
 DataSource *ApplicationVersionRepository::dataSource() const
@@ -70,10 +68,7 @@ bool ApplicationVersionRepository::edit(const ApplicationVersion &entity)
     wvalues.insert(":os_type", int(entity.os()));
     wvalues.insert(":portable", int(entity.portable()));
     wvalues.insert(":processor_architecture_type", int(entity.processorArchitecture()));
-    TransactionHolder holder(Source);
-    if (!Source->update("application_versions", values, BSqlWhere(ws, wvalues)).success())
-        return false;
-    return holder.doCommit();
+    return Source->update("application_versions", values, BSqlWhere(ws, wvalues)).success();
 }
 
 ApplicationVersion ApplicationVersionRepository::findOneByFields(Texsample::ClientType clienType, BeQt::OSType os,

@@ -26,6 +26,7 @@ public:
     bool add(const RegistrationConfirmationCode &entity);
     bool deleteExpired();
     bool deleteOneByUserId(quint64 userId);
+    QList<RegistrationConfirmationCode> findExpired();
     RegistrationConfirmationCode findOneByCode(const BUuid &code);
     DataSource *dataSource() const;
     bool isValid() const;

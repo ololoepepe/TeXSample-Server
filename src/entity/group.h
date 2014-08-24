@@ -37,7 +37,6 @@ public:
     QString name() const;
     quint64 ownerId() const;
     GroupRepository *repository() const;
-    void setCreationDateTime(const QDateTime &dt);
     void setId(quint64 id);
     void setName(const QString &name);
     void setOwnerId(quint64 ownerId);

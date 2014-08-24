@@ -129,11 +129,6 @@ void InviteCode::setCode(const BUuid &code)
     mcode = code;
 }
 
-void InviteCode::setCreationDateTime(const QDateTime &dt)
-{
-    mcreationDateTime = dt.toUTC();
-}
-
 void InviteCode::setExpirationDateTime(const QDateTime &dt)
 {
     mexpirationDateTime = dt.toUTC();

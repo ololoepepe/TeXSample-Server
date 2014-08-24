@@ -3,18 +3,20 @@
 #include "datasource.h"
 #include "entity/sample.h"
 #include "repositorytools.h"
-#include "transactionholder.h"
 
 #include <TBinaryFile>
 #include <TIdList>
 #include <TSampleType>
 #include <TTexProject>
 
+#include <BeQt>
 #include <BSqlResult>
 #include <BSqlWhere>
 
+#include <QByteArray>
 #include <QList>
 #include <QString>
+#include <QVariant>
 
 /*============================================================================
 ================================ SampleRepository ============================
@@ -50,7 +52,6 @@ quint64 SampleRepository::add(const Sample &entity)
     values.insert("rating", quint8(0));
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
-    TransactionHolder holder(Source);
     BSqlResult result = Source->insert("samples", values);
     if (!result.success())
         return 0;
@@ -59,7 +60,7 @@ quint64 SampleRepository::add(const Sample &entity)
         return 0;
     if (!RepositoryTools::setTags(Source, "sample_tags", "sample_id", id, entity.tags()))
         return 0;
-    if (!createSource(id, entity.source()) || !holder.doCommit())
+    if (!createSource(id, entity.source()))
         return 0;
     return id;
 }
@@ -84,7 +85,6 @@ bool SampleRepository::edit(const Sample &entity)
     values.insert("rating", quint8(0));
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
-    TransactionHolder holder(Source);
     BSqlResult result = Source->update("samples", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
         return false;
@@ -98,7 +98,7 @@ bool SampleRepository::edit(const Sample &entity)
         return false;
     if (entity.saveData() && !updateSource(entity.id(), entity.source()))
         return false;
-    return holder.doCommit();
+    return true;
 }
 
 QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan)
@@ -180,21 +180,39 @@ bool SampleRepository::isValid() const
 
 bool SampleRepository::createSource(quint64 sampleId, const TTexProject &data)
 {
-    //
+    if (!isValid() || !sampleId)
+        return false;
+    return Source->insert("sample_sources", "sample_id", sampleId, "source", BeQt::serialize(data)).success();
 }
 
-bool SampleRepository::fetchPreview(quint64 sampleId, TBinaryFile &mainFile)
+TBinaryFile SampleRepository::fetchPreview(quint64 sampleId, bool *ok)
 {
-    //
+    if (!isValid() || !sampleId)
+        return bRet(ok, false, TBinaryFile());
+    BSqlResult result = Source->select("sample_previews", "main_file",
+                                       BSqlWhere("sample_id = :sample_id", ":sample_id", sampleId));
+    if (!result.success() || result.value().isEmpty())
+        return bRet(ok, false, TBinaryFile());
+    TBinaryFile mainFile = BeQt::deserialize(result.value("main_file").toByteArray()).value<TBinaryFile>();
+    return bRet(ok, true, mainFile);
 }
 
 TTexProject SampleRepository::fetchSource(quint64 sampleId, bool *ok)
 {
-    //
+    if (!isValid() || !sampleId)
+        return bRet(ok, false, TTexProject());
+    BSqlResult result = Source->select("sample_sources", "source",
+                                       BSqlWhere("sample_id = :sample_id", ":sample_id", sampleId));
+    if (!result.success() || result.value().isEmpty())
+        return bRet(ok, false, TTexProject());
+    TTexProject source = BeQt::deserialize(result.value("source").toByteArray()).value<TTexProject>();
+    return bRet(ok, true, source);
 }
 
 
 bool SampleRepository::updateSource(quint64 sampleId, const TTexProject &data)
 {
-    //
+    if (!isValid() || !sampleId)
+        return false;
+    return Source->update("sample_previews", "sample_id", sampleId, "preview", BeQt::serialize(data)).success();
 }

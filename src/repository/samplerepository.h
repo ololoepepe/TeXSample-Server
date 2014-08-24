@@ -33,7 +33,7 @@ public:
     bool isValid() const;
 private:
     bool createSource(quint64 sampleId, const TTexProject &data);
-    bool fetchPreview(quint64 sampleId, TBinaryFile &mainFile);
+    TBinaryFile fetchPreview(quint64 sampleId, bool *ok = false);
     TTexProject fetchSource(quint64 sampleId, bool *ok = false);
     bool updateSource(quint64 sampleId, const TTexProject &data);
 private:

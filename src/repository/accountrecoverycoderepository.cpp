@@ -2,7 +2,6 @@
 
 #include "datasource.h"
 #include "entity/accountrecoverycode.h"
-#include "transactionholder.h"
 
 #include <TIdList>
 
@@ -44,8 +43,7 @@ bool AccountRecoveryCodeRepository::add(const AccountRecoveryCode &entity)
     values.insert("code", entity.code().toString(true));
     values.insert("expiration_date_time", entity.expirationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("user_id", entity.userId());
-    TransactionHolder holder(Source);
-    return Source->insert("account_recovery_codes", values).success() && holder.doCommit();
+    return Source->insert("account_recovery_codes", values).success();
 }
 
 bool AccountRecoveryCodeRepository::deleteExpired()
@@ -59,9 +57,7 @@ bool AccountRecoveryCodeRepository::deleteOneByUserId(quint64 userId)
 {
     if (!isValid() || !userId)
         return false;
-    TransactionHolder holder(Source);
-    return Source->deleteFrom("account_recovery_codes", BSqlWhere("user_id = :user_id", ":user_id", userId))
-            && holder.doCommit();
+    return Source->deleteFrom("account_recovery_codes", BSqlWhere("user_id = :user_id", ":user_id", userId));
 }
 
 AccountRecoveryCode AccountRecoveryCodeRepository::findOneByCode(const BUuid &code)
