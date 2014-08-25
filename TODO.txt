@@ -9,11 +9,12 @@
 === MAJOR ===
 
 [done] Implement registration confirmation
+[done] Implement e-mail change confirmation
 [done] Add access level info to invites
-* Make invite codes generation available for administrators only
+[done] Make invite codes generation available for administrators only
 [done] Change copyright owner
 [done] Use BeQt 4.0.0
 [done] Use TeXSample 2.0.0
 [done] Use Qt coding style, sort includes, class members, etc.
 [done] Consider processor architecture for applications versions
-* Add GPL headers to files
+[done] Add GPL headers to files

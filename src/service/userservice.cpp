@@ -1,3 +1,24 @@
+/****************************************************************************
+**
+** Copyright (C) 2012-2014 Andrey Bogdanov
+**
+** This file is part of TeXSample Server.
+**
+** TeXSample Server is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** TeXSample Server is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with TeXSample Server.  If not, see <http://www.gnu.org/licenses/>.
+**
+****************************************************************************/
+
 #include "userservice.h"
 
 #include "application.h"
@@ -203,6 +224,35 @@ RequestOut<TChangePasswordReplyData> UserService::changePassword(const RequestIn
     return Out(replyData, dt);
 }
 
+RequestOut<TCheckEmailAvailabilityReplyData> UserService::checkEmailAvailability(
+        const RequestIn<TCheckEmailAvailabilityRequestData> &in)
+{
+    typedef RequestOut<TCheckEmailAvailabilityReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    QString email = in.data().email();
+    TCheckEmailAvailabilityReplyData replyData;
+    replyData.setAvailable(!UserRepo->emailOccupied(email) && !EmailChangeConfirmationCodeRepo->emailOccupied(email));
+    return Out(replyData, dt);
+}
+
+RequestOut<TCheckLoginAvailabilityReplyData> UserService::checkLoginAvailability(
+        const RequestIn<TCheckLoginAvailabilityRequestData> &in)
+{
+    typedef RequestOut<TCheckLoginAvailabilityReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    TCheckLoginAvailabilityReplyData replyData;
+    replyData.setAvailable(!UserRepo->loginOccupied(in.data().login()));
+    return Out(replyData, dt);
+}
+
 bool UserService::checkOutdatedEntries()
 {
     if (!isValid())
@@ -214,7 +264,9 @@ bool UserService::checkOutdatedEntries()
         if (!UserRepo->deleteOne(entity.userId()))
             return false;
     }
-    return RegistrationConfirmationCodeRepo->deleteExpired() && holder.doCommit();
+    if (!RegistrationConfirmationCodeRepo->deleteExpired() || !EmailChangeConfirmationCodeRepo->deleteExpired())
+        return false;
+    return holder.doCommit();
 }
 
 RequestOut<TConfirmEmailChangeReplyData> UserService::confirmEmailChange(

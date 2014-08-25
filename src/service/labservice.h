@@ -19,54 +19,32 @@
 **
 ****************************************************************************/
 
-#ifndef GROUP_H
-#define GROUP_H
+#ifndef LABSERVICE_H
+#define LABSERVICE_H
 
-class GroupRepository;
+class DataSource;
+class LabRepository;
 
-#include <QDateTime>
-#include <QString>
+#include <QCoreApplication>
 
 /*============================================================================
-================================ Group =======================================
+================================ LabService ==================================
 ============================================================================*/
 
-class Group
+class LabService
 {
+    Q_DECLARE_TR_FUNCTIONS(LabService)
 private:
-    quint64 mid;
-    quint64 mownerId;
-    QDateTime mcreationDateTime;
-    QDateTime mlastModificationDateTime;
-    QString mname;
-    bool createdByRepo;
-    GroupRepository *repo;
-    bool valid;
+    LabRepository * const LabRepo;
+    DataSource * const Source;
 public:
-    explicit Group();
-    Group(const Group &other);
-    ~Group();
-protected:
-    explicit Group(GroupRepository *repo);
+    explicit LabService(DataSource *source);
+    ~LabService();
 public:
-    void convertToCreatedByUser();
-    QDateTime creationDateTime() const;
-    quint64 id() const;
-    bool isCreatedByRepo() const;
+    DataSource *dataSource() const;
     bool isValid() const;
-    QDateTime lastModificationDateTime() const;
-    QString name() const;
-    quint64 ownerId() const;
-    GroupRepository *repository() const;
-    void setId(quint64 id);
-    void setName(const QString &name);
-    void setOwnerId(quint64 ownerId);
-public:
-    Group &operator =(const Group &other);
 private:
-    void init();
-private:
-    friend class GroupRepository;
+    Q_DISABLE_COPY(LabService)
 };
 
-#endif // GROUP_H
+#endif // LABSERVICE_H

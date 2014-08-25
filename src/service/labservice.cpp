@@ -19,38 +19,37 @@
 **
 ****************************************************************************/
 
-#include "temporarylocation.h"
+#include "labservice.h"
 
 #include "datasource.h"
-
-#include <BDirTools>
-#include <BUuid>
-
-#include <QString>
+#include "entity/lab.h"
+#include "repository/labrepository.h"
 
 /*============================================================================
-================================ TemporaryLocation ===========================
+================================ LabService ==================================
 ============================================================================*/
 
 /*============================== Public constructors =======================*/
 
-TemporaryLocation::TemporaryLocation(DataSource *source) :
-    QDir((source && source->isValid()) ? (source->location() + "/" + BUuid::createUuid().toString(true)) : QString()),
-    Source(source)
+LabService::LabService(DataSource *source) :
+    LabRepo(new LabRepository(source)), Source(source)
 {
-    if (source && source->isValid())
-        BDirTools::mkpath(absolutePath());
+    //
 }
 
-TemporaryLocation::~TemporaryLocation()
+LabService::~LabService()
 {
-    if (isValid())
-        BDirTools::rmdir(absolutePath());
+    //
 }
 
 /*============================== Public methods ============================*/
 
-bool TemporaryLocation::isValid() const
+DataSource *LabService::dataSource() const
 {
-    return Source && Source->isValid() && exists();
+    return Source;
+}
+
+bool LabService::isValid() const
+{
+    return Source && Source->isValid() && LabRepo->isValid();
 }
