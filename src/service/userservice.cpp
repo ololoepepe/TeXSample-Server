@@ -104,7 +104,6 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     TGroupInfo info = groupToGroupInfo(entity);
     TAddGroupReplyData replyData;
     replyData.setGroupInfo(info);
-    qDebug() << replyData.groupInfo().isValid();
     return Out(replyData, info.creationDateTime());
 }
 

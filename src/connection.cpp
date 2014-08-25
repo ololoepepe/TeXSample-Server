@@ -552,6 +552,7 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 bool Connection::handleNoopRequest(BNetworkOperation *op)
 {
     op->reply();
+    return true;
 }
 
 bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)

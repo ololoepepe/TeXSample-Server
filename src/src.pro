@@ -34,7 +34,6 @@ SOURCES += \
     main.cpp \
     server.cpp \
     settings.cpp \
-    storage.cpp \
     temporarylocation.cpp \
     transactionholder.cpp \
     translator.cpp
@@ -45,7 +44,6 @@ HEADERS += \
     datasource.h \
     server.h \
     settings.h \
-    storage.h \
     temporarylocation.h \
     transactionholder.h \
     translator.h
