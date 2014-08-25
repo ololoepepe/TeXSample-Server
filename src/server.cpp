@@ -23,6 +23,7 @@
 
 #include "connection.h"
 
+#include <TGetUserConnectionInfoListRequestData>
 #include <TUserConnectionInfo>
 #include <TUserConnectionInfoList>
 #include <TUserInfo>
@@ -52,23 +53,27 @@ Server::Server(const QString &location, QObject *parent) :
 
 /*============================== Static public methods =====================*/
 
-TUserConnectionInfoList Server::userConnections(const QString &matchPattern, UserMatchType type, int *total) const
+TUserConnectionInfoList Server::userConnections(
+        const QString &matchPattern, TGetUserConnectionInfoListRequestData::MatchType type, int *total) const
 {
-    int t = 0;
     QRegExp rx = QRegExp(matchPattern, Qt::CaseSensitive, QRegExp::WildcardUnix);
     TUserConnectionInfoList list;
-    if (!rx.isValid())
-        return bRet(total, t, list);
     const_cast<Server *>(this)->lock();
-    foreach (BNetworkConnection *c, connections()) {
+    QList<BNetworkConnection *> clist = connections();
+    bSet(total, clist.size());
+    if (!rx.isValid()) {
+        const_cast<Server *>(this)->unlock();
+        return list;
+    }
+    foreach (BNetworkConnection *c, clist) {
         Connection *cc = static_cast<Connection *>(c);
         TUserInfo userInfo = cc->userInfo();
         BUuid uniqueId = cc->uniqueId();
-        if ((!(MatchLogin | type) || !rx.exactMatch(userInfo.login()))
-                && (!(MatchUniqueId | type) || !rx.exactMatch(cc->uniqueId().toString(true)))) {
+        if ((!(TGetUserConnectionInfoListRequestData::MatchLogin | type) || !rx.exactMatch(userInfo.login()))
+                && (!(TGetUserConnectionInfoListRequestData::MatchUniqueId | type)
+                    || !rx.exactMatch(cc->uniqueId().toString(true)))) {
             continue;
         }
-        ++t;
         TUserConnectionInfo info;
         info.setClientInfo(cc->clientInfo());
         info.setConnectionDateTime(cc->connectionDateTime());
@@ -79,7 +84,7 @@ TUserConnectionInfoList Server::userConnections(const QString &matchPattern, Use
         list << info;
     }
     const_cast<Server *>(this)->unlock();
-    return bRet(total, t, list);
+    return list;
 }
 
 /*============================== Protected methods =========================*/

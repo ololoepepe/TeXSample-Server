@@ -63,9 +63,10 @@ public:
     BSqlResult exec(const QString &qs, const QVariantMap &boundValues);
     bool initialize(QString *error = 0);
     BSqlResult insert(const QString &table, const QVariantMap &values, const BSqlWhere &where = BSqlWhere());
-    BSqlResult insert(const QString &table, const QString &field1, const QVariant &value1,
-                      const QString &field2 = QString(), const QVariant &value2 = QVariant(),
+    BSqlResult insert(const QString &table, const QString &field, const QVariant &value,
                       const BSqlWhere &where = BSqlWhere());
+    BSqlResult insert(const QString &table, const QString &field1, const QVariant &value1, const QString &field2,
+                      const QVariant &value2, const BSqlWhere &where = BSqlWhere());
     bool isTransactionActive() const;
     bool isValid() const;
     QString location() const;
@@ -74,7 +75,7 @@ public:
     BSqlResult select(const QString &table, const QString &field, const BSqlWhere &where = BSqlWhere());
     bool transaction();
     BSqlResult update(const QString &table, const QVariantMap &values, const BSqlWhere &where = BSqlWhere());
-    BSqlResult update(const QString &table, const QString &field1, const QVariant &value1,
+    BSqlResult update(const QString &table, const QString &field, const QVariant &value,
                       const BSqlWhere &where = BSqlWhere());
     BSqlResult update(const QString &table, const QString &field1, const QVariant &value1, const QString &field2,
                       const QVariant &value2, const BSqlWhere &where = BSqlWhere());

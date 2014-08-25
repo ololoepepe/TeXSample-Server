@@ -72,6 +72,7 @@ public:
     Server *server();
     void updateLoggingMode();
     void updateReadonly();
+    qint64 uptime() const;
 protected:
     void timerEvent(QTimerEvent *e);
 private:

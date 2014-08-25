@@ -321,6 +321,39 @@ User UserRepository::findOne(const QString &identifier, const QByteArray &passwo
     return entity;
 }
 
+User UserRepository::findOneByEmail(const QString &email)
+{
+    User entity(this);
+    if (!isValid() || email.isEmpty())
+        return entity;
+    static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
+        << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
+        << "surname";
+    BSqlResult result = Source->select("users", Fields, BSqlWhere("email = :email", ":email", email));
+    if (!result.success() || result.value().isEmpty())
+        return entity;
+    entity.mid = result.value("id").toULongLong();
+    entity.maccessLevel = result.value("access_level").toInt();
+    entity.mactive = result.value("active").toBool();
+    entity.memail = result.value("email").toString();
+    entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    entity.mlogin = result.value("login").toString();
+    entity.mname = result.value("name").toString();
+    entity.mpassword = result.value("password").toByteArray();
+    entity.mpatronymic = result.value("patronymic").toString();
+    entity.mregistrationDateTime.setMSecsSinceEpoch(result.value("registration_date_time").toLongLong());
+    entity.msurname = result.value("surname").toString();
+    bool ok = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
+    if (!ok)
+        return entity;
+    entity.valid = true;
+    return entity;
+}
+
 bool UserRepository::isValid() const
 {
     return Source && Source->isValid();
@@ -386,5 +419,6 @@ bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
             return false;
         buff.close();
     }
-    return Source->update("user_avatars", "user_id", userId, "avatar", data).success();
+    return Source->deleteFrom("user_avatars", BSqlWhere("user_id = :user_id", ":user_id", userId))
+            && Source->insert("user_avatars", "user_id", userId, "avatar", data);
 }

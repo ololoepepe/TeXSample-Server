@@ -63,6 +63,7 @@ public:
     QString findLogin(quint64 id);
     User findOne(const TUserIdentifier &id);
     User findOne(const QString &identifier, const QByteArray &password);
+    User findOneByEmail(const QString &email);
     bool isValid() const;
     bool loginOccupied(const QString &login);
 private:

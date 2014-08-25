@@ -32,6 +32,7 @@
 #include <TClientInfo>
 #include <TCoreApplication>
 #include <TeXSample>
+#include <TGetUserConnectionInfoListRequestData>
 #include <TInviteInfo>
 #include <TUserConnectionInfo>
 #include <TUserConnectionInfoList>
@@ -257,6 +258,11 @@ void Application::updateReadonly()
     BTerminal::setTitle(title);
 }
 
+qint64 Application::uptime() const
+{
+    return melapsedTimer.elapsed();
+}
+
 /*============================== Protected methods =========================*/
 
 void Application::timerEvent(QTimerEvent *e)
@@ -443,14 +449,14 @@ bool Application::handleUptimeCommand(const QString &, const QStringList &args)
 
 bool Application::handleUserInfoCommand(const QString &, const QStringList &args)
 {
-    typedef QMap<QString, Server::UserMatchType> IntMap;
+    typedef QMap<QString, TGetUserConnectionInfoListRequestData::MatchType> IntMap;
     init_once(IntMap, matchTypeMap, IntMap()) {
-        matchTypeMap.insert("login-and-unique-id", Server::MatchLoginAndUniqueId);
-        matchTypeMap.insert("a", Server::MatchLoginAndUniqueId);
-        matchTypeMap.insert("login", Server::MatchLogin);
-        matchTypeMap.insert("l", Server::MatchLogin);
-        matchTypeMap.insert("unique-id", Server::MatchUniqueId);
-        matchTypeMap.insert("u", Server::MatchUniqueId);
+        matchTypeMap.insert("login-and-unique-id", TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId);
+        matchTypeMap.insert("a", TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId);
+        matchTypeMap.insert("login", TGetUserConnectionInfoListRequestData::MatchLogin);
+        matchTypeMap.insert("l", TGetUserConnectionInfoListRequestData::MatchLogin);
+        matchTypeMap.insert("unique-id", TGetUserConnectionInfoListRequestData::MatchUniqueId);
+        matchTypeMap.insert("u", TGetUserConnectionInfoListRequestData::MatchUniqueId);
     }
     QMap<QString, QString> result;
     QString errorData;
@@ -458,8 +464,9 @@ bool Application::handleUserInfoCommand(const QString &, const QStringList &args
     BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
     if (!checkParsingError(error, errorData))
         return false;
-    Server::UserMatchType matchType = result.contains("type") ? matchTypeMap.value(result.value("type")) :
-                                                                Server::MatchLoginAndUniqueId;
+    TGetUserConnectionInfoListRequestData::MatchType matchType =
+            result.contains("type") ? matchTypeMap.value(result.value("type")) :
+                                      TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId;
     QString matchPattern = result.value("pattern");
     if (!QRegExp(matchPattern, Qt::CaseSensitive, QRegExp::WildcardUnix).isValid()) {
         bWriteLine(tr("Invalid pattern", "error"));

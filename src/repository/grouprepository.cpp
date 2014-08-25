@@ -184,7 +184,7 @@ Group GroupRepository::findOne(quint64 id)
     if (!isValid() || !id)
         return entity;
     BSqlResult result = Source->select("groups", QStringList() << "creation_date_time" << "last_modification_date_time"
-                                       << "name", BSqlWhere("id = :id", ":id", id));
+                                       << "owner_id" << "name", BSqlWhere("id = :id", ":id", id));
     if (!result.success() || result.value().isEmpty())
         return entity;
     entity.mid = id;

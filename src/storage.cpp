@@ -69,40 +69,7 @@ bool Storage::removeTexsample(const QString &path)
 
 /*============================== Public methods ============================*/
 
-/*TOperationResult Storage::addUser(const TUserInfo &info, const QLocale &locale, const QStringList &clabGroups)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!info.isValid(TUserInfo::AddContext))
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    return addUserInternal(info, locale, clabGroups);
-}
-
-TOperationResult Storage::editUser(const TUserInfo &info, bool editClab, const QStringList &clabGroups)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!info.isValid(TUserInfo::EditContext))
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    return editUserInternal(info, editClab, clabGroups);
-}
-
-TOperationResult Storage::updateUser(const TUserInfo info)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!info.isValid(TUserInfo::UpdateContext))
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    return editUserInternal(info);
-}
-
-TCompilationResult Storage::addSample(quint64 userId, TTexProject project, const TSampleInfo &info)
+/*TCompilationResult Storage::addSample(quint64 userId, TTexProject project, const TSampleInfo &info)
 {
     if (Global::readOnly())
         return TOperationResult(TMessage::ReadOnlyError);
@@ -360,88 +327,6 @@ TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &d
     }
     foreach (const QVariant &v, r2.values())
         deletedSamples << v.toMap().value("id").toULongLong();
-    return TOperationResult(true);
-}
-
-TOperationResult Storage::getRecoveryCode(const QString &email, const QLocale &locale)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (email.isEmpty())
-        return TOperationResult(TMessage::InvalidEmailError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    quint64 userId = userIdByEmail(email);
-    if (!userId)
-        return TOperationResult(TMessage::NoSuchUserError);
-    if (!mdb->transaction())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    QString code = BeQt::pureUuidText(QUuid::createUuid());
-    QDateTime crDt = QDateTime::currentDateTimeUtc();
-    QDateTime expDt = crDt.addDays(1);
-    QVariantMap m;
-    m.insert("code", code);
-    m.insert("requester_id", userId);
-    m.insert("expiration_dt", expDt.toMSecsSinceEpoch());
-    m.insert("creation_dt", crDt.toMSecsSinceEpoch());
-    BSqlResult r = mdb->insert("recovery_codes", m);
-    if (!r)
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    Global::StringMap replace;
-    replace.insert("%code%", code);
-    replace.insert("%username%", userLogin(userId));
-    TOperationResult sr = Global::sendEmail(email, "get_recovery_code", locale, replace);
-    if (!sr)
-    {
-        mdb->rollback();
-        return sr;
-    }
-    if (!mdb->commit())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    return TOperationResult(true);
-}
-
-TOperationResult Storage::recoverAccount(const QString &email, const QString &code, const QByteArray &password,
-                                         const QLocale &locale)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (email.isEmpty() || BeQt::uuidFromText(code).isNull() || password.isEmpty())
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    quint64 userId = userIdByEmail(email);
-    if (!userId)
-        return TOperationResult(TMessage::NoSuchUserError);
-    BSqlWhere w("requester_id = :requester_id AND code = :code", ":requester_id", userId, ":code",
-                BeQt::pureUuidText(code));
-    BSqlResult r = mdb->select("recovery_codes", "id", w);
-    quint64 codeId = r.value("id").toULongLong();
-    if (!r || !codeId)
-        return TOperationResult(TMessage::NoSuchCodeError);
-    if (!mdb->transaction())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    if (!mdb->update("users", "password", password, "", QVariant(), BSqlWhere("id = :id", ":id", userId)))
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    if (!mdb->deleteFrom("recovery_codes", BSqlWhere("id = :id", ":id", codeId)))
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    TOperationResult sr = Global::sendEmail(email, "recover_account", locale);
-    if (!sr)
-    {
-        mdb->rollback();
-        return sr;
-    }
-    if (!mdb->commit())
-        return TOperationResult(TMessage::InternalDatabaseError);
     return TOperationResult(true);
 }
 

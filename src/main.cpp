@@ -37,11 +37,11 @@ int main(int argc, char *argv[])
 {
     static const QString AppName = "TeXSample Server";
     QString home = QDir::home().dirName();
-    BApplicationServer s(9920 + qHash(home) % 10, AppName + home);
+    BApplicationServer s(9920 + qHash(home) % 10, AppName + "3" + home);
     int ret = 0;
     if (!s.testServer()) {
-        s.listen();
         Application app(argc, argv, AppName, "Andrey Bogdanov");
+        s.listen();
         if (!app.initializeEmail() || !app.initializeStorage())
             return 0;
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));

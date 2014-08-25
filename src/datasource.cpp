@@ -166,6 +166,14 @@ BSqlResult DataSource::insert(const QString &table, const QVariantMap &values, c
     return db->insert(table, values, where);
 }
 
+BSqlResult DataSource::insert(const QString &table, const QString &field, const QVariant &value,
+                              const BSqlWhere &where)
+{
+    if (!isValid())
+        return BSqlResult();
+    return db->insert(table, field, value, where);
+}
+
 BSqlResult DataSource::insert(const QString &table, const QString &field1, const QVariant &value1,
                               const QString &field2, const QVariant &value2, const BSqlWhere &where)
 {
@@ -233,12 +241,12 @@ BSqlResult DataSource::update(const QString &table, const QVariantMap &values, c
     return db->update(table, values, where);
 }
 
-BSqlResult DataSource::update(const QString &table, const QString &field1, const QVariant &value1,
+BSqlResult DataSource::update(const QString &table, const QString &field, const QVariant &value,
                               const BSqlWhere &where)
 {
     if (!isValid())
         return BSqlResult();
-    return db->update(table, field1, value1, where);
+    return db->update(table, field, value, where);
 }
 
 BSqlResult DataSource::update(const QString &table, const QString &field1, const QVariant &value1,

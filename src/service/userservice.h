@@ -30,6 +30,7 @@ class GroupRepository;
 class InviteCode;
 class InviteCodeRepository;
 class RegistrationConfirmationCodeRepository;
+class TransactionHolder;
 class User;
 class UserRepository;
 
@@ -89,6 +90,11 @@ public:
     RequestOut<TConfirmRegistrationReplyData> confirmRegistration(
             const RequestIn<TConfirmRegistrationRequestData> &in);
     DataSource *dataSource() const;
+    RequestOut<TDeleteGroupReplyData> deleteGroup(const RequestIn<TDeleteGroupRequestData> &in, quint64 userId);
+    RequestOut<TDeleteInvitesReplyData> deleteInvites(const RequestIn<TDeleteInvitesRequestData> &in, quint64 userId);
+    RequestOut<TEditGroupReplyData> editGroup(const RequestIn<TEditGroupRequestData> &in, quint64 userId);
+    RequestOut<TEditSelfReplyData> editSelf(const RequestIn<TEditSelfRequestData> &in, quint64 userId);
+    RequestOut<TEditUserReplyData> editUser(const RequestIn<TEditUserRequestData> &in, quint64 userId);
     RequestOut<TGenerateInvitesReplyData> generateInvites(const RequestIn<TGenerateInvitesRequestData> &in,
                                                           quint64 userId);
     RequestOut<TGetGroupInfoListReplyData> getGroupInfoList(const RequestIn<TGetGroupInfoListRequestData> &in,
@@ -96,6 +102,7 @@ public:
     RequestOut<TGetInviteInfoListReplyData> getInviteInfoList(const RequestIn<TGetInviteInfoListRequestData> &in,
                                                               quint64 userId);
     RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);
+    RequestOut<TGetUserAvatarReplyData> getUserAvatar(const RequestIn<TGetUserAvatarRequestData> &in);
     RequestOut<TGetUserInfoReplyData> getUserInfo(const RequestIn<TGetUserInfoRequestData> &in);
     RequestOut<TGetUserInfoAdminReplyData> getUserInfoAdmin(const RequestIn<TGetUserInfoAdminRequestData> &in);
     RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(
@@ -103,7 +110,10 @@ public:
     bool initializeRoot(QString *error = 0);
     bool isRootInitialized();
     bool isValid() const;
+    RequestOut<TRecoverAccountReplyData> recoverAccount(const RequestIn<TRecoverAccountRequestData> &in);
     RequestOut<TRegisterReplyData> registerUser(const RequestIn<TRegisterRequestData> &in);
+    RequestOut<TRequestRecoveryCodeReplyData> requestRecoveryCode(
+            const RequestIn<TRequestRecoveryCodeRequestData> &in);
 private:
     static bool sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                           const BProperties &replace = BProperties());
@@ -119,7 +129,9 @@ private:
 private:
     bool addUser(const User &entity, User &newEntity, const QLocale &locale = Application::locale(),
                  QString *error = 0);
-    bool checkUserId(const Translator &t, quint64 userId, QString *error);
+    bool checkUserId(const Translator &translator, quint64 userId, QString *error);
+    bool commit(const QLocale &locale, TransactionHolder &holder, QString *error);
+    bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
     bool commonCheck(const Translator &translator, QString *error) const;
     bool confirmRegistration(const BUuid &code, const QLocale &locale = Application::locale(), QString *error = 0);
     TGroupInfoList getAllGroups();
