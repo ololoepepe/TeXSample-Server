@@ -345,6 +345,39 @@
     </message>
 </context>
 <context>
+    <name>ApplicationVersionService</name>
+    <message>
+        <location filename="../src/service/applicationversionservice.cpp" line="84"/>
+        <source>No application version for this client found</source>
+        <comment>error</comment>
+        <translation>Версия приложения для этого клиента не найдена</translation>
+    </message>
+    <message>
+        <location filename="../src/service/applicationversionservice.cpp" line="149"/>
+        <source>Failed to add application version (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось добавить версию приложения (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/applicationversionservice.cpp" line="157"/>
+        <source>Failed to edit application version (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось редактировать версию приложения (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/applicationversionservice.cpp" line="172"/>
+        <source>Failed to commit (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/applicationversionservice.cpp" line="181"/>
+        <source>Invalid ApplicationVersionService instance (internal)</source>
+        <comment>error</comment>
+        <translation>Некорректный экземпляр ApplicationVersionService (внутренняя)</translation>
+    </message>
+</context>
+<context>
     <name>BTerminalIOHandler</name>
     <message>
         <location filename="../src/application.cpp" line="557"/>
@@ -432,54 +465,54 @@ Example:
 <context>
     <name>Connection</name>
     <message>
-        <location filename="../src/connection.cpp" line="62"/>
+        <location filename="../src/connection.cpp" line="64"/>
         <source>Invalid storage instance</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="179"/>
+        <location filename="../src/connection.cpp" line="181"/>
         <source>Invalid Connection instance (internal)</source>
         <comment>error</comment>
         <translation>Недействительный экземпляр Connection (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="183"/>
+        <location filename="../src/connection.cpp" line="185"/>
         <source>Not authorized</source>
         <comment>error</comment>
         <translation>Не авторизован</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="185"/>
+        <location filename="../src/connection.cpp" line="187"/>
         <source>Not enough rights</source>
         <comment>error</comment>
         <translation>Недостаточно прав</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="187"/>
+        <location filename="../src/connection.cpp" line="189"/>
         <source>No access to service</source>
         <comment>error</comment>
         <translation>Нет доступа к сервису</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="242"/>
+        <location filename="../src/connection.cpp" line="244"/>
         <source>Already authorized</source>
         <comment>message</comment>
         <translation>Уже авторизован</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="357"/>
+        <location filename="../src/connection.cpp" line="359"/>
         <source>This operation is not supported yet</source>
         <comment>message</comment>
         <translation>Эта операция пока еще не поддерживается</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="603"/>
+        <location filename="../src/connection.cpp" line="615"/>
         <source>Server is already listening</source>
         <comment>error</comment>
         <translation>Сервер уже прослушивает порт</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="605"/>
+        <location filename="../src/connection.cpp" line="617"/>
         <source>Failed to start server</source>
         <comment>error</comment>
         <translation>Не удалось запустить сервер</translation>
@@ -541,79 +574,9 @@ Example:
     </message>
 </context>
 <context>
-    <name>Storage</name>
-    <message>
-        <source>Storage already initialized</source>
-        <translation type="obsolete">Хранилище уже инициализировано</translation>
-    </message>
-    <message>
-        <source>Initializing storage...</source>
-        <translation type="obsolete">Инициализация хранилища...</translation>
-    </message>
-    <message>
-        <source>Failed to load texsample.sty</source>
-        <translation type="obsolete">Не удалось загрузить texsample.sty</translation>
-    </message>
-    <message>
-        <source>Failed to load texsample.tex</source>
-        <translation type="obsolete">Не удалось загрузить texsample.tex</translation>
-    </message>
-    <message>
-        <source>Failed to load database schema</source>
-        <translation type="obsolete">Не удалось загрузить схему базы данных</translation>
-    </message>
-    <message>
-        <source>Can&apos;t create tables in read-only mode</source>
-        <translation type="obsolete">Нельзя создать таблицы в режиме только чтения</translation>
-    </message>
-    <message>
-        <source>Can&apos;t create users in read-only mode</source>
-        <translation type="obsolete">Нельзя создать пользователя в режиме только чтения</translation>
-    </message>
-    <message>
-        <source>Database initialization failed</source>
-        <translation type="obsolete">Инициализация базы данных не удалась</translation>
-    </message>
-    <message>
-        <source>Invalid storage instance</source>
-        <translation type="obsolete">Недействительный экземпляр хранилища</translation>
-    </message>
-    <message>
-        <source>Failed to test invite codes</source>
-        <translation type="obsolete">Не удалось проверить инвайт-коды</translation>
-    </message>
-    <message>
-        <source>Failed to test recovery codes</source>
-        <translation type="obsolete">Не удалось проверить коды восстановления</translation>
-    </message>
-    <message>
-        <source>Enter superuser login:</source>
-        <translation type="obsolete">Введите логин суперпользователя:</translation>
-    </message>
-    <message>
-        <source>Enter superuser e-mail:</source>
-        <translation type="obsolete">Введите электронную почту суперпользователя:</translation>
-    </message>
-    <message>
-        <source>Enter superuser password:</source>
-        <translation type="obsolete">Введите пароль сперпользователя:</translation>
-    </message>
-    <message>
-        <source>Creating superuser account...</source>
-        <translation type="obsolete">Создание аккаунта суперпользователя...</translation>
-    </message>
-    <message>
-        <source>Operation aborted</source>
-        <translation type="obsolete">Операция прервана</translation>
-    </message>
-    <message>
-        <source>Done!</source>
-        <translation type="obsolete">Готово!</translation>
-    </message>
-</context>
-<context>
     <name>UserService</name>
     <message>
+        <location filename="../src/service/applicationversionservice.h" line="74"/>
         <location filename="../src/service/userservice.h" line="126"/>
         <source>Invalid data</source>
         <comment>error</comment>
@@ -741,7 +704,7 @@ Example:
         <location filename="../src/service/userservice.cpp" line="492"/>
         <location filename="../src/service/userservice.cpp" line="768"/>
         <location filename="../src/service/userservice.cpp" line="909"/>
-        <location filename="../src/service/userservice.cpp" line="964"/>
+        <location filename="../src/service/userservice.cpp" line="965"/>
         <source>Failed to get user (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить пользователя (внутренняя)</translation>
@@ -763,7 +726,7 @@ Example:
         <translation>Не удалось отправить сообщение по эл. почте</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="958"/>
+        <location filename="../src/service/userservice.cpp" line="959"/>
         <source>Invalid registration confirmation code</source>
         <comment>error</comment>
         <translation>Некорректный код подтверждения регистрации</translation>
@@ -771,7 +734,7 @@ Example:
     <message>
         <location filename="../src/service/userservice.cpp" line="288"/>
         <location filename="../src/service/userservice.cpp" line="765"/>
-        <location filename="../src/service/userservice.cpp" line="961"/>
+        <location filename="../src/service/userservice.cpp" line="962"/>
         <source>No such code</source>
         <comment>error</comment>
         <translation>Нет такого кода</translation>
@@ -782,13 +745,13 @@ Example:
         <location filename="../src/service/userservice.cpp" line="442"/>
         <location filename="../src/service/userservice.cpp" line="489"/>
         <location filename="../src/service/userservice.cpp" line="774"/>
-        <location filename="../src/service/userservice.cpp" line="968"/>
+        <location filename="../src/service/userservice.cpp" line="969"/>
         <source>Failed to edit user (internal)</source>
         <comment>error</comment>
         <translation>Не удалось изменить пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/userservice.cpp" line="970"/>
+        <location filename="../src/service/userservice.cpp" line="971"/>
         <source>Failed to remove registration confirmation code (internal)</source>
         <comment>error</comment>
         <translation>Не удалось удалить код подтверждения регистрации (внутренняя)</translation>
@@ -952,13 +915,13 @@ Example:
         <translation>Введите код подтверждаения (xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx):</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="159"/>
+        <location filename="../src/connection.cpp" line="161"/>
         <source>No access to service</source>
         <comment>error</comment>
         <translation>Нет доступа к сервису</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="163"/>
+        <location filename="../src/connection.cpp" line="165"/>
         <source>No access to group</source>
         <comment>error</comment>
         <translation>Нет доступа к группе</translation>

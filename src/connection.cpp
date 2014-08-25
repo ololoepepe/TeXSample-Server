@@ -24,6 +24,7 @@
 #include "application.h"
 #include "datasource.h"
 #include "server.h"
+#include "service/applicationversionservice.h"
 #include "service/requestin.h"
 #include "service/requestout.h"
 #include "service/userservice.h"
@@ -56,7 +57,8 @@
 /*============================== Public constructors =======================*/
 
 Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QString &location) :
-    BNetworkConnection(server, socket), Source(new DataSource(location)), UserServ(new UserService(Source))
+    BNetworkConnection(server, socket), Source(new DataSource(location)),
+    ApplicationVersionServ(new ApplicationVersionService(Source)), UserServ(new UserService(Source))
 {
     if (!Source->isValid()) {
         QString msg = translationsEnabled() ? tr("Invalid storage instance") : QString("Invalid storage instance");
@@ -453,7 +455,12 @@ bool Connection::handleGetLabInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
+        return sendReply(op, error);
+    RequestIn<TGetLatestAppVersionRequestData> in(request);
+    return sendReply(op, ApplicationVersionServ->getLatestAppVersion(in).createReply());
 }
 
 bool Connection::handleGetSampleInfoListRequest(BNetworkOperation *op)
@@ -587,7 +594,12 @@ bool Connection::handleRequestRecoveryCodeRequest(BNetworkOperation *op)
 
 bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+        return sendReply(op, error);
+    RequestIn<TSetLatestAppVersionRequestData> in(request);
+    return sendReply(op, ApplicationVersionServ->setLatestAppVersion(in).createReply());
 }
 
 bool Connection::handleSetServerStateRequest(BNetworkOperation *op)

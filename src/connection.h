@@ -22,6 +22,7 @@
 #ifndef CONNECTION_H
 #define CONNECTION_H
 
+class ApplicationVersionService;
 class DataSource;
 class Translator;
 class UserService;
@@ -75,6 +76,7 @@ private:
     };
 private:
     DataSource * const Source;
+    ApplicationVersionService * const ApplicationVersionServ;
     UserService * const UserServ;
 private:
     TClientInfo mclientInfo;

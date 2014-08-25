@@ -412,7 +412,6 @@ bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
     if (!isValid() || !userId)
         return false;
     QByteArray data;
-    qDebug() << avatar.isNull() << avatar.size();
     if (!avatar.isNull()) {
         QBuffer buff(&data);
         buff.open(QBuffer::WriteOnly);
@@ -421,6 +420,4 @@ bool UserRepository::updateAvatar(quint64 userId, const QImage &avatar)
         buff.close();
     }
     return Source->update("user_avatars", "avatar", data, BSqlWhere("user_id = :user_id", ":user_id", userId));
-    //return Source->deleteFrom("user_avatars", BSqlWhere("user_id = :user_id", ":user_id", userId))
-    //        && Source->insert("user_avatars", "user_id", userId, "avatar", data);
 }

@@ -945,9 +945,10 @@ bool UserService::commit(const Translator &translator, TransactionHolder &holder
 
 bool UserService::commonCheck(const Translator &translator, QString *error) const
 {
-    if (!isValid())
+    if (!isValid()) {
         return bRet(error, translator.translate("UserService", "Invalid UserService instance (internal)", "error"),
                     false);
+    }
     return bRet(error, QString(), true);
 }
 
@@ -966,9 +967,10 @@ bool UserService::confirmRegistration(const BUuid &code, const QLocale &locale, 
     userEntity.setActive(true);
     if (!UserRepo->edit(userEntity))
         return bRet(error, t.translate("UserService", "Failed to edit user (internal)", "error"), false);
-    if (!RegistrationConfirmationCodeRepo->deleteOneByUserId(codeEntity.userId()))
+    if (!RegistrationConfirmationCodeRepo->deleteOneByUserId(codeEntity.userId())) {
         return bRet(error, t.translate("UserService", "Failed to remove registration confirmation code (internal)",
                                        "error"), false);
+    }
     return bRet(error, QString(), true);
 }
 

@@ -24,13 +24,23 @@
 
 class ApplicationVersionRepository;
 class DataSource;
+class TransactionHolder;
+
+#include "requestin.h"
+#include "requestout.h"
+#include "translator.h"
 
 #include <TeXSample>
+#include <TGetLatestAppVersionReplyData>
+#include <TGetLatestAppVersionRequestData>
+#include <TSetLatestAppVersionReplyData>
+#include <TSetLatestAppVersionRequestData>
 
 #include <BeQt>
 #include <BVersion>
 
 #include <QCoreApplication>
+#include <QString>
 #include <QUrl>
 
 /*============================================================================
@@ -48,9 +58,25 @@ public:
     ~ApplicationVersionService();
 public:
     DataSource *dataSource() const;
+    RequestOut<TGetLatestAppVersionReplyData> getLatestAppVersion(
+            const RequestIn<TGetLatestAppVersionRequestData> &in);
     bool isValid() const;
-    bool setApplicationVersion(Texsample::ClientType clienType, BeQt::OSType os, BeQt::ProcessorArchitecture arch,
-                               bool portable, const BVersion &version, const QUrl &downloadUrl = QUrl());
+    bool setLatestAppVersion(Texsample::ClientType clienType, BeQt::OSType os, BeQt::ProcessorArchitecture arch,
+                             bool portable, const BVersion &version, const QUrl &downloadUrl = QUrl());
+    RequestOut<TSetLatestAppVersionReplyData> setLatestAppVersion(
+            const RequestIn<TSetLatestAppVersionRequestData> &in);
+private:
+    template <typename T> bool commonCheck(const Translator &translator, const T &data, QString *error) const
+    {
+        if (!commonCheck(translator, error))
+            return false;
+        if (!data.isValid())
+            return bRet(error, translator.translate("UserService", "Invalid data", "error"), false);
+        return bRet(error, QString(), true);
+    }
+private:
+    bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
+    bool commonCheck(const Translator &translator, QString *error) const;
 private:
     Q_DISABLE_COPY(ApplicationVersionService)
 };
