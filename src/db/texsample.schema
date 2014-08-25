@@ -110,6 +110,13 @@ CREATE TABLE IF NOT EXISTS registration_confirmation_codes (
   expiration_date_time          INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS email_change_confirmation_codes (
+  user_id                       INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  code                          TEXT UNIQUE NOT NULL,
+  email                         TEXT UNIQUE NOT NULL,
+  expiration_date_time          INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS application_versions (
   client_type                   INTEGER NOT NULL REFERENCES client_types(client_type) ON DELETE CASCADE ON UPDATE CASCADE,
   os_type                       INTEGER NOT NULL REFERENCES os_types(os_type) ON DELETE CASCADE ON UPDATE CASCADE,

@@ -99,6 +99,7 @@ private:
     bool handleCheckEmailAvailabilityRequest(BNetworkOperation *op);
     bool handleCheckLoginAvailabilityRequest(BNetworkOperation *op);
     bool handleCompileTexProjectRequest(BNetworkOperation *op);
+    bool handleConfirmEmailChangeRequest(BNetworkOperation *op);
     bool handleConfirmRegistrationRequest(BNetworkOperation *op);
     bool handleDeleteGroupRequest(BNetworkOperation *op);
     bool handleDeleteInvitesRequest(BNetworkOperation *op);

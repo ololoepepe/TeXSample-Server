@@ -1,6 +1,7 @@
 HEADERS += \
     $${PWD}/accountrecoverycoderepository.h \
     $${PWD}/applicationversionrepository.h \
+    $${PWD}/emailchangeconfirmationcoderepository.h \
     $${PWD}/grouprepository.h \
     $${PWD}/invitecoderepository.h \
     $${PWD}/labrepository.h \
@@ -12,6 +13,7 @@ HEADERS += \
 SOURCES += \
     $${PWD}/accountrecoverycoderepository.cpp \
     $${PWD}/applicationversionrepository.cpp \
+    $${PWD}/emailchangeconfirmationcoderepository.cpp \
     $${PWD}/grouprepository.cpp \
     $${PWD}/invitecoderepository.cpp \
     $${PWD}/labrepository.cpp \

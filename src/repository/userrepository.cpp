@@ -134,6 +134,16 @@ bool UserRepository::exists(const TUserIdentifier &id)
     return result.success() && result.value("COUNT(*)").toInt() > 0;
 }
 
+TAccessLevel UserRepository::findAccessLevel(quint64 id)
+{
+    if (!isValid() || !id)
+        return TAccessLevel();
+    BSqlResult result = Source->select("users", "access_level", BSqlWhere("id = :id", ":id", id));
+    if (!result.success())
+        return TAccessLevel();
+    return result.value("access_level").toInt();
+}
+
 QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan)
 {
     QList<User> list;
@@ -173,6 +183,30 @@ QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan)
         list << entity;
     }
     return list;
+}
+
+QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id)
+{
+    if (!isValid() || !id.isValid())
+        return QDateTime();
+    BSqlResult result;
+    switch (id.type()) {
+    case TUserIdentifier::IdType:
+        result = Source->select("users", "last_modification_date_time", BSqlWhere("id = :id", ":id", id.id()));
+        break;
+    case TUserIdentifier::LoginType:
+        result = Source->select("users", "last_modification_date_time",
+                                BSqlWhere("login = :login", ":login", id.login()));
+        break;
+    default:
+        break;
+    }
+    if (!result.success())
+        return QDateTime();
+    QDateTime dt;
+    dt.setTimeSpec(Qt::UTC);
+    dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    return dt;
 }
 
 QString UserRepository::findLogin(quint64 id)
@@ -261,30 +295,6 @@ User UserRepository::findOne(const QString &identifier, const QByteArray &passwo
 bool UserRepository::isValid() const
 {
     return Source && Source->isValid();
-}
-
-QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id)
-{
-    if (!isValid() || !id.isValid())
-        return QDateTime();
-    BSqlResult result;
-    switch (id.type()) {
-    case TUserIdentifier::IdType:
-        result = Source->select("users", "last_modification_date_time", BSqlWhere("id = :id", ":id", id.id()));
-        break;
-    case TUserIdentifier::LoginType:
-        result = Source->select("users", "last_modification_date_time",
-                                BSqlWhere("login = :login", ":login", id.login()));
-        break;
-    default:
-        break;
-    }
-    if (!result.success())
-        return QDateTime();
-    QDateTime dt;
-    dt.setTimeSpec(Qt::UTC);
-    dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
-    return dt;
 }
 
 /*============================== Private methods ===========================*/

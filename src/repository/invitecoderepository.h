@@ -28,6 +28,7 @@ public:
     bool deleteExpired();
     bool deleteOne(quint64 id);
     bool deleteSome(const TIdList &ids);
+    QList<InviteCode> findAll();
     QList<InviteCode> findAllByOwnerId(quint64 ownerId);
     InviteCode findOne(quint64 id);
     InviteCode findOneByCode(const BUuid &code);

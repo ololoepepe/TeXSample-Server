@@ -1,6 +1,7 @@
 HEADERS += \
     $${PWD}/accountrecoverycode.h \
     $${PWD}/applicationversion.h \
+    $${PWD}/emailchangeconfirmationcode.h \
     $${PWD}/group.h \
     $${PWD}/invitecode.h \
     $${PWD}/lab.h \
@@ -11,6 +12,7 @@ HEADERS += \
 SOURCES += \
     $${PWD}/accountrecoverycode.cpp \
     $${PWD}/applicationversion.cpp \
+    $${PWD}/emailchangeconfirmationcode.cpp \
     $${PWD}/group.cpp \
     $${PWD}/invitecode.cpp \
     $${PWD}/lab.cpp \

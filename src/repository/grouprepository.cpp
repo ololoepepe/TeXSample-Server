@@ -74,6 +74,28 @@ bool GroupRepository::edit(const Group &entity)
     return Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success();
 }
 
+QList<Group> GroupRepository::findAll()
+{
+    QList<Group> list;
+    if (!isValid())
+        return list;
+    BSqlResult result = Source->select("groups", QStringList() << "id" << "owner_id" << "creation_date_time"
+                                       << "last_modification_date_time" << "name");
+    if (!result.success() || result.values().isEmpty())
+        return list;
+    foreach (const QVariantMap &m, result.values()) {
+        Group entity(this);
+        entity.mid = m.value("id").toULongLong();
+        entity.mownerId = m.value("owner_id").toULongLong();
+        entity.mcreationDateTime.setMSecsSinceEpoch(m.value("creation_date_time").toLongLong());
+        entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("last_modification_date_time").toLongLong());
+        entity.mname = m.value("name").toString();
+        entity.valid = true;
+        list << entity;
+    }
+    return list;
+}
+
 QList<Group> GroupRepository::findAll(const TIdList &ids)
 {
     QList<Group> list;

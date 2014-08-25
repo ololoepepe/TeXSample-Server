@@ -8,42 +8,7 @@
 #include "service/userservice.h"
 #include "translator.h"
 
-#include <TAccessLevel>
-#include <TAddGroupReplyData>
-#include <TAddGroupRequestData>
-#include <TAddUserReplyData>
-#include <TAddUserRequestData>
-#include <TAuthorizeReplyData>
-#include <TAuthorizeRequestData>
-#include <TConfirmRegistrationReplyData>
-#include <TConfirmRegistrationRequestData>
-#include <TGenerateInvitesReplyData>
-#include <TGenerateInvitesRequestData>
-#include <TGetInviteInfoListReplyData>
-#include <TGetInviteInfoListRequestData>
-#include <TGetSelfInfoReplyData>
-#include <TGetSelfInfoRequestData>
-#include <TGetUserInfoAdminReplyData>
-#include <TGetUserInfoAdminRequestData>
-#include <TGetUserInfoListAdminReplyData>
-#include <TGetUserInfoListAdminRequestData>
-#include <TGetUserInfoReplyData>
-#include <TGetUserInfoRequestData>
-#include <TGroupInfo>
-#include <TGroupInfoList>
-#include <TIdList>
-#include <TLogRequestData>
-#include <TOperation>
-#include <TRegisterReplyData>
-#include <TRegisterRequestData>
-#include <TReply>
-#include <TRequest>
-#include <TServerState>
-#include <TService>
-#include <TServiceList>
-#include <TUserConnectionInfo>
-#include <TUserConnectionInfoList>
-#include <TUserInfo>
+#include <TeXSample/TeXSampleCore>
 
 #include <BGenericSocket>
 #include <BNetworkConnection>
@@ -221,12 +186,12 @@ bool Connection::handleAddGroupRequest(BNetworkOperation *op)
 
 bool Connection::handleAddLabRequest(BNetworkOperation *op)
 {
-    //
+    //TODO
 }
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
-    //
+    //TODO
 }
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -266,12 +231,24 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
 
 bool Connection::handleChangeEmailRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    Translator t(request.locale());
+    QString error;
+    if (!commonCheck(t, &error, TAccessLevel::UserLevel))
+        return sendReply(op, error);
+    RequestIn<TChangeEmailRequestData> in(request);
+    return sendReply(op, UserServ->changeEmail(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleChangePasswordRequest(BNetworkOperation *op)
 {
-    //
+    TRequest request = op->variantData().value<TRequest>();
+    Translator t(request.locale());
+    QString error;
+    if (!commonCheck(t, &error, TAccessLevel::UserLevel))
+        return sendReply(op, error);
+    RequestIn<TChangePasswordRequestData> in(request);
+    return sendReply(op, UserServ->changePassword(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleCheckEmailAvailabilityRequest(BNetworkOperation *op)
@@ -287,6 +264,16 @@ bool Connection::handleCheckLoginAvailabilityRequest(BNetworkOperation *op)
 bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
 {
     //
+}
+
+bool Connection::handleConfirmEmailChangeRequest(BNetworkOperation *op)
+{
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error))
+        return sendReply(op, error);
+    RequestIn<TConfirmEmailChangeRequestData> in(request);
+    return sendReply(op, UserServ->confirmEmailChange(in).createReply());
 }
 
 bool Connection::handleConfirmRegistrationRequest(BNetworkOperation *op)
@@ -372,9 +359,10 @@ bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
 {
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
+    if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
         return sendReply(op, error);
-    return sendReply(op, "dummy"); //TODO
+    RequestIn<TGetGroupInfoListRequestData> in(request);
+    return sendReply(op, UserServ->getGroupInfoList(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
@@ -1321,6 +1309,8 @@ void Connection::initHandlers()
     installRequestHandler(TOperation::CheckLoginAvailability,
                           InternalHandler(&Connection::handleCheckLoginAvailabilityRequest));
     installRequestHandler(TOperation::CompileTexProject, InternalHandler(&Connection::handleCompileTexProjectRequest));
+    installRequestHandler(TOperation::ConfirmEmailChange,
+                          InternalHandler(&Connection::handleConfirmEmailChangeRequest));
     installRequestHandler(TOperation::ConfirmRegistration,
                           InternalHandler(&Connection::handleConfirmRegistrationRequest));
     installRequestHandler(TOperation::DeleteGroup, InternalHandler(&Connection::handleDeleteGroupRequest));

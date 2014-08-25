@@ -3,6 +3,7 @@
 
 class AccountRecoveryCodeRepository;
 class DataSource;
+class EmailChangeConfirmationCodeRepository;
 class Group;
 class GroupRepository;
 class InviteCode;
@@ -24,28 +25,7 @@ class BUuid;
 #include "requestout.h"
 #include "translator.h"
 
-#include <TAddGroupReplyData>
-#include <TAddGroupRequestData>
-#include <TAddUserReplyData>
-#include <TAddUserRequestData>
-#include <TAuthorizeReplyData>
-#include <TAuthorizeRequestData>
-#include <TConfirmRegistrationReplyData>
-#include <TConfirmRegistrationRequestData>
-#include <TGenerateInvitesReplyData>
-#include <TGenerateInvitesRequestData>
-#include <TGetInviteInfoListReplyData>
-#include <TGetInviteInfoListRequestData>
-#include <TGetSelfInfoReplyData>
-#include <TGetSelfInfoRequestData>
-#include <TGetUserInfoAdminReplyData>
-#include <TGetUserInfoAdminRequestData>
-#include <TGetUserInfoListAdminReplyData>
-#include <TGetUserInfoListAdminRequestData>
-#include <TGetUserInfoReplyData>
-#include <TGetUserInfoRequestData>
-#include <TRegisterReplyData>
-#include <TRegisterRequestData>
+#include <TeXSample/TeXSampleCore>
 
 #include <BProperties>
 
@@ -63,6 +43,7 @@ class UserService
     Q_DECLARE_TR_FUNCTIONS(UserService)
 private:
     AccountRecoveryCodeRepository * const AccountRecoveryCodeRepo;
+    EmailChangeConfirmationCodeRepository * const EmailChangeConfirmationCodeRepo;
     GroupRepository * const GroupRepo;
     InviteCodeRepository * const InviteCodeRepo;
     RegistrationConfirmationCodeRepository * const RegistrationConfirmationCodeRepo;
@@ -75,12 +56,18 @@ public:
     RequestOut<TAddGroupReplyData> addGroup(const RequestIn<TAddGroupRequestData> &in, quint64 userId);
     RequestOut<TAddUserReplyData> addUser(const RequestIn<TAddUserRequestData> &in);
     RequestOut<TAuthorizeReplyData> authorize(const RequestIn<TAuthorizeRequestData> &in);
+    RequestOut<TChangeEmailReplyData> changeEmail(const RequestIn<TChangeEmailRequestData> &in, quint64 userId);
+    RequestOut<TChangePasswordReplyData> changePassword(const RequestIn<TChangePasswordRequestData> &in,
+                                                        quint64 userId);
     bool checkOutdatedEntries();
+    RequestOut<TConfirmEmailChangeReplyData> confirmEmailChange(const RequestIn<TConfirmEmailChangeRequestData> &in);
     RequestOut<TConfirmRegistrationReplyData> confirmRegistration(
             const RequestIn<TConfirmRegistrationRequestData> &in);
     DataSource *dataSource() const;
     RequestOut<TGenerateInvitesReplyData> generateInvites(const RequestIn<TGenerateInvitesRequestData> &in,
                                                           quint64 userId);
+    RequestOut<TGetGroupInfoListReplyData> getGroupInfoList(const RequestIn<TGetGroupInfoListRequestData> &in,
+                                                            quint64 userId);
     RequestOut<TGetInviteInfoListReplyData> getInviteInfoList(const RequestIn<TGetInviteInfoListRequestData> &in,
                                                               quint64 userId);
     RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);
@@ -107,8 +94,10 @@ private:
 private:
     bool addUser(const User &entity, User &newEntity, const QLocale &locale = Application::locale(),
                  QString *error = 0);
+    bool checkUserId(const Translator &t, quint64 userId, QString *error);
     bool commonCheck(const Translator &translator, QString *error) const;
     bool confirmRegistration(const BUuid &code, const QLocale &locale = Application::locale(), QString *error = 0);
+    TGroupInfoList getAllGroups();
     TGroupInfoList getGroups(const TIdList &ids);
     TGroupInfoList getGroups(quint64 userId);
     TGroupInfo groupToGroupInfo(const Group &entity);

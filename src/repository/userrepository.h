@@ -35,12 +35,13 @@ public:
     bool deleteOne(quint64 userId);
     bool edit(const User &entity);
     bool exists(const TUserIdentifier &id);
+    TAccessLevel findAccessLevel(quint64 id);
     QList<User> findAllNewerThan(const QDateTime &newerThan);
+    QDateTime findLastModificationDateTime(const TUserIdentifier &id);
     QString findLogin(quint64 id);
     User findOne(const TUserIdentifier &id);
     User findOne(const QString &identifier, const QByteArray &password);
     bool isValid() const;
-    QDateTime findLastModificationDateTime(const TUserIdentifier &id);
 private:
     bool createAvatar(quint64 userId, const QImage &avatar);
     bool deleteAvatar(quint64 userId);
