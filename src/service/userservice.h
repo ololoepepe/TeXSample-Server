@@ -85,7 +85,7 @@ public:
             const RequestIn<TCheckEmailAvailabilityRequestData> &in);
     RequestOut<TCheckLoginAvailabilityReplyData> checkLoginAvailability(
             const RequestIn<TCheckLoginAvailabilityRequestData> &in);
-    bool checkOutdatedEntries();
+    bool checkOutdatedEntries(QString *error = 0);
     RequestOut<TConfirmEmailChangeReplyData> confirmEmailChange(const RequestIn<TConfirmEmailChangeRequestData> &in);
     RequestOut<TConfirmRegistrationReplyData> confirmRegistration(
             const RequestIn<TConfirmRegistrationRequestData> &in);
@@ -107,7 +107,7 @@ public:
     RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(
             const RequestIn<TGetUserInfoListAdminRequestData> &in);
     bool initializeRoot(QString *error = 0);
-    bool isRootInitialized();
+    bool isRootInitialized(bool *ok = 0, QString *error = 0);
     bool isValid() const;
     RequestOut<TRecoverAccountReplyData> recoverAccount(const RequestIn<TRecoverAccountRequestData> &in);
     RequestOut<TRegisterReplyData> registerUser(const RequestIn<TRegisterRequestData> &in);
@@ -133,12 +133,12 @@ private:
     bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
     bool commonCheck(const Translator &translator, QString *error) const;
     bool confirmRegistration(const BUuid &code, const QLocale &locale = Application::locale(), QString *error = 0);
-    TGroupInfoList getAllGroups();
-    TGroupInfoList getGroups(const TIdList &ids);
-    TGroupInfoList getGroups(quint64 userId);
-    TGroupInfo groupToGroupInfo(const Group &entity);
-    TInviteInfo inviteCodeToInviteInfo(const InviteCode &entity);
-    TUserInfo userToUserInfo(const User &entity, bool includeEmail);
+    TGroupInfoList getAllGroups(bool *ok = 0);
+    TGroupInfoList getGroups(const TIdList &ids, bool *ok = 0);
+    TGroupInfoList getGroups(quint64 userId, bool *ok = 0);
+    TGroupInfo groupToGroupInfo(const Group &entity, bool *ok = 0);
+    TInviteInfo inviteCodeToInviteInfo(const InviteCode &entity, bool *ok = 0);
+    TUserInfo userToUserInfo(const User &entity, bool includeEmail, bool *ok = 0);
 private:
     Q_DISABLE_COPY(UserService)
 };

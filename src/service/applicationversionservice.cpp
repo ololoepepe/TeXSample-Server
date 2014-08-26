@@ -21,6 +21,7 @@
 
 #include "applicationversionservice.h"
 
+#include "application.h"
 #include "datasource.h"
 #include "entity/applicationversion.h"
 #include "repository/applicationversionrepository.h"
@@ -77,9 +78,12 @@ RequestOut<TGetLatestAppVersionReplyData> ApplicationVersionService::getLatestAp
         return Out(error);
     TClientInfo info = in.data().clientInfo();
     QDateTime dt = QDateTime::currentDateTimeUtc();
+    bool ok = false;
     ApplicationVersion entity = ApplicationVersionRepo->findOneByFields(info.applicationType(), info.osType(),
                                                                         info.processorArchitecture(),
-                                                                        info.isPortable());
+                                                                        info.isPortable(), &ok);
+    if (!ok)
+        return Out(t.translate("ApplicationVersionService", "Failed to get application version (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("ApplicationVersionService", "No application version for this client found", "error"));
     TGetLatestAppVersionReplyData replyData;
@@ -93,30 +97,57 @@ bool ApplicationVersionService::isValid() const
     return Source && Source->isValid() && ApplicationVersionRepo->isValid();
 }
 
-bool ApplicationVersionService::setLatestAppVersion(Texsample::ClientType clienType, BeQt::OSType os,
-                                                    BeQt::ProcessorArchitecture arch, bool portable,
-                                                    const BVersion &version, const QUrl &downloadUrl)
+bool ApplicationVersionService::setLatestAppVersion(const Translator &t, Texsample::ClientType clientType,
+                                                    BeQt::OSType os, BeQt::ProcessorArchitecture arch, bool portable,
+                                                    const BVersion &version, const QUrl &downloadUrl, QString *error)
 {
-    if (!isValid() || Texsample::UnknownClient == clienType || BeQt::UnknownOS == os
-            || BeQt::UnknownArchitecture == arch || !version.isValid())
+    if (!commonCheck(t, error))
         return false;
+    if (Texsample::UnknownClient == clientType || BeQt::UnknownOS == os || BeQt::UnknownArchitecture == arch
+            || !version.isValid()) {
+        return bRet(error, t.translate("ApplicationVersionService", "Invalid data", "error"), false);
+    }
     TransactionHolder holder(Source);
-    ApplicationVersion entity = ApplicationVersionRepo->findOneByFields(clienType, os, arch, portable);
+    bool ok = false;
+    ApplicationVersion entity = ApplicationVersionRepo->findOneByFields(clientType, os, arch, portable, &ok);
+    if (!ok) {
+        return bRet(error, t.translate("ApplicationVersionService", "Failed to get application version (internal)",
+                                       "error"), false);
+    }
     if (!entity.isValid()) {
         entity = ApplicationVersion();
-        entity.setClientType(clienType);
+        entity.setClientType(clientType);
         entity.setOs(os);
         entity.setProcessorArchitecture(arch);
         entity.setPortable(portable);
         entity.setVersion(version);
         entity.setDownloadUrl(downloadUrl);
-        return ApplicationVersionRepo->add(entity) && holder.doCommit();
+        ApplicationVersionRepo->add(entity, &ok);
+        if (!ok) {
+            return bRet(error, t.translate("ApplicationVersionService", "Failed to add application version (internal)",
+                                           "error"), false);
+        }
     } else {
         entity.convertToCreatedByUser();
         entity.setVersion(version);
         entity.setDownloadUrl(downloadUrl);
-        return ApplicationVersionRepo->edit(entity) && holder.doCommit();
+        ApplicationVersionRepo->edit(entity, &ok);
+        if (!ok) {
+            return bRet(error, t.translate("ApplicationVersionService",
+                                           "Failed to edit application version (internal)", "error"), false);
+        }
     }
+    if (!commit(t, holder, error))
+        return false;
+    return bRet(error, QString(), true);
+}
+
+bool ApplicationVersionService::setLatestAppVersion(Texsample::ClientType clientType, BeQt::OSType os,
+                                                    BeQt::ProcessorArchitecture arch, bool portable,
+                                                    const BVersion &version, const QUrl &downloadUrl, QString *error)
+{
+    Translator t(Application::locale());
+    return setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, error);
 }
 
 RequestOut<TSetLatestAppVersionReplyData> ApplicationVersionService::setLatestAppVersion(
@@ -135,30 +166,7 @@ RequestOut<TSetLatestAppVersionReplyData> ApplicationVersionService::setLatestAp
     BVersion version = requestData.version();
     QUrl downloadUrl = requestData.downloadUrl();
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    TransactionHolder holder(Source);
-    ApplicationVersion entity = ApplicationVersionRepo->findOneByFields(clientType, os, arch, portable);
-    if (!entity.isValid()) {
-        entity = ApplicationVersion();
-        entity.setClientType(clientType);
-        entity.setOs(os);
-        entity.setProcessorArchitecture(arch);
-        entity.setPortable(portable);
-        entity.setVersion(version);
-        entity.setDownloadUrl(downloadUrl);
-        if (!ApplicationVersionRepo->add(entity)) {
-            return Out(t.translate("ApplicationVersionService", "Failed to add application version (internal)",
-                                   "error"));
-        }
-    } else {
-        entity.convertToCreatedByUser();
-        entity.setVersion(version);
-        entity.setDownloadUrl(downloadUrl);
-        if (!ApplicationVersionRepo->edit(entity)) {
-            return Out(t.translate("ApplicationVersionService", "Failed to edit application version (internal)",
-                                   "error"));
-        }
-    }
-    if (!commit(t, holder, &error))
+    if (setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, &error))
         return Out(error);
     TSetLatestAppVersionReplyData replyData;
     return Out(replyData, dt);
@@ -166,21 +174,18 @@ RequestOut<TSetLatestAppVersionReplyData> ApplicationVersionService::setLatestAp
 
 /*============================== Private methods ===========================*/
 
-bool ApplicationVersionService::commit(const Translator &translator, TransactionHolder &holder, QString *error)
+bool ApplicationVersionService::commit(const Translator &t, TransactionHolder &holder, QString *error)
 {
-    if (!holder.doCommit()) {
-        return bRet(error, translator.translate("ApplicationVersionService", "Failed to commit (internal)", "error"),
-                    false);
-    }
+    if (!holder.doCommit())
+        return bRet(error, t.translate("ApplicationVersionService", "Failed to commit (internal)", "error"), false);
     return bRet(error, QString(), true);
 }
 
-bool ApplicationVersionService::commonCheck(const Translator &translator, QString *error) const
+bool ApplicationVersionService::commonCheck(const Translator &t, QString *error) const
 {
     if (!isValid()) {
-        return bRet(error, translator.translate("ApplicationVersionService",
-                                                "Invalid ApplicationVersionService instance (internal)", "error"),
-                    false);
+        return bRet(error, t.translate("ApplicationVersionService",
+                                       "Invalid ApplicationVersionService instance (internal)", "error"), false);
     }
     return bRet(error, QString(), true);
 }

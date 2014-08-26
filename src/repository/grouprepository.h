@@ -43,14 +43,14 @@ public:
     explicit GroupRepository(DataSource *source);
     ~GroupRepository();
 public:
-    quint64 add(const Group &entity);
+    quint64 add(const Group &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    bool deleteOne(quint64 id);
-    bool edit(const Group &entity);
-    QList<Group> findAll();
-    QList<Group> findAll(const TIdList &ids);
-    QList<Group> findAllByUserId(quint64 userId, const QDateTime &newerThan = QDateTime());
-    Group findOne(quint64 id);
+    void deleteOne(quint64 id, bool *ok = 0);
+    void edit(const Group &entity, bool *ok = 0);
+    QList<Group> findAll(bool *ok = 0);
+    QList<Group> findAll(const TIdList &ids, bool *ok = 0);
+    QList<Group> findAllByUserId(quint64 userId, const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    Group findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
     friend class Group;

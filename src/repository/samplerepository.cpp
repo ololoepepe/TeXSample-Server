@@ -58,10 +58,10 @@ SampleRepository::~SampleRepository()
 
 /*============================== Public methods ============================*/
 
-quint64 SampleRepository::add(const Sample &entity)
+quint64 SampleRepository::add(const Sample &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
-        return 0;
+        return bRet(ok, false, 0);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
@@ -75,15 +75,15 @@ quint64 SampleRepository::add(const Sample &entity)
     values.insert("type", int(entity.type()));
     BSqlResult result = Source->insert("samples", values);
     if (!result.success())
-        return 0;
+        return bRet(ok, false, 0);
     quint64 id = result.lastInsertId().toULongLong();
     if (!RepositoryTools::setAuthorInfoList(Source, "sample_authors", "sample_id", id, entity.authors()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!RepositoryTools::setTags(Source, "sample_tags", "sample_id", id, entity.tags()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!createSource(id, entity.source()))
-        return 0;
-    return id;
+        return bRet(ok, false, 0);
+    return bRet(ok, false, id);
 }
 
 DataSource *SampleRepository::dataSource() const
@@ -91,10 +91,10 @@ DataSource *SampleRepository::dataSource() const
     return Source;
 }
 
-bool SampleRepository::edit(const Sample &entity)
+void SampleRepository::edit(const Sample &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || !entity.id() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
@@ -108,34 +108,34 @@ bool SampleRepository::edit(const Sample &entity)
     values.insert("type", int(entity.type()));
     BSqlResult result = Source->update("samples", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
-        return false;
-    if (!RepositoryTools::deleteHelper(Source, QStringList() << "sample_authors" << "sample_tags", "sample_id",
-                                       entity.id())) {
-        return false;
-    }
+        return bSet(ok, false);
+    static const QStringList Tables = QStringList() << "sample_authors" << "sample_tags";
+    if (!RepositoryTools::deleteHelper(Source, Tables, "sample_id", entity.id()))
+        return bSet(ok, false);
     if (!RepositoryTools::setAuthorInfoList(Source, "sample_authors", "sample_id", entity.id(), entity.authors()))
-        return false;
+        return bSet(ok, false);
     if (!RepositoryTools::setTags(Source, "sample_tags", "sample_id", entity.id(), entity.tags()))
-        return false;
+        return bSet(ok, false);
     if (entity.saveData() && !updateSource(entity.id(), entity.source()))
-        return false;
-    return true;
+        return bSet(ok, false);
+    return bSet(ok, true);
 }
 
-QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan)
+QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan, bool *ok)
 {
     QList<Sample> list;
     if (!isValid())
-        return list;
+        return bRet(ok, false, list);
     static const QStringList Fields = QStringList() << "id" << "sender_id" << "deleted" << "admin_remark"
         << "creation_date_time" << "description" << "last_modification_date_time" << "rating" << "title" << "type";
     BSqlWhere where;
-    if (newerThan.isValid())
+    if (newerThan.isValid()) {
         where = BSqlWhere("last_modification_date_time > :last_modification_date_time", ":last_modification_date_time",
                           newerThan.toUTC().toMSecsSinceEpoch());
+    }
     BSqlResult result = Source->select("samples", Fields, where);
-    if (!result.success() || result.values().isEmpty())
-        return list;
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Sample entity(this);
         entity.mid = m.value("id").toULongLong();
@@ -148,29 +148,31 @@ QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan)
         entity.mrating = m.value("rating").toUInt();
         entity.mtitle = m.value("title").toString();
         entity.mtype = m.value("type").toInt();
-        bool ok = false;
-        entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "sample_authors", "sample_id", entity.id(), &ok);
-        if (!ok)
-            return QList<Sample>();
-        entity.mtags = RepositoryTools::getTags(Source, "sample_tags", "sample_id", entity.id(), &ok);
-        if (!ok)
-            return QList<Sample>();
+        bool b = false;
+        entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "sample_authors", "sample_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<Sample>());
+        entity.mtags = RepositoryTools::getTags(Source, "sample_tags", "sample_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<Sample>());
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-Sample SampleRepository::findOne(quint64 id)
+Sample SampleRepository::findOne(quint64 id, bool *ok)
 {
     Sample entity(this);
     if (!isValid() || !id)
-        return entity;
+        return bRet(ok, false, entity);
     static const QStringList Fields = QStringList() << "sender_id" << "deleted" << "admin_remark"
         << "creation_date_time" << "description" << "last_modification_date_time" << "rating" << "title" << "type";
     BSqlResult result = Source->select("samples", Fields, BSqlWhere("id = :id", ":id", id));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = result.value("id").toULongLong();
     entity.msenderId = result.value("sender_id").toULongLong();
     entity.mdeleted = result.value("deleted").toBool();
@@ -181,15 +183,15 @@ Sample SampleRepository::findOne(quint64 id)
     entity.mrating = result.value("rating").toUInt();
     entity.mtitle = result.value("title").toString();
     entity.mtype = result.value("type").toInt();
-    bool ok = false;
-    entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "sample_authors", "sample_id", id, &ok);
-    if (!ok)
-        return entity;
-    entity.mtags = RepositoryTools::getTags(Source, "sample_tags", "sample_id", id, &ok);
-    if (!ok)
-        return entity;
+    bool b = false;
+    entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "sample_authors", "sample_id", id, &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mtags = RepositoryTools::getTags(Source, "sample_tags", "sample_id", id, &b);
+    if (!b)
+        return bRet(ok, false, entity);
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 bool SampleRepository::isValid() const

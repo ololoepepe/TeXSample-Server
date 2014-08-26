@@ -62,10 +62,10 @@ UserRepository::~UserRepository()
 
 /*============================== Public methods ============================*/
 
-quint64 UserRepository::add(const User &entity)
+quint64 UserRepository::add(const User &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
-        return 0;
+        return bRet(ok, false, 0);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("access_level", int(entity.accessLevel()));
@@ -80,26 +80,26 @@ quint64 UserRepository::add(const User &entity)
     values.insert("surname", entity.surname());
     BSqlResult result = Source->insert("users", values);
     if (!result.success())
-        return 0;
+        return bRet(ok, false, 0);
     quint64 id = result.lastInsertId().toULongLong();
     if (!RepositoryTools::setGroupIdList(Source, "user_groups", "user_id", id, entity.groups()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!RepositoryTools::setServices(Source, "user_services", "user_id", id, entity.availableServices()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!createAvatar(id, entity.avatar()))
-        return 0;
-    return id;
+        return bRet(ok, false, 0);
+    return bRet(ok, true, id);
 }
 
-long UserRepository::countByAccessLevel(const TAccessLevel &accessLevel)
+long UserRepository::countByAccessLevel(const TAccessLevel &accessLevel, bool *ok)
 {
     if (!isValid())
-        return 0;
+        return bRet(ok, false, 0);
     BSqlResult result = Source->select("users", "COUNT(id)",
                                        BSqlWhere("access_level = :access_level", ":access_level", int(accessLevel)));
     if (!result.success())
-        return 0;
-    return result.value("COUNT(id)").toLongLong();
+        return bRet(ok, false, 0);
+    return bRet(ok, true, result.value("COUNT(id)").toLongLong());
 }
 
 DataSource *UserRepository::dataSource() const
@@ -107,17 +107,19 @@ DataSource *UserRepository::dataSource() const
     return Source;
 }
 
-bool UserRepository::deleteOne(quint64 userId)
+void UserRepository::deleteOne(quint64 userId, bool *ok)
 {
     if (!isValid() || !userId)
-        return false;
-    return deleteAvatar(userId) && Source->deleteFrom("users", BSqlWhere("user_id = :user_id", ":user_id", userId));
+        return bSet(ok, false);
+    if (!deleteAvatar(userId))
+        return bSet(ok, false);
+    bSet(ok, Source->deleteFrom("users", BSqlWhere("user_id = :user_id", ":user_id", userId)).success());
 }
 
-bool UserRepository::edit(const User &entity)
+void UserRepository::edit(const User &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || !entity.id())
-        return false;
+        return bSet(ok, false);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("access_level", int(entity.accessLevel()));
@@ -131,63 +133,67 @@ bool UserRepository::edit(const User &entity)
     values.insert("surname", entity.surname());
     BSqlResult result = Source->update("users", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
-        return false;
-    if (!RepositoryTools::deleteHelper(Source, QStringList() << "user_groups" << "user_services", "user_id",
-                                       entity.id())) {
-        return false;
-    }
+        return bSet(ok, false);
+    static const QStringList Tables = QStringList() << "user_groups" << "user_services";
+    if (!RepositoryTools::deleteHelper(Source, Tables, "user_id", entity.id()))
+        return bSet(ok, false);
     if (!RepositoryTools::setGroupIdList(Source, "user_groups", "user_id", entity.id(), entity.groups()))
-        return false;
+        return bSet(ok, false);
     if (!RepositoryTools::setServices(Source, "user_services", "user_id", entity.id(), entity.availableServices()))
-        return false;
+        return bSet(ok, false);
     if (!updateAvatar(entity.id(), entity.avatar()))
-        return false;
-    return true;
+        return bSet(ok, false);
+    return bSet(ok, true);
 }
 
-bool UserRepository::emailOccupied(const QString &email)
+bool UserRepository::emailOccupied(const QString &email, bool *ok)
 {
     if (!isValid() || email.isEmpty())
-        return false;
+        return bRet(ok, false, false);
     BSqlResult result = Source->select("users", "COUNT(*)", BSqlWhere("email = :email", ":email", email));
-    return result.success() && result.value("COUNT(*)").toInt() > 0;
+    if (!result.success())
+        return bRet(ok, false, false);
+    return bRet(ok, true, (result.value("COUNT(*)").toInt() > 0));
 }
 
-bool UserRepository::exists(const TUserIdentifier &id)
+bool UserRepository::exists(const TUserIdentifier &id, bool *ok)
 {
     if (!isValid() || !id.isValid())
-        return false;
+        return bRet(ok, false, false);
     BSqlWhere where = (id.type() == TUserIdentifier::IdType) ? BSqlWhere("id = :id", ":id", id.id()) :
                                                                BSqlWhere("login = :login", ":login", id.login());
     BSqlResult result = Source->select("users", "COUNT(*)", where);
-    return result.success() && result.value("COUNT(*)").toInt() > 0;
+    if (!result.success())
+        return bRet(ok, false, false);
+    return bRet(ok, true, (result.value("COUNT(*)").toInt() > 0));
 }
 
-TAccessLevel UserRepository::findAccessLevel(quint64 id)
+TAccessLevel UserRepository::findAccessLevel(quint64 id, bool *ok)
 {
     if (!isValid() || !id)
-        return TAccessLevel();
+        return bRet(ok, false, TAccessLevel());
     BSqlResult result = Source->select("users", "access_level", BSqlWhere("id = :id", ":id", id));
     if (!result.success())
-        return TAccessLevel();
-    return result.value("access_level").toInt();
+        return bRet(ok, false, TAccessLevel());
+    return bRet(ok, true, result.value("access_level").toInt());
 }
 
-QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan)
+QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan, bool *ok)
 {
     QList<User> list;
     if (!isValid())
-        return list;
+        return bRet(ok, false, list);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
         << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
         << "surname";
     BSqlWhere where;
-    if (newerThan.isValid())
+    if (newerThan.isValid()) {
         where = BSqlWhere("last_modification_date_time > :last_modification_date_time", ":last_modification_date_time",
                           newerThan.toUTC().toMSecsSinceEpoch());
+    }
     BSqlResult result = Source->select("users", Fields, where);
-    if (!result.success() || result.values().isEmpty())
-        return list;
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         User entity(this);
         entity.mid = m.value("id").toULongLong();
@@ -201,23 +207,23 @@ QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan)
         entity.mpatronymic = m.value("patronymic").toString();
         entity.mregistrationDateTime.setMSecsSinceEpoch(m.value("registration_date_time").toLongLong());
         entity.msurname = m.value("surname").toString();
-        bool ok = false;
-        entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
-        if (!ok)
-            return QList<User>();
-        entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
-        if (!ok)
-            return QList<User>();
+        bool b = false;
+        entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<User>());
+        entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<User>());
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id)
+QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id, bool *ok)
 {
     if (!isValid() || !id.isValid())
-        return QDateTime();
+        return bRet(ok, false, QDateTime());
     BSqlResult result;
     switch (id.type()) {
     case TUserIdentifier::IdType:
@@ -231,36 +237,42 @@ QDateTime UserRepository::findLastModificationDateTime(const TUserIdentifier &id
         break;
     }
     if (!result.success())
-        return QDateTime();
+        return bRet(ok, false, QDateTime());
+    if (result.values().isEmpty())
+        return bRet(ok, true, QDateTime());
     QDateTime dt;
     dt.setTimeSpec(Qt::UTC);
     dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
-    return dt;
+    return bRet(ok, true, dt);
 }
 
-QString UserRepository::findLogin(quint64 id)
+QString UserRepository::findLogin(quint64 id, bool *ok)
 {
     if (!isValid() || !id)
-        return QString();
+        return bRet(ok, false, QString());
     BSqlResult result = Source->select("users", "login", BSqlWhere("id = :id", ":id", id));
     if (!result.success())
-        return QString();
-    return result.value("login").toString();
+        return bRet(ok, false, QString());
+    if (result.values().isEmpty())
+        return bRet(ok, true, QString());
+    return bRet(ok, true, result.value("login").toString());
 }
 
-User UserRepository::findOne(const TUserIdentifier &id)
+User UserRepository::findOne(const TUserIdentifier &id, bool *ok)
 {
     User entity(this);
     if (!isValid() || !id.isValid())
-        return entity;
+        return bRet(ok, false, entity);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
         << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
         << "surname";
     BSqlWhere where = (id.type() == TUserIdentifier::IdType) ? BSqlWhere("id = :id", ":id", id.id()) :
                                                                BSqlWhere("login = :login", ":login", id.login());
     BSqlResult result = Source->select("users", Fields, where);
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = result.value("id").toULongLong();
     entity.maccessLevel = result.value("access_level").toInt();
     entity.mactive = result.value("active").toBool();
@@ -272,22 +284,22 @@ User UserRepository::findOne(const TUserIdentifier &id)
     entity.mpatronymic = result.value("patronymic").toString();
     entity.mregistrationDateTime.setMSecsSinceEpoch(result.value("registration_date_time").toLongLong());
     entity.msurname = result.value("surname").toString();
-    bool ok = false;
-    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
-    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
+    bool b = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
-User UserRepository::findOne(const QString &identifier, const QByteArray &password)
+User UserRepository::findOne(const QString &identifier, const QByteArray &password, bool *ok)
 {
     User entity(this);
     if (!isValid() || identifier.isEmpty() || password.isEmpty())
-        return entity;
+        return bRet(ok, false, entity);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
         << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
         << "surname";
@@ -297,8 +309,10 @@ User UserRepository::findOne(const QString &identifier, const QByteArray &passwo
     wvalues.insert(":email", identifier);
     wvalues.insert(":password", password);
     BSqlResult result = Source->select("users", Fields, BSqlWhere(ws, wvalues));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = result.value("id").toULongLong();
     entity.maccessLevel = result.value("access_level").toInt();
     entity.mactive = result.value("active").toBool();
@@ -310,28 +324,30 @@ User UserRepository::findOne(const QString &identifier, const QByteArray &passwo
     entity.mpatronymic = result.value("patronymic").toString();
     entity.mregistrationDateTime.setMSecsSinceEpoch(result.value("registration_date_time").toLongLong());
     entity.msurname = result.value("surname").toString();
-    bool ok = false;
-    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
-    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
+    bool b = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
-User UserRepository::findOneByEmail(const QString &email)
+User UserRepository::findOneByEmail(const QString &email, bool *ok)
 {
     User entity(this);
     if (!isValid() || email.isEmpty())
-        return entity;
+        return bRet(ok, false, entity);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "active" << "email"
         << "last_modification_date_time" << "login" << "name" << "password" << "patronymic" << "registration_date_time"
         << "surname";
     BSqlResult result = Source->select("users", Fields, BSqlWhere("email = :email", ":email", email));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = result.value("id").toULongLong();
     entity.maccessLevel = result.value("access_level").toInt();
     entity.mactive = result.value("active").toBool();
@@ -343,15 +359,15 @@ User UserRepository::findOneByEmail(const QString &email)
     entity.mpatronymic = result.value("patronymic").toString();
     entity.mregistrationDateTime.setMSecsSinceEpoch(result.value("registration_date_time").toLongLong());
     entity.msurname = result.value("surname").toString();
-    bool ok = false;
-    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
-    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &ok);
-    if (!ok)
-        return entity;
+    bool b = false;
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "user_groups", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mavailableServices = RepositoryTools::getServices(Source, "user_services", "user_id", entity.id(), &b);
+    if (!b)
+        return bRet(ok, false, entity);
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 bool UserRepository::isValid() const
@@ -359,9 +375,9 @@ bool UserRepository::isValid() const
     return Source && Source->isValid();
 }
 
-bool UserRepository::loginOccupied(const QString &login)
+bool UserRepository::loginOccupied(const QString &login, bool *ok)
 {
-    return exists(login);
+    return exists(login, ok);
 }
 
 /*============================== Private methods ===========================*/

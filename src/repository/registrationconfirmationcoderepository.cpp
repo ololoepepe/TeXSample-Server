@@ -55,43 +55,45 @@ RegistrationConfirmationCodeRepository::~RegistrationConfirmationCodeRepository(
 
 /*============================== Public methods ============================*/
 
-bool RegistrationConfirmationCodeRepository::add(const RegistrationConfirmationCode &entity)
+void RegistrationConfirmationCodeRepository::add(const RegistrationConfirmationCode &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QVariantMap values;
     values.insert("code", entity.code().toString(true));
     values.insert("expiration_date_time", entity.expirationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("user_id", entity.userId());
-    return Source->insert("registration_confirmation_codes", values).success();
+    bSet(ok, Source->insert("registration_confirmation_codes", values).success());
 }
 
-bool RegistrationConfirmationCodeRepository::deleteExpired()
+void RegistrationConfirmationCodeRepository::deleteExpired(bool *ok)
 {
-    return isValid() && Source->deleteFrom("registration_confirmation_codes",
-                                           BSqlWhere("expiration_date_time <= :date_time", ":date_time",
-                                                     QDateTime::currentDateTimeUtc().toMSecsSinceEpoch()));
+    if (!isValid())
+        return bSet(ok, false);
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    BSqlWhere where("expiration_date_time <= :date_time", ":date_time", dt.toMSecsSinceEpoch());
+    bSet(ok, Source->deleteFrom("registration_confirmation_codes", where).success());
 }
 
-bool RegistrationConfirmationCodeRepository::deleteOneByUserId(quint64 userId)
+void RegistrationConfirmationCodeRepository::deleteOneByUserId(quint64 userId, bool *ok)
 {
     if (!isValid() || !userId)
-        return false;
-    return Source->deleteFrom("registration_confirmation_codes",
-                              BSqlWhere("user_id = :user_id", ":user_id", userId)).success();
+        return bSet(ok, false);
+    BSqlWhere where("user_id = :user_id", ":user_id", userId);
+    bSet(ok, Source->deleteFrom("registration_confirmation_codes", where).success());
 }
 
-QList<RegistrationConfirmationCode> RegistrationConfirmationCodeRepository::findExpired()
+QList<RegistrationConfirmationCode> RegistrationConfirmationCodeRepository::findExpired(bool *ok)
 {
     QList<RegistrationConfirmationCode> list;
     if (!isValid())
-        return list;
-    BSqlResult result = Source->select("registration_confirmation_codes",
-                                       QStringList() << "user_id" << "code" << "expiration_date_time",
-                                           BSqlWhere("expiration_date_time <= :date_time", ":date_time",
-                                                     QDateTime::currentDateTimeUtc().toMSecsSinceEpoch()));
+        return bRet(ok, false, list);
+    static const QStringList Fields = QStringList() << "user_id" << "code" << "expiration_date_time";
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    BSqlWhere where("expiration_date_time <= :date_time", ":date_time", dt.toMSecsSinceEpoch());
+    BSqlResult result = Source->select("registration_confirmation_codes", Fields, where);
     if (!result.success())
-        return list;
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         RegistrationConfirmationCode entity(this);
         entity.muserId = m.value("user_id").toULongLong();
@@ -99,24 +101,26 @@ QList<RegistrationConfirmationCode> RegistrationConfirmationCodeRepository::find
         entity.mexpirationDateTime.setMSecsSinceEpoch(m.value("expiration_date_time").toLongLong());
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-RegistrationConfirmationCode RegistrationConfirmationCodeRepository::findOneByCode(const BUuid &code)
+RegistrationConfirmationCode RegistrationConfirmationCodeRepository::findOneByCode(const BUuid &code, bool *ok)
 {
     RegistrationConfirmationCode entity(this);
     if (!isValid() || code.isNull())
-        return entity;
-    BSqlResult result = Source->select("registration_confirmation_codes",
-                                       QStringList() << "expiration_date_time" << "user_id",
-                                       BSqlWhere("code = :code", ":code", code.toString(true)));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+        return bRet(ok, false, entity);
+    static const QStringList Fields = QStringList() << "expiration_date_time" << "user_id";
+    BSqlWhere where("code = :code", ":code", code.toString(true));
+    BSqlResult result = Source->select("registration_confirmation_codes", Fields, where);
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mcode = code;
     entity.mexpirationDateTime.setMSecsSinceEpoch(result.value("expiration_date_time").toLongLong());
     entity.muserId = result.value("user_id").toULongLong();
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 DataSource *RegistrationConfirmationCodeRepository::dataSource() const

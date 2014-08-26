@@ -55,10 +55,10 @@ GroupRepository::~GroupRepository()
 
 /*============================== Public methods ============================*/
 
-quint64 GroupRepository::add(const Group &entity)
+quint64 GroupRepository::add(const Group &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo())
-        return false;
+        return bRet(ok, false, 0);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("owner_id", entity.ownerId());
@@ -67,8 +67,10 @@ quint64 GroupRepository::add(const Group &entity)
     values.insert("name", entity.name());
     BSqlResult result = Source->insert("groups", values);
     if (!result.success())
-        return 0;
-    return result.lastInsertId().toULongLong();
+        return bRet(ok, false, 0);
+    if (result.values().isEmpty())
+        return bRet(ok, true, 0);
+    return bRet(ok, true, result.lastInsertId().toULongLong());
 }
 
 DataSource *GroupRepository::dataSource() const
@@ -76,34 +78,35 @@ DataSource *GroupRepository::dataSource() const
     return Source;
 }
 
-bool GroupRepository::deleteOne(quint64 id)
+void GroupRepository::deleteOne(quint64 id, bool *ok)
 {
     if (!isValid() || !id)
-        return false;
+        return bSet(ok, false);
     BSqlWhere where("id = :id", ":id", id);
-    return Source->deleteFrom("groups", where).success();
+    bSet(ok, Source->deleteFrom("groups", where).success());
 }
 
-bool GroupRepository::edit(const Group &entity)
+void GroupRepository::edit(const Group &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || !entity.id() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QVariantMap values;
     values.insert("owner_id", entity.ownerId());
     values.insert("last_modification_date_time", entity.lastModificationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("name", entity.name());
-    return Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success();
+    bSet(ok, Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success());
 }
 
-QList<Group> GroupRepository::findAll()
+QList<Group> GroupRepository::findAll(bool *ok)
 {
     QList<Group> list;
     if (!isValid())
-        return list;
-    BSqlResult result = Source->select("groups", QStringList() << "id" << "owner_id" << "creation_date_time"
-                                       << "last_modification_date_time" << "name");
-    if (!result.success() || result.values().isEmpty())
-        return list;
+        return bRet(ok, false, list);
+    static const QStringList Fields = QStringList() << "id" << "owner_id" << "creation_date_time"
+                                                    << "last_modification_date_time" << "name";
+    BSqlResult result = Source->select("groups", Fields);
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Group entity(this);
         entity.mid = m.value("id").toULongLong();
@@ -114,14 +117,18 @@ QList<Group> GroupRepository::findAll()
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-QList<Group> GroupRepository::findAll(const TIdList &ids)
+QList<Group> GroupRepository::findAll(const TIdList &ids, bool *ok)
 {
     QList<Group> list;
-    if (!isValid() || ids.isEmpty())
-        return list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    if (ids.isEmpty())
+        return bRet(ok, true, list);
+    static const QStringList Fields = QStringList() << "id" << "owner_id" << "creation_date_time"
+                                                    << "last_modification_date_time" << "name";
     QString ws = "id IN (";
     QVariantMap values;
     foreach (int i, bRangeD(0, ids.size() - 1)) {
@@ -132,10 +139,9 @@ QList<Group> GroupRepository::findAll(const TIdList &ids)
     }
     ws += ")";
     BSqlWhere where(ws, values);
-    BSqlResult result = Source->select("groups", QStringList() << "id" << "owner_id" << "creation_date_time"
-                                       << "last_modification_date_time" << "name", where);
-    if (!result.success() || result.values().isEmpty())
-        return list;
+    BSqlResult result = Source->select("groups", Fields, where);
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Group entity(this);
         entity.mid = m.value("id").toULongLong();
@@ -146,14 +152,16 @@ QList<Group> GroupRepository::findAll(const TIdList &ids)
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &newerThan)
+QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &newerThan, bool *ok)
 {
     QList<Group> list;
     if (!isValid() || !userId)
-        return list;
+        return bRet(ok, false, list);
+    static const QStringList Fields = QStringList() << "id" << "creation_date_time" << "last_modification_date_time"
+                                                    << "name";
     QString ws = "owner_id = :owner_id";
     QVariantMap wvalues;
     wvalues.insert(":owner_id", userId);
@@ -161,10 +169,9 @@ QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &n
         ws += " AND last_modification_date_time > :last_modification_date_time";
         wvalues.insert("last_modification_date_time", newerThan.toUTC().toMSecsSinceEpoch());
     }
-    BSqlResult result = Source->select("groups", QStringList() << "id" << "creation_date_time"
-                                       << "last_modification_date_time" << "name", BSqlWhere(ws, wvalues));
-    if (!result.success() || result.values().isEmpty())
-        return list;
+    BSqlResult result = Source->select("groups", Fields, BSqlWhere(ws, wvalues));
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Group entity(this);
         entity.mid = m.value("id").toULongLong();
@@ -175,25 +182,28 @@ QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &n
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-Group GroupRepository::findOne(quint64 id)
+Group GroupRepository::findOne(quint64 id, bool *ok)
 {
     Group entity(this);
     if (!isValid() || !id)
-        return entity;
-    BSqlResult result = Source->select("groups", QStringList() << "creation_date_time" << "last_modification_date_time"
-                                       << "owner_id" << "name", BSqlWhere("id = :id", ":id", id));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+        return bRet(ok, false, entity);
+    static const QStringList Fields = QStringList() << "creation_date_time" << "last_modification_date_time"
+                                                    << "owner_id" << "name";
+    BSqlResult result = Source->select("groups", Fields, BSqlWhere("id = :id", ":id", id));
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = id;
     entity.mownerId = result.value("owner_id").toULongLong();
     entity.mcreationDateTime.setMSecsSinceEpoch(result.value("creation_date_time").toLongLong());
     entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
     entity.mname = result.value("name").toString();
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 bool GroupRepository::isValid() const

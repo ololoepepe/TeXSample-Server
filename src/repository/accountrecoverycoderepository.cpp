@@ -64,7 +64,7 @@ void AccountRecoveryCodeRepository::add(const AccountRecoveryCode &entity, bool 
     values.insert("code", entity.code().toString(true));
     values.insert("expiration_date_time", entity.expirationDateTime().toUTC().toMSecsSinceEpoch());
     values.insert("user_id", entity.userId());
-    return bSet(ok, Source->insert("account_recovery_codes", values).success());
+    bSet(ok, Source->insert("account_recovery_codes", values).success());
 }
 
 void AccountRecoveryCodeRepository::deleteExpired(bool *ok)
@@ -73,7 +73,7 @@ void AccountRecoveryCodeRepository::deleteExpired(bool *ok)
         return bSet(ok, false);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     BSqlWhere where("expiration_date_time <= :date_time", ":date_time", dt.toMSecsSinceEpoch());
-    return bSet(ok, Source->deleteFrom("account_recovery_codes", where).success());
+    bSet(ok, Source->deleteFrom("account_recovery_codes", where).success());
 }
 
 void AccountRecoveryCodeRepository::deleteOneByUserId(quint64 userId, bool *ok)
@@ -81,7 +81,7 @@ void AccountRecoveryCodeRepository::deleteOneByUserId(quint64 userId, bool *ok)
     if (!isValid() || !userId)
         return bSet(ok, false);
     BSqlWhere where("user_id = :user_id", ":user_id", userId);
-    return bSet(ok, Source->deleteFrom("account_recovery_codes", where).success());
+    bSet(ok, Source->deleteFrom("account_recovery_codes", where).success());
 }
 
 AccountRecoveryCode AccountRecoveryCodeRepository::findOneByCode(const BUuid &code, bool *ok)

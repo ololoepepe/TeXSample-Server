@@ -44,11 +44,11 @@ public:
     explicit RegistrationConfirmationCodeRepository(DataSource *source);
     ~RegistrationConfirmationCodeRepository();
 public:
-    bool add(const RegistrationConfirmationCode &entity);
-    bool deleteExpired();
-    bool deleteOneByUserId(quint64 userId);
-    QList<RegistrationConfirmationCode> findExpired();
-    RegistrationConfirmationCode findOneByCode(const BUuid &code);
+    void add(const RegistrationConfirmationCode &entity, bool *ok = 0);
+    void deleteExpired(bool *ok = 0);
+    void deleteOneByUserId(quint64 userId, bool *ok = 0);
+    QList<RegistrationConfirmationCode> findExpired(bool *ok = 0);
+    RegistrationConfirmationCode findOneByCode(const BUuid &code, bool *ok = 0);
     DataSource *dataSource() const;
     bool isValid() const;
 private:

@@ -44,12 +44,12 @@ public:
     explicit EmailChangeConfirmationCodeRepository(DataSource *source);
     ~EmailChangeConfirmationCodeRepository();
 public:
-    bool add(const EmailChangeConfirmationCode &entity);
-    bool deleteExpired();
-    bool deleteOneByUserId(quint64 userId);
-    bool emailOccupied(const QString &email);
-    QList<EmailChangeConfirmationCode> findExpired();
-    EmailChangeConfirmationCode findOneByCode(const BUuid &code);
+    void add(const EmailChangeConfirmationCode &entity, bool *ok = 0);
+    void deleteExpired(bool *ok = 0);
+    void deleteOneByUserId(quint64 userId, bool *ok = 0);
+    bool emailOccupied(const QString &email, bool *ok = 0);
+    QList<EmailChangeConfirmationCode> findExpired(bool *ok = 0);
+    EmailChangeConfirmationCode findOneByCode(const BUuid &code, bool *ok = 0);
     DataSource *dataSource() const;
     bool isValid() const;
 private:

@@ -50,22 +50,22 @@ public:
     explicit UserRepository(DataSource *source);
     ~UserRepository();
 public:
-    quint64 add(const User &entity);
-    long countByAccessLevel(const TAccessLevel &accessLevel);
+    quint64 add(const User &entity, bool *ok = 0);
+    long countByAccessLevel(const TAccessLevel &accessLevel, bool *ok = 0);
     DataSource *dataSource() const;
-    bool deleteOne(quint64 userId);
-    bool edit(const User &entity);
-    bool emailOccupied(const QString &email);
-    bool exists(const TUserIdentifier &id);
-    TAccessLevel findAccessLevel(quint64 id);
-    QList<User> findAllNewerThan(const QDateTime &newerThan);
-    QDateTime findLastModificationDateTime(const TUserIdentifier &id);
-    QString findLogin(quint64 id);
-    User findOne(const TUserIdentifier &id);
-    User findOne(const QString &identifier, const QByteArray &password);
-    User findOneByEmail(const QString &email);
+    void deleteOne(quint64 userId, bool *ok = 0);
+    void edit(const User &entity, bool *ok = 0);
+    bool emailOccupied(const QString &email, bool *ok = 0);
+    bool exists(const TUserIdentifier &id, bool *ok = 0);
+    TAccessLevel findAccessLevel(quint64 id, bool *ok = 0);
+    QList<User> findAllNewerThan(const QDateTime &newerThan, bool *ok = 0);
+    QDateTime findLastModificationDateTime(const TUserIdentifier &id, bool *ok = 0);
+    QString findLogin(quint64 id, bool *ok = 0);
+    User findOne(const TUserIdentifier &id, bool *ok = 0);
+    User findOne(const QString &identifier, const QByteArray &password, bool *ok = 0);
+    User findOneByEmail(const QString &email, bool *ok = 0);
     bool isValid() const;
-    bool loginOccupied(const QString &login);
+    bool loginOccupied(const QString &login, bool *ok = 0);
 private:
     bool createAvatar(quint64 userId, const QImage &avatar);
     bool deleteAvatar(quint64 userId);

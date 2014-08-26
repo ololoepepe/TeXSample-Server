@@ -56,10 +56,10 @@ ApplicationVersionRepository::~ApplicationVersionRepository()
 
 /*============================== Public methods ============================*/
 
-bool ApplicationVersionRepository::add(const ApplicationVersion &entity)
+void ApplicationVersionRepository::add(const ApplicationVersion &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QVariantMap values;
     values.insert("client_type", int(entity.clienType()));
     values.insert("os_type", int(entity.os()));
@@ -67,7 +67,7 @@ bool ApplicationVersionRepository::add(const ApplicationVersion &entity)
     values.insert("processor_architecture_type", int(entity.processorArchitecture()));
     values.insert("download_url", entity.downloadUrl().toString());
     values.insert("version", entity.version().toString());
-    return Source->insert("application_versions", values).success();
+    bSet(ok, Source->insert("application_versions", values).success());
 }
 
 DataSource *ApplicationVersionRepository::dataSource() const
@@ -75,10 +75,10 @@ DataSource *ApplicationVersionRepository::dataSource() const
     return Source;
 }
 
-bool ApplicationVersionRepository::edit(const ApplicationVersion &entity)
+void ApplicationVersionRepository::edit(const ApplicationVersion &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QVariantMap values;
     values.insert("download_url", entity.downloadUrl().toString());
     values.insert("version", entity.version().toString());
@@ -89,16 +89,16 @@ bool ApplicationVersionRepository::edit(const ApplicationVersion &entity)
     wvalues.insert(":os_type", int(entity.os()));
     wvalues.insert(":portable", int(entity.portable()));
     wvalues.insert(":processor_architecture_type", int(entity.processorArchitecture()));
-    return Source->update("application_versions", values, BSqlWhere(ws, wvalues)).success();
+    bSet(ok, Source->update("application_versions", values, BSqlWhere(ws, wvalues)).success());
 }
 
-ApplicationVersion ApplicationVersionRepository::findOneByFields(Texsample::ClientType clienType, BeQt::OSType os,
-                                                                 BeQt::ProcessorArchitecture arch, bool portable)
+ApplicationVersion ApplicationVersionRepository::findOneByFields(
+        Texsample::ClientType clienType, BeQt::OSType os, BeQt::ProcessorArchitecture arch, bool portable, bool *ok)
 {
     ApplicationVersion entity(this);
     if (!isValid() || Texsample::UnknownClient == clienType || BeQt::UnknownOS == os
             || BeQt::UnknownArchitecture == arch) {
-        return entity;
+        return bRet(ok, false, entity);
     }
     QString ws = "client_type = :client_type AND os_type = :os_type AND portable = :portable "
         "AND processor_architecture_type = :processor_architecture_type";
@@ -109,8 +109,10 @@ ApplicationVersion ApplicationVersionRepository::findOneByFields(Texsample::Clie
     values.insert(":processor_architecture_type", int(arch));
     BSqlResult result = Source->select("application_versions", QStringList() << "download_url" << "version",
                                        BSqlWhere(ws, values));
-    if (!result.success() || result.values().isEmpty())
-        return entity;
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.values().isEmpty())
+        return bRet(ok, true, entity);
     entity.mclienType = clienType;
     entity.mdownloadUrl = QUrl(result.value("download_url").toString());
     entity.mos = os;
@@ -118,7 +120,7 @@ ApplicationVersion ApplicationVersionRepository::findOneByFields(Texsample::Clie
     entity.mprocessorArchitecture = arch;
     entity.mversion = BVersion(result.value("version").toString());
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 bool ApplicationVersionRepository::isValid() const

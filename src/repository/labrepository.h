@@ -46,12 +46,12 @@ public:
     explicit LabRepository(DataSource *source);
     ~LabRepository();
 public:
-    quint64 add(const Lab &entity);
+    quint64 add(const Lab &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    bool edit(const Lab &entity);
-    QList<Lab> findAllNewerThan(const TIdList &groups = TIdList());
-    QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList());
-    Lab findOne(quint64 id);
+    void edit(const Lab &entity, bool *ok = 0);
+    QList<Lab> findAllNewerThan(const TIdList &groups = TIdList(), bool *ok = 0);
+    QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList(), bool *ok = 0);
+    Lab findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
     //fetch

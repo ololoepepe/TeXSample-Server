@@ -61,22 +61,26 @@ public:
     RequestOut<TGetLatestAppVersionReplyData> getLatestAppVersion(
             const RequestIn<TGetLatestAppVersionRequestData> &in);
     bool isValid() const;
-    bool setLatestAppVersion(Texsample::ClientType clienType, BeQt::OSType os, BeQt::ProcessorArchitecture arch,
-                             bool portable, const BVersion &version, const QUrl &downloadUrl = QUrl());
+    bool setLatestAppVersion(Texsample::ClientType clientType, BeQt::OSType os, BeQt::ProcessorArchitecture arch,
+                             bool portable, const BVersion &version, const QUrl &downloadUrl = QUrl(),
+                             QString *error = 0);
+    bool setLatestAppVersion(const Translator &t, Texsample::ClientType clientType, BeQt::OSType os,
+                             BeQt::ProcessorArchitecture arch, bool portable, const BVersion &version,
+                             const QUrl &downloadUrl = QUrl(), QString *error = 0);
     RequestOut<TSetLatestAppVersionReplyData> setLatestAppVersion(
             const RequestIn<TSetLatestAppVersionRequestData> &in);
 private:
-    template <typename T> bool commonCheck(const Translator &translator, const T &data, QString *error) const
+    template <typename T> bool commonCheck(const Translator &t, const T &data, QString *error) const
     {
-        if (!commonCheck(translator, error))
+        if (!commonCheck(t, error))
             return false;
         if (!data.isValid())
-            return bRet(error, translator.translate("UserService", "Invalid data", "error"), false);
+            return bRet(error, t.translate("UserService", "Invalid data", "error"), false);
         return bRet(error, QString(), true);
     }
 private:
-    bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
-    bool commonCheck(const Translator &translator, QString *error) const;
+    bool commit(const Translator &t, TransactionHolder &holder, QString *error);
+    bool commonCheck(const Translator &t, QString *error) const;
 private:
     Q_DISABLE_COPY(ApplicationVersionService)
 };

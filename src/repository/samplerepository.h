@@ -46,11 +46,11 @@ public:
     explicit SampleRepository(DataSource *source);
     ~SampleRepository();
 public:
-    quint64 add(const Sample &entity);
+    quint64 add(const Sample &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    bool edit(const Sample &entity);
-    QList<Sample> findAllNewerThan(const QDateTime &newerThan = QDateTime());
-    Sample findOne(quint64 id);
+    void edit(const Sample &entity, bool *ok = 0);
+    QList<Sample> findAllNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    Sample findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
     bool createSource(quint64 sampleId, const TTexProject &data);

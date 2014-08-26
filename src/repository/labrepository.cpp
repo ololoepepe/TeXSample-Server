@@ -58,10 +58,10 @@ LabRepository::~LabRepository()
 
 /*============================== Public methods ============================*/
 
-quint64 LabRepository::add(const Lab &entity)
+quint64 LabRepository::add(const Lab &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
-        return 0;
+        return bRet(ok, false, 0);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
@@ -73,17 +73,17 @@ quint64 LabRepository::add(const Lab &entity)
     values.insert("type", int(entity.type()));
     BSqlResult result = Source->insert("labs", values);
     if (!result.success())
-        return 0;
+        return bRet(ok, false, 0);
     quint64 id = result.lastInsertId().toULongLong();
     if (!RepositoryTools::setAuthorInfoList(Source, "lab_authors", "lab_id", id, entity.authors()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!RepositoryTools::setGroupIdList(Source, "lab_groups", "lab_id", id, entity.groups()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!RepositoryTools::setTags(Source, "lab_tags", "lab_id", id, entity.tags()))
-        return 0;
+        return bRet(ok, false, 0);
     if (!createData(id, entity.labDataList()) || !createExtraFiles(id, entity.extraFiles()))
-        return 0;
-    return id;
+        return bRet(ok, false, 0);
+    return bRet(ok, true, id);
 }
 
 DataSource *LabRepository::dataSource() const
@@ -91,10 +91,10 @@ DataSource *LabRepository::dataSource() const
     return Source;
 }
 
-bool LabRepository::edit(const Lab &entity)
+void LabRepository::edit(const Lab &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || !entity.id() || entity.isCreatedByRepo())
-        return false;
+        return bSet(ok, false);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
@@ -105,36 +105,35 @@ bool LabRepository::edit(const Lab &entity)
     values.insert("type", int(entity.type()));
     BSqlResult result = Source->update("labs", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
-        return false;
-    if (!RepositoryTools::deleteHelper(Source, QStringList() << "lab_authors" << "lab_groups" << "lab_tags", "lab_id",
-                                       entity.id())) {
-        return false;
-    }
+        return bSet(ok, false);
+    static const QStringList Tables = QStringList() << "lab_authors" << "lab_groups" << "lab_tags";
+    if (!RepositoryTools::deleteHelper(Source, Tables, "lab_id", entity.id()))
+        return bSet(ok, false);
     if (!RepositoryTools::setAuthorInfoList(Source, "lab_authors", "lab_id", entity.id(), entity.authors()))
-        return false;
+        return bSet(ok, false);
     if (!RepositoryTools::setGroupIdList(Source, "lab_groups", "lab_id", entity.id(), entity.groups()))
-        return false;
+        return bSet(ok, false);
     if (!RepositoryTools::setTags(Source, "lab_tags", "lab_id", entity.id(), entity.tags()))
-        return false;
+        return bSet(ok, false);
     if (entity.saveData() && !updateData(entity.id(), entity.labDataList()))
-        return false;
+        return bSet(ok, false);
     if (!deleteExtraFiles(entity.id(), entity.deletedExtraFiles()))
-        return false;
+        return bSet(ok, false);
     if (!createExtraFiles(entity.id(), entity.extraFiles()))
-        return false;
-    return true;
+        return bSet(ok, false);
+    bSet(ok, true);
 }
 
-QList<Lab> LabRepository::findAllNewerThan(const TIdList &groups)
+QList<Lab> LabRepository::findAllNewerThan(const TIdList &groups, bool *ok)
 {
-    return findAllNewerThan(QDateTime(), groups);
+    return findAllNewerThan(QDateTime(), groups, ok);
 }
 
-QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TIdList &groups)
+QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TIdList &groups, bool *ok)
 {
     QList<Lab> list;
     if (!isValid())
-        return list;
+        return bRet(ok, false, list);
     QString qs = "SELECT labs.id, labs.sender_id, labs.deleted, labs.creation_date_time, labs.description, "
         "labs.last_modification_date_time, labs.title, labs.type FROM labs";
     QVariantMap bv;
@@ -154,8 +153,8 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
         qs += ")) > 0";
     }
     BSqlResult result = Source->exec(qs, bv);
-    if (!result.success() || result.values().isEmpty())
-        return list;
+    if (!result.success())
+        return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Lab entity(this);
         entity.mid = m.value("labs.id").toULongLong();
@@ -166,32 +165,34 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
         entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("labs.last_modification_date_time").toLongLong());
         entity.mtitle = m.value("labs.title").toString();
         entity.mtype = m.value("labs.type").toInt();
-        bool ok = false;
-        entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", entity.id(), &ok);
-        if (!ok)
-            return QList<Lab>();
-        entity.mgroups = RepositoryTools::getGroupIdList(Source, "lab_groups", "lab_id", entity.id(), &ok);
-        if (!ok)
-            return QList<Lab>();
-        entity.mtags = RepositoryTools::getTags(Source, "lab_tags", "lab_id", entity.id(), &ok);
-        if (!ok)
-            return QList<Lab>();
+        bool b = false;
+        entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<Lab>());
+        entity.mgroups = RepositoryTools::getGroupIdList(Source, "lab_groups", "lab_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<Lab>());
+        entity.mtags = RepositoryTools::getTags(Source, "lab_tags", "lab_id", entity.id(), &b);
+        if (!b)
+            return bRet(ok, false, QList<Lab>());
         entity.valid = true;
         list << entity;
     }
-    return list;
+    return bRet(ok, true, list);
 }
 
-Lab LabRepository::findOne(quint64 id)
+Lab LabRepository::findOne(quint64 id, bool *ok)
 {
     Lab entity(this);
     if (!isValid() || !id)
-        return entity;
-    BSqlResult result = Source->select("labs", QStringList() << "sender_id" << "deleted" << "creation_date_time"
-                                       << "description" << "last_modification_date_time" << "title" << "type",
-                                       BSqlWhere("id = :id", ":id", id));
-    if (!result.success() || result.value().isEmpty())
-        return entity;
+        return bRet(ok, false, entity);
+    static const QStringList Fields = QStringList() << "sender_id" << "deleted" << "creation_date_time"
+        << "description" << "last_modification_date_time" << "title" << "type";
+    BSqlResult result = Source->select("labs", Fields, BSqlWhere("id = :id", ":id", id));
+    if (!result.success())
+        return bRet(ok, false, entity);
+    if (result.value().isEmpty())
+        return bRet(ok, true, entity);
     entity.mid = id;
     entity.msenderId = result.value("sender_id").toULongLong();
     entity.mdeleted = result.value("deleted").toBool();
@@ -200,18 +201,18 @@ Lab LabRepository::findOne(quint64 id)
     entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
     entity.mtitle = result.value("title").toString();
     entity.mtype = result.value("type").toInt();
-    bool ok = false;
-    entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", id, &ok);
-    if (!ok)
-        return entity;
-    entity.mgroups = RepositoryTools::getGroupIdList(Source, "lab_groups", "lab_id", id, &ok);
-    if (!ok)
-        return entity;
-    entity.mtags = RepositoryTools::getTags(Source, "lab_tags", "lab_id", id, &ok);
-    if (!ok)
-        return entity;
+    bool b = false;
+    entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", id, &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mgroups = RepositoryTools::getGroupIdList(Source, "lab_groups", "lab_id", id, &b);
+    if (!b)
+        return bRet(ok, false, entity);
+    entity.mtags = RepositoryTools::getTags(Source, "lab_tags", "lab_id", id, &b);
+    if (!b)
+        return bRet(ok, false, entity);
     entity.valid = true;
-    return entity;
+    return bRet(ok, true, entity);
 }
 
 bool LabRepository::isValid() const

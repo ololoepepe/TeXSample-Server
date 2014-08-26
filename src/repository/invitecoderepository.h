@@ -44,15 +44,15 @@ public:
     explicit InviteCodeRepository(DataSource *source);
     ~InviteCodeRepository();
 public:
-    quint64 add(const InviteCode &entity);
+    quint64 add(const InviteCode &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    bool deleteExpired();
-    bool deleteOne(quint64 id);
-    bool deleteSome(const TIdList &ids);
-    QList<InviteCode> findAll();
-    QList<InviteCode> findAllByOwnerId(quint64 ownerId);
-    InviteCode findOne(quint64 id);
-    InviteCode findOneByCode(const BUuid &code);
+    void deleteExpired(bool *ok = 0);
+    void deleteOne(quint64 id, bool *ok = 0);
+    void deleteSome(const TIdList &ids, bool *ok = 0);
+    QList<InviteCode> findAll(bool *ok = 0);
+    QList<InviteCode> findAllByOwnerId(quint64 ownerId, bool *ok = 0);
+    InviteCode findOne(quint64 id, bool *ok = 0);
+    InviteCode findOneByCode(const BUuid &code, bool *ok = 0);
     bool isValid() const;
 private:
     friend class InviteCode;

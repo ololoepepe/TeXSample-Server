@@ -65,9 +65,9 @@ TAuthorInfoList getAuthorInfoList(DataSource *source, const QString &table, cons
 {
     if (!source || !source->isValid() || table.isEmpty() || idField.isEmpty() || !id)
         return bRet(ok, false, TAuthorInfoList());
-    BSqlResult result = source->select(table, QStringList() << "name" << "organization" << "patronymic" << "post"
-                                       << "role" << "surname",
-                                       BSqlWhere(idField + " = :" + idField, ":" + idField, id));
+    static const QStringList Fields = QStringList() << "name" << "organization" << "patronymic" << "post" << "role"
+                                                    << "surname";
+    BSqlResult result = source->select(table, Fields, BSqlWhere(idField + " = :" + idField, ":" + idField, id));
     if (!result.success())
         return bRet(ok, false, TAuthorInfoList());
     TAuthorInfoList list;
@@ -81,7 +81,7 @@ TAuthorInfoList getAuthorInfoList(DataSource *source, const QString &table, cons
         info.setSurname(m.value("surname").toString());
         list << info;
     }
-    return bRet(ok, false, list);
+    return bRet(ok, true, list);
 }
 
 TIdList getGroupIdList(DataSource *source, const QString &table, const QString &idField, quint64 id, bool *ok)
@@ -101,8 +101,8 @@ TServiceList getServices(DataSource *source, const QString &table, const QString
 {
     if (!source || !source->isValid() || table.isEmpty() || idField.isEmpty() || !id)
         return bRet(ok, false, TServiceList());
-    BSqlResult result = source->select(table, "service_type",
-                                       BSqlWhere(idField + " = :" + idField, ":" + idField, id));
+    BSqlWhere where(idField + " = :" + idField, ":" + idField, id);
+    BSqlResult result = source->select(table, "service_type", where);
     if (!result.success())
         return  bRet(ok, false, TServiceList());
     TServiceList list;

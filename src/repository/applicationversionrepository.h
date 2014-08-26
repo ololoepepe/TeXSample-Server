@@ -42,11 +42,11 @@ public:
     explicit ApplicationVersionRepository(DataSource *source);
     ~ApplicationVersionRepository();
 public:
-    bool add(const ApplicationVersion &entity);
+    void add(const ApplicationVersion &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    bool edit(const ApplicationVersion &entity);
+    void edit(const ApplicationVersion &entity, bool *ok = 0);
     ApplicationVersion findOneByFields(Texsample::ClientType clienType, BeQt::OSType os,
-                                       BeQt::ProcessorArchitecture arch, bool portable);
+                                       BeQt::ProcessorArchitecture arch, bool portable, bool *ok = 0);
     bool isValid() const;
 private:
     friend class ApplicationVersion;

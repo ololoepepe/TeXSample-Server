@@ -374,8 +374,9 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
-    if (!bApp->ApplicationVersionServ->setLatestAppVersion(client, os, arch, portable, version, url)) {
-        bWriteLine(tr("Failed to set application version", "error"));
+    QString err;
+    if (!bApp->ApplicationVersionServ->setLatestAppVersion(client, os, arch, portable, version, url, &err)) {
+        bWriteLine(tr("Failed to set application version due to the following error:", "error") + " " + err);
         return true;
     }
     bWriteLine(tr("OK", "message"));
