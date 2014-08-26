@@ -140,7 +140,7 @@ bool UserRepository::edit(const User &entity)
         return false;
     if (!RepositoryTools::setServices(Source, "user_services", "user_id", entity.id(), entity.availableServices()))
         return false;
-    if (entity.saveAvatar() && !updateAvatar(entity.id(), entity.avatar()))
+    if (!updateAvatar(entity.id(), entity.avatar()))
         return false;
     return true;
 }

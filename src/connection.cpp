@@ -25,8 +25,10 @@
 #include "datasource.h"
 #include "server.h"
 #include "service/applicationversionservice.h"
+#include "service/labservice.h"
 #include "service/requestin.h"
 #include "service/requestout.h"
+#include "service/sampleservice.h"
 #include "service/userservice.h"
 #include "translator.h"
 
@@ -58,7 +60,8 @@
 
 Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QString &location) :
     BNetworkConnection(server, socket), Source(new DataSource(location)),
-    ApplicationVersionServ(new ApplicationVersionService(Source)), UserServ(new UserService(Source))
+    ApplicationVersionServ(new ApplicationVersionService(Source)), LabServ(new LabService(Source)),
+    SampleServ(new SampleService(Source)), UserServ(new UserService(Source))
 {
     if (!Source->isValid()) {
         QString msg = translationsEnabled() ? tr("Invalid storage instance") : QString("Invalid storage instance");
@@ -502,16 +505,6 @@ bool Connection::handleGetServerStateRequest(BNetworkOperation *op)
     return sendReply(op, "", replyData);
 }
 
-bool Connection::handleGetUserAvatarRequest(BNetworkOperation *op)
-{
-    TRequest request = op->variantData().value<TRequest>();
-    QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
-        return sendReply(op, error);
-    RequestIn<TGetUserAvatarRequestData> in(request);
-    return sendReply(op, UserServ->getUserAvatar(in).createReply());
-}
-
 bool Connection::handleGetUserConnectionInfoListRequest(BNetworkOperation *op)
 {
     TRequest request = op->variantData().value<TRequest>();
@@ -641,37 +634,7 @@ bool Connection::handleSubscribeRequest(BNetworkOperation *op)
     return sendReply(op, "", replyData);
 }
 
-/*bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
-{
-    TClientInfo ci = op->variantData().toMap().value("client_info").value<TClientInfo>();
-    QString name = ci.client().toLower().replace(QRegExp("\\s"), "-");
-    QString ls = "Get latest app version request: " + name + " v" + ci.clientVersion().toString();
-    if (ci.isClientPortable())
-        ls += " (portable)";
-    ls += "@" + ci.os();
-    log(ls);
-    QVariantMap out;
-    QString s = "AppVersion/" + name + "/" + ci.os().left(3).toLower() + "/" + (ci.isClientPortable() ?
-                                                                                    "portable" : "normal") + "/";
-    out.insert("version", BCoreApplication::settingsInstance()->value(s + "/version"));
-    out.insert("url", BCoreApplication::settingsInstance()->value(s + "/url"));
-    sendReply(op, out);
-    return true;
-}
-
-bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QStringList args = in.value("arguments").toStringList();
-    logLocal("Set latest app version request" + (args.size() ? (": " + args.join(" ")) : ""));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError, LocalOnly);
-    if (maccessLevel < TAccessLevel::SuperuserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError, LocalOnly);
-    return sendReply(op, TerminalIOHandler::instance()->setAppVersion(args), LocalOnly);
-}
-
-bool Connection::handleAddSampleRequest(BNetworkOperation *op)
+/*bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     TTexProject project = in.value("project").value<TTexProject>();
@@ -1025,7 +988,6 @@ void Connection::initHandlers()
     installRequestHandler(TOperation::GetSampleSource, InternalHandler(&Connection::handleGetSampleSourceRequest));
     installRequestHandler(TOperation::GetSelfInfo, InternalHandler(&Connection::handleGetSelfInfoRequest));
     installRequestHandler(TOperation::GetServerState, InternalHandler(&Connection::handleGetServerStateRequest));
-    installRequestHandler(TOperation::GetUserAvatar, InternalHandler(&Connection::handleGetUserAvatarRequest));
     installRequestHandler(TOperation::GetUserConnectionInfoList,
                           InternalHandler(&Connection::handleGetUserConnectionInfoListRequest));
     installRequestHandler(TOperation::GetUserInfo, InternalHandler(&Connection::handleGetUserInfoRequest));

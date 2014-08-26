@@ -102,7 +102,6 @@ public:
     RequestOut<TGetInviteInfoListReplyData> getInviteInfoList(const RequestIn<TGetInviteInfoListRequestData> &in,
                                                               quint64 userId);
     RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);
-    RequestOut<TGetUserAvatarReplyData> getUserAvatar(const RequestIn<TGetUserAvatarRequestData> &in);
     RequestOut<TGetUserInfoReplyData> getUserInfo(const RequestIn<TGetUserInfoRequestData> &in);
     RequestOut<TGetUserInfoAdminReplyData> getUserInfoAdmin(const RequestIn<TGetUserInfoAdminRequestData> &in);
     RequestOut<TGetUserInfoListAdminReplyData> getUserInfoListAdmin(
@@ -139,7 +138,7 @@ private:
     TGroupInfoList getGroups(quint64 userId);
     TGroupInfo groupToGroupInfo(const Group &entity);
     TInviteInfo inviteCodeToInviteInfo(const InviteCode &entity);
-    TUserInfo userToUserInfo(const User &entity, bool includeEmail, bool includeAvatar);
+    TUserInfo userToUserInfo(const User &entity, bool includeEmail);
 private:
     Q_DISABLE_COPY(UserService)
 };

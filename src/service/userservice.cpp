@@ -132,7 +132,7 @@ RequestOut<TAddUserReplyData> UserService::addUser(const RequestIn<TAddUserReque
         return Out(error);
     if (!commit(t, holder, &error))
         return Out(error);
-    TUserInfo info = userToUserInfo(entity, true, false);
+    TUserInfo info = userToUserInfo(entity, true);
     TAddUserReplyData replyData;
     replyData.setUserInfo(info);
     return Out(replyData, info.registrationDateTime());
@@ -151,7 +151,7 @@ RequestOut<TAuthorizeReplyData> UserService::authorize(const RequestIn<TAuthoriz
         return Out(t.translate("UserService", "Invalid login, e-mail, or password", "error"));
     if (!entity.active())
         return Out(t.translate("UserService", "Account is inactive", "error"));
-    TUserInfo info = userToUserInfo(entity, true, false);
+    TUserInfo info = userToUserInfo(entity, true);
     TAuthorizeReplyData replyData;
     replyData.setUserInfo(info);
     return Out(replyData, dt);
@@ -260,7 +260,9 @@ bool UserService::checkOutdatedEntries()
     if (!isValid())
         return false;
     TransactionHolder holder(Source);
-    if (!AccountRecoveryCodeRepo->deleteExpired() || !InviteCodeRepo->deleteExpired())
+    bool ok = false;
+    AccountRecoveryCodeRepo->deleteExpired(&ok);
+    if (!ok || !InviteCodeRepo->deleteExpired())
         return false;
     foreach (const RegistrationConfirmationCode &entity, RegistrationConfirmationCodeRepo->findExpired()) {
         if (!UserRepo->deleteOne(entity.userId()))
@@ -432,7 +434,6 @@ RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRe
         return Out(t.translate("UserService", "No such user", "error"));
     TEditSelfRequestData requestData = in.data();
     entity.convertToCreatedByUser();
-    entity.setSaveAvatar(requestData.editAvatar());
     entity.setAvatar(requestData.avatar());
     entity.setName(requestData.name());
     entity.setPatronymic(requestData.patronymic());
@@ -446,7 +447,7 @@ RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRe
     if (!commit(t, holder, &error))
         return Out(error);
     TEditSelfReplyData replyData;
-    replyData.setUserInfo(userToUserInfo(entity, true, true));
+    replyData.setUserInfo(userToUserInfo(entity, true));
     return Out(replyData, entity.lastModificationDateTime());
 
 }
@@ -472,9 +473,8 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     }
     entity.convertToCreatedByUser();
     entity.setAccessLevel(requestData.accessLevel());
-    entity.setAccessLevel(requestData.active());
+    entity.setActive(requestData.active());
     entity.setAvailableServices(requestData.availableServices());
-    entity.setSaveAvatar(requestData.editAvatar());
     entity.setAvatar(requestData.avatar());
     if (requestData.editEmail())
         entity.setEmail(requestData.email());
@@ -493,7 +493,7 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     if (!commit(t, holder, &error))
         return Out(error);
     TEditUserReplyData replyData;
-    replyData.setUserInfo(userToUserInfo(entity, true, true));
+    replyData.setUserInfo(userToUserInfo(entity, true));
     return Out(replyData, entity.lastModificationDateTime());
 }
 
@@ -599,24 +599,7 @@ RequestOut<TGetSelfInfoReplyData> UserService::getSelfInfo(const RequestIn<TGetS
     if (!entity.isValid())
         return Out(t.translate("UserService", "No such user", "error"));
     TGetSelfInfoReplyData replyData;
-    replyData.setUserInfo(userToUserInfo(entity, true, true));
-    return Out(replyData, dt);
-}
-
-RequestOut<TGetUserAvatarReplyData> UserService::getUserAvatar(const RequestIn<TGetUserAvatarRequestData> &in)
-{
-    typedef RequestOut<TGetUserAvatarReplyData> Out;
-    Translator t(in.locale());
-    QString error;
-    if (!commonCheck(t, in.data(), &error))
-        return Out(error);
-    TUserIdentifier id = in.data().identifier();
-    QDateTime dt = QDateTime::currentDateTime();
-    User entity = UserRepo->findOne(id);
-    if (!entity.isValid())
-        return Out(t.translate("UserService", "No such user", "error"));
-    TGetUserAvatarReplyData replyData;
-    replyData.setAvatar(entity.avatar());
+    replyData.setUserInfo(userToUserInfo(entity, true));
     return Out(replyData, dt);
 }
 
@@ -638,7 +621,7 @@ RequestOut<TGetUserInfoReplyData> UserService::getUserInfo(const RequestIn<TGetU
     if (!entity.isValid())
         return Out(t.translate("UserService", "No such user", "error"));
     TGetUserInfoReplyData replyData;
-    replyData.setUserInfo(userToUserInfo(entity, false, in.data().includeAvatar()));
+    replyData.setUserInfo(userToUserInfo(entity, false));
     return Out(replyData, dt);
 }
 
@@ -660,7 +643,7 @@ RequestOut<TGetUserInfoAdminReplyData> UserService::getUserInfoAdmin(const Reque
     if (!entity.isValid())
         return Out(t.translate("UserService", "No such user", "error"));
     TGetUserInfoAdminReplyData replyData;
-    replyData.setUserInfo(userToUserInfo(entity, true, in.data().includeAvatar()));
+    replyData.setUserInfo(userToUserInfo(entity, true));
     return Out(replyData, dt);
 }
 
@@ -677,7 +660,7 @@ RequestOut<TGetUserInfoListAdminReplyData> UserService::getUserInfoListAdmin(
     TUserInfoList newUsers;
     //TIdList deletedUsers;
     foreach (const User &entity, entities)
-        newUsers << userToUserInfo(entity, true, false);
+        newUsers << userToUserInfo(entity, true);
     TGetUserInfoListAdminReplyData replyData;
     //replyData.setDeletedUsers(deletedUsers);
     replyData.setNewUsers(newUsers);
@@ -760,7 +743,10 @@ RequestOut<TRecoverAccountReplyData> UserService::recoverAccount(const RequestIn
     QString error;
     if (!commonCheck(t, &error))
         return Out(error);
-    AccountRecoveryCode arcEntity = AccountRecoveryCodeRepo->findOneByCode(requestData.recoveryCode());
+    bool ok = false;
+    AccountRecoveryCode arcEntity = AccountRecoveryCodeRepo->findOneByCode(requestData.recoveryCode(), &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get account recovery code (internal)", "error"));
     if (!arcEntity.isValid())
         return Out(t.translate("UserService", "No such code", "error"));
     User userEntity = UserRepo->findOne(arcEntity.userId());
@@ -772,7 +758,8 @@ RequestOut<TRecoverAccountReplyData> UserService::recoverAccount(const RequestIn
     userEntity.setPassword(requestData.password());
     if (!UserRepo->edit(userEntity))
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
-    if (!AccountRecoveryCodeRepo->deleteOneByUserId(userEntity.id()))
+    AccountRecoveryCodeRepo->deleteOneByUserId(userEntity.id(), &ok);
+    if (!ok)
         return Out(t.translate("UserService", "Failed to remove account recovery code (internal)", "error"));
     if (!sendEmail(userEntity.email(), "recover_account", in.locale()))
         return Out(t.translate("UserService", "Failed to send e-mail message", "error"));
@@ -813,7 +800,7 @@ RequestOut<TRegisterReplyData> UserService::registerUser(const RequestIn<TRegist
         return Out(error);
     if (!commit(t, holder, &error))
         return Out(error);
-    TUserInfo info = userToUserInfo(entity, true, false);
+    TUserInfo info = userToUserInfo(entity, true);
     TRegisterReplyData replyData;
     replyData.setUserInfo(info);
     return Out(replyData, info.registrationDateTime());
@@ -828,6 +815,7 @@ RequestOut<TRequestRecoveryCodeReplyData> UserService::requestRecoveryCode(
     QString error;
     if (!commonCheck(t, &error))
         return Out(error);
+    bool ok = false;
     User userEntity = UserRepo->findOneByEmail(requestData.email());
     if (!userEntity.isValid())
         return Out(t.translate("UserService", "No user with this e-mail", "error"));
@@ -838,7 +826,8 @@ RequestOut<TRequestRecoveryCodeReplyData> UserService::requestRecoveryCode(
     entity.setCode(code);
     entity.setExpirationDateTime(QDateTime::currentDateTimeUtc().addDays(1));
     entity.setUserId(userEntity.id());
-    if (!AccountRecoveryCodeRepo->add(entity))
+    AccountRecoveryCodeRepo->add(entity, &ok);
+    if (!ok)
         return Out(t.translate("UserService", "Failed to add account recovery code (internal)", "error"));
     BProperties replace;
     replace.insert("%username%", userEntity.login());
@@ -1035,7 +1024,7 @@ TInviteInfo UserService::inviteCodeToInviteInfo(const InviteCode &entity)
     return info;
 }
 
-TUserInfo UserService::userToUserInfo(const User &entity, bool includeEmail, bool includeAvatar)
+TUserInfo UserService::userToUserInfo(const User &entity, bool includeEmail)
 {
     TUserInfo info;
     if (!isValid() || !entity.isValid() || !entity.isCreatedByRepo())
@@ -1045,8 +1034,7 @@ TUserInfo UserService::userToUserInfo(const User &entity, bool includeEmail, boo
     info.setActive(entity.active());
     info.setAvailableGroups(superuser ? getAllGroups() : getGroups(entity.id()));
     info.setAvailableServices(superuser ? TServiceList::allServices() : entity.availableServices());
-    if (includeAvatar)
-        info.setAvatar(entity.avatar());
+    info.setAvatar(entity.avatar());
     if (includeEmail)
         info.setEmail(entity.email());
     info.setGroups(getGroups(entity.groups()));

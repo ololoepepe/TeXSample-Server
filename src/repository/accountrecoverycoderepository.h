@@ -44,10 +44,10 @@ public:
     explicit AccountRecoveryCodeRepository(DataSource *source);
     ~AccountRecoveryCodeRepository();
 public:
-    bool add(const AccountRecoveryCode &entity);
-    bool deleteExpired();
-    bool deleteOneByUserId(quint64 userId);
-    AccountRecoveryCode findOneByCode(const BUuid &code);
+    void add(const AccountRecoveryCode &entity, bool *ok = 0);
+    void deleteExpired(bool *ok = 0);
+    void deleteOneByUserId(quint64 userId, bool *ok = 0);
+    AccountRecoveryCode findOneByCode(const BUuid &code, bool *ok = 0);
     DataSource *dataSource() const;
     bool isValid() const;
 private:

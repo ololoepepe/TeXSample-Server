@@ -24,6 +24,8 @@
 
 class ApplicationVersionService;
 class DataSource;
+class LabService;
+class SampleService;
 class Translator;
 class UserService;
 
@@ -77,6 +79,8 @@ private:
 private:
     DataSource * const Source;
     ApplicationVersionService * const ApplicationVersionServ;
+    LabService * const LabServ;
+    SampleService * const SampleServ;
     UserService * const UserServ;
 private:
     TClientInfo mclientInfo;
@@ -147,7 +151,6 @@ private:
     bool handleGetSampleSourceRequest(BNetworkOperation *op);
     bool handleGetSelfInfoRequest(BNetworkOperation *op);
     bool handleGetServerStateRequest(BNetworkOperation *op);
-    bool handleGetUserAvatarRequest(BNetworkOperation *op);
     bool handleGetUserConnectionInfoListRequest(BNetworkOperation *op);
     bool handleGetUserInfoAdminRequest(BNetworkOperation *op);
     bool handleGetUserInfoListAdminRequest(BNetworkOperation *op);
