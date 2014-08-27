@@ -1,17 +1,39 @@
+/****************************************************************************
+**
+** Copyright (C) 2012-2014 Andrey Bogdanov
+**
+** This file is part of TeXSample Server.
+**
+** TeXSample Server is free software: you can redistribute it and/or modify
+** it under the terms of the GNU General Public License as published by
+** the Free Software Foundation, either version 3 of the License, or
+** (at your option) any later version.
+**
+** TeXSample Server is distributed in the hope that it will be useful,
+** but WITHOUT ANY WARRANTY; without even the implied warranty of
+** MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+** GNU General Public License for more details.
+**
+** You should have received a copy of the GNU General Public License
+** along with TeXSample Server.  If not, see <http://www.gnu.org/licenses/>.
+**
+****************************************************************************/
+
 #ifndef SERVER_H
 #define SERVER_H
 
-class QString;
+class TUserConnectionInfoList;
 
-class BNetworkConnection;
 class BGenericSocket;
+class BNetworkConnection;
 
-#include <BNetworkServer>
+#include <TGetUserConnectionInfoListRequestData>
+
 #include <BLogger>
+#include <BNetworkServer>
 
 #include <QObject>
-
-#define sServer Server::instance()
+#include <QString>
 
 /*============================================================================
 ================================ Server ======================================
@@ -20,13 +42,16 @@ class BGenericSocket;
 class Server : public BNetworkServer
 {
     Q_OBJECT
+private:
+    const QString Location;
 public:
-    static Server *instance();
-    static void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
+    explicit Server(const QString &location, QObject *parent = 0);
 public:
-    explicit Server(QObject *parent = 0);
+    TUserConnectionInfoList userConnections(
+            const QString &matchPattern, TGetUserConnectionInfoListRequestData::MatchType type =
+            TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId, int *total = 0) const;
 protected:
-    BNetworkConnection *createConnection(BGenericSocket *socket);
+    BNetworkConnection *createConnection(BGenericSocket *socket, const QString &serverAddress, quint16 serverPort);
     BGenericSocket *createSocket();
 };
 

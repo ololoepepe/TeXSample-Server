@@ -1,0 +1,5 @@
+Hello, %username%! You have requested TeXSample account e-mail change.
+
+Please, confirm your e-mail change by entering the following code in your client application:
+
+%code%

@@ -1,0 +1,3 @@
+Hello, %username%! You have requested TeXSample account e-mail change.
+
+The new e-mail address is: %email%

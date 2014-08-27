@@ -3,17 +3,29 @@
         <file>db/texsample.schema</file>
         <file>texsample-framework/texsample.sty</file>
         <file>texsample-framework/texsample.tex</file>
-        <file>templates/get_recovery_code/body.txt</file>
-        <file>templates/get_recovery_code/body_ru.txt</file>
         <file>templates/recover_account/body.txt</file>
         <file>templates/recover_account/body_ru.txt</file>
         <file>templates/register/body.txt</file>
         <file>templates/register/body_ru.txt</file>
         <file>templates/register/subject.txt</file>
         <file>templates/register/subject_ru.txt</file>
-        <file>templates/get_recovery_code/subject.txt</file>
-        <file>templates/get_recovery_code/subject_ru.txt</file>
         <file>templates/recover_account/subject.txt</file>
         <file>templates/recover_account/subject_ru.txt</file>
+        <file>templates/registration_confirmation/body.txt</file>
+        <file>templates/registration_confirmation/body_ru.txt</file>
+        <file>templates/registration_confirmation/subject.txt</file>
+        <file>templates/registration_confirmation/subject_ru.txt</file>
+        <file>templates/email_change_confirmation/body.txt</file>
+        <file>templates/email_change_confirmation/body_ru.txt</file>
+        <file>templates/email_change_confirmation/subject.txt</file>
+        <file>templates/email_change_confirmation/subject_ru.txt</file>
+        <file>templates/email_change_notification/body.txt</file>
+        <file>templates/email_change_notification/body_ru.txt</file>
+        <file>templates/email_change_notification/subject.txt</file>
+        <file>templates/email_change_notification/subject_ru.txt</file>
+        <file>templates/request_recovery_code/body.txt</file>
+        <file>templates/request_recovery_code/body_ru.txt</file>
+        <file>templates/request_recovery_code/subject.txt</file>
+        <file>templates/request_recovery_code/subject_ru.txt</file>
     </qresource>
 </RCC>
