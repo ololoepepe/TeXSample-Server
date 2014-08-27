@@ -26,6 +26,8 @@ class SampleRepository;
 
 #include <TAuthorInfoList>
 #include <TBinaryFile>
+#include <TFileInfo>
+#include <TFileInfoList>
 #include <TSampleType>
 #include <TTexProject>
 
@@ -42,17 +44,19 @@ class Sample
 private:
     quint64 mid;
     quint64 msenderId;
-    bool mdeleted;
     QString madminRemark;
     TAuthorInfoList mauthors;
     QDateTime mcreationDateTime;
     QString mdescription;
     QDateTime mlastModificationDateTime;
     TBinaryFile mpreviewMainFile;
+    TFileInfo mpreviewMainFileInfo;
     quint8 mrating;
     bool msaveAdminRemark;
     bool msaveData;
     TTexProject msource;
+    TFileInfoList msourceExtraFileInfos;
+    TFileInfo msourceMainFileInfo;
     QStringList mtags;
     QString mtitle;
     TSampleType mtype;
@@ -73,13 +77,13 @@ public:
     TAuthorInfoList authors() const;
     void convertToCreatedByUser();
     QDateTime creationDateTime() const;
-    bool deleted() const;
     QString description() const;
     quint64 id() const;
     bool isCreatedByRepo() const;
     bool isValid() const;
     QDateTime lastModificationDateTime() const;
     const TBinaryFile &previewMainFile() const;
+    TFileInfo previewMainFileInfo() const;
     quint8 rating() const;
     SampleRepository *repository() const;
     bool saveAdminRemark() const;
@@ -87,24 +91,27 @@ public:
     quint64 senderId() const;
     void setAdminRemark(const QString &remark);
     void setAuthors(const TAuthorInfoList &authors);
-    void setDeleted(bool deleted);
     void setDescription(const QString &description);
     void setId(quint64 id);
-    void setProject(const TTexProject &project);
+    void setPreviewMainFile(const TBinaryFile &file);
     void setRating(quint8 rating);
     void setSaveAdminRemark(bool save);
     void setSaveData(bool save);
     void setSenderId(quint64 senderId);
+    void setSource(const TTexProject &project);
     void setTags(const QStringList &tags);
     void setTitle(const QString &title);
     void setType(const TSampleType &type);
     const TTexProject &source() const;
+    TFileInfoList sourceExtraFileInfos() const;
+    TFileInfo sourceMainFileInfo() const;
     QStringList tags() const;
     QString title() const;
     TSampleType type() const;
 public:
     Sample &operator =(const Sample &other);
 private:
+    Sample *getSelf() const;
     void init();
 private:
     friend class SampleRepository;

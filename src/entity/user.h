@@ -99,6 +99,7 @@ public:
 public:
     User &operator =(const User &other);
 private:
+    User *getSelf() const;
     void init();
 private:
     friend class UserRepository;

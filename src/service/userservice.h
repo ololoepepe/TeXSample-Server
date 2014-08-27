@@ -117,21 +117,21 @@ private:
     static bool sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                           const BProperties &replace = BProperties());
 private:
-    template <typename T> bool commonCheck(const Translator &translator, const T &data, QString *error) const
+    template <typename T> bool commonCheck(const Translator &t, const T &data, QString *error) const
     {
-        if (!commonCheck(translator, error))
+        if (!commonCheck(t, error))
             return false;
         if (!data.isValid())
-            return bRet(error, translator.translate("UserService", "Invalid data", "error"), false);
+            return bRet(error, t.translate("UserService", "Invalid data", "error"), false);
         return bRet(error, QString(), true);
     }
 private:
     bool addUser(const User &entity, User &newEntity, const QLocale &locale = Application::locale(),
                  QString *error = 0);
-    bool checkUserId(const Translator &translator, quint64 userId, QString *error);
+    bool checkUserId(const Translator &t, quint64 userId, QString *error);
     bool commit(const QLocale &locale, TransactionHolder &holder, QString *error);
-    bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
-    bool commonCheck(const Translator &translator, QString *error) const;
+    bool commit(const Translator &t, TransactionHolder &holder, QString *error);
+    bool commonCheck(const Translator &t, QString *error) const;
     bool confirmRegistration(const BUuid &code, const QLocale &locale = Application::locale(), QString *error = 0);
     TGroupInfoList getAllGroups(bool *ok = 0);
     TGroupInfoList getGroups(const TIdList &ids, bool *ok = 0);

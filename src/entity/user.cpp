@@ -88,11 +88,12 @@ QImage User::avatar() const
         return mavatar;
     if (!repo || !repo->isValid())
         return QImage();
+    User *self = getSelf();
     bool ok = false;
-    *const_cast<QImage *>(&mavatar) = const_cast<UserRepository *>(repo)->fetchAvatar(mid, &ok);
+    self->mavatar = self->repo->fetchAvatar(mid, &ok);
     if (!ok)
         return QImage();
-    *const_cast<bool *>(&avatarFetched) = true;
+    self->avatarFetched = true;
     return mavatar;
 }
 
@@ -263,6 +264,11 @@ User &User::operator =(const User &other)
 }
 
 /*============================== Private methods ===========================*/
+
+User *User::getSelf() const
+{
+    return const_cast<User *>(this);
+}
 
 void User::init()
 {

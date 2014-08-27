@@ -138,7 +138,7 @@ bool setAuthorInfoList(DataSource *source, const QString &table, const QString &
         values.insert("post", info.post());
         values.insert("role", info.role());
         values.insert("surname", info.surname());
-        if (source->insert(table, values))
+        if (!source->insert(table, values))
             return false;
     }
     return true;

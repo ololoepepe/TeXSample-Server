@@ -49,7 +49,6 @@ class Lab
 private:
     quint64 mid;
     quint64 msenderId;
-    bool mdeleted;
     TAuthorInfoList mauthors;
     QDateTime mcreationDateTime;
     TLabDataList mdataList;
@@ -77,7 +76,6 @@ public:
     TAuthorInfoList authors() const;
     void convertToCreatedByUser();
     QDateTime creationDateTime() const;
-    bool deleted() const;
     const TLabData &labData(BeQt::OSType os) const;
     const TLabDataList &labDataList() const;
     QStringList deletedExtraFiles() const;
@@ -94,7 +92,6 @@ public:
     quint64 senderId() const;
     void setAuthors(const TAuthorInfoList &authors);
     void setDataList(const TLabDataList &list);
-    void setDeleted(bool deleted);
     void setDeletedExtraFiles(const QStringList &fileNames);
     void setDescription(const QString &description);
     void setExtraFiles(const TBinaryFileList &extraFiles);

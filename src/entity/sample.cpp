@@ -94,11 +94,6 @@ QDateTime Sample::creationDateTime() const
     return mcreationDateTime;
 }
 
-bool Sample::deleted() const
-{
-    return mdeleted;
-}
-
 QString Sample::description() const
 {
     return mdescription;
@@ -118,7 +113,8 @@ bool Sample::isValid() const
 {
     if (createdByRepo)
         return valid;
-    return msenderId && msource.isValid() && !mtitle.isEmpty() && ((mid && !msaveData) || msource.isValid());
+    return msenderId && !mtitle.isEmpty()
+            && ((mid && !msaveData) || (msource.isValid() && mpreviewMainFile.isValid()));
 }
 
 QDateTime Sample::lastModificationDateTime() const
@@ -133,12 +129,18 @@ const TBinaryFile &Sample::previewMainFile() const
         return mpreviewMainFile;
     if (!repo || !repo->isValid())
         return Default;
+    Sample *self = getSelf();
     bool ok = false;
-    *const_cast<TBinaryFile *>(&mpreviewMainFile) = const_cast<SampleRepository *>(repo)->fetchPreview(mid, &ok);
+    self->mpreviewMainFile = self->repo->fetchPreview(mid, &ok);
     if (!ok)
         return Default;
-    *const_cast<bool *>(&previewFetched) = true;
+    self->previewFetched = true;
     return mpreviewMainFile;
+}
+
+TFileInfo Sample::previewMainFileInfo() const
+{
+    return mpreviewMainFileInfo;
 }
 
 quint8 Sample::rating() const
@@ -176,11 +178,6 @@ void Sample::setAuthors(const TAuthorInfoList &authors)
     mauthors = authors;
 }
 
-void Sample::setDeleted(bool deleted)
-{
-    mdeleted = deleted;
-}
-
 void Sample::setDescription(const QString &description)
 {
     mdescription = Texsample::testSampleDescription(description) ? description : QString();
@@ -191,9 +188,9 @@ void Sample::setId(quint64 id)
     mid = id;
 }
 
-void Sample::setProject(const TTexProject &project)
+void Sample::setPreviewMainFile(const TBinaryFile &file)
 {
-    msource = project;
+    mpreviewMainFile = file;
 }
 
 void Sample::setRating(quint8 rating)
@@ -214,6 +211,11 @@ void Sample::setSaveData(bool save)
 void Sample::setSenderId(quint64 senderId)
 {
     msenderId = senderId;
+}
+
+void Sample::setSource(const TTexProject &project)
+{
+    msource = project;
 }
 
 void Sample::setTags(const QStringList &tags)
@@ -238,12 +240,23 @@ const TTexProject &Sample::source() const
         return msource;
     if (!repo || !repo->isValid())
         return Default;
+    Sample *self = getSelf();
     bool ok = false;
-    *const_cast<TTexProject *>(&msource) = const_cast<SampleRepository *>(repo)->fetchSource(mid, &ok);
+    self->msource = self->repo->fetchSource(mid, &ok);
     if (!ok)
         return Default;
-    *const_cast<bool *>(&sourceFetched) = true;
+    self->sourceFetched = true;
     return msource;
+}
+
+TFileInfoList Sample::sourceExtraFileInfos() const
+{
+    return msourceExtraFileInfos;
+}
+
+TFileInfo Sample::sourceMainFileInfo() const
+{
+    return msourceMainFileInfo;
 }
 
 QStringList Sample::tags() const
@@ -267,34 +280,42 @@ Sample &Sample::operator =(const Sample &other)
 {
     mid = other.mid;
     msenderId = other.msenderId;
-    mdeleted = other.mdeleted;
     madminRemark = other.madminRemark;
     mauthors = other.mauthors;
     mcreationDateTime = other.mcreationDateTime;
     mdescription = other.mdescription;
     mlastModificationDateTime = other.mlastModificationDateTime;
     mpreviewMainFile = other.mpreviewMainFile;
+    mpreviewMainFileInfo = other.mpreviewMainFileInfo;
     mrating = other.mrating;
     msaveAdminRemark = other.msaveAdminRemark;
     msaveData = other.msaveData;
     msource = other.msource;
+    msourceExtraFileInfos = other.msourceExtraFileInfos;
+    msourceMainFileInfo = other.msourceMainFileInfo;
     mtags = other.mtags;
     mtitle = other.mtitle;
     mtype = other.mtype;
+    createdByRepo = other.createdByRepo;
     mainFileName = other.mainFileName;
     previewFetched = other.previewFetched;
     repo = other.repo;
     sourceFetched = other.sourceFetched;
+    valid = other.valid;
     return *this;
 }
 
 /*============================== Private methods ===========================*/
 
+Sample *Sample::getSelf() const
+{
+    return const_cast<Sample *>(this);
+}
+
 void Sample::init()
 {
     mid = 0;
     msenderId = 0;
-    mdeleted = false;
     mcreationDateTime = QDateTime().toUTC();
     mlastModificationDateTime = QDateTime().toUTC();
     mrating = 0;

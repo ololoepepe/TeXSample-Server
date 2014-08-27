@@ -21,9 +21,30 @@
 
 #include "sampleservice.h"
 
+#include "application.h"
 #include "datasource.h"
 #include "entity/sample.h"
+#include "entity/user.h"
 #include "repository/samplerepository.h"
+#include "repository/userrepository.h"
+#include "requestin.h"
+#include "requestout.h"
+#include "temporarylocation.h"
+#include "transactionholder.h"
+#include "translator.h"
+
+#include <TeXSample/TeXSampleCore>
+
+#include <BDirTools>
+
+#include <QDateTime>
+#include <QDebug>
+#include <QDir>
+#include <QFileInfo>
+#include <QLocale>
+#include <QString>
+#include <QStringList>
+#include <QTextCodec>
 
 /*============================================================================
 ================================ SampleService ===============================
@@ -32,7 +53,7 @@
 /*============================== Public constructors =======================*/
 
 SampleService::SampleService(DataSource *source) :
-    SampleRepo(new SampleRepository(source)), Source(source)
+    SampleRepo(new SampleRepository(source)), Source(source), UserRepo(new UserRepository(source))
 {
     //
 }
@@ -44,9 +65,328 @@ SampleService::~SampleService()
 
 /*============================== Public methods ============================*/
 
+RequestOut<TAddSampleReplyData> SampleService::addSample(const RequestIn<TAddSampleRequestData> &in, quint64 userId)
+{
+    typedef RequestOut<TAddSampleReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    const TAddSampleRequestData &requestData = in.data();
+    if (!commonCheck(t, requestData, &error))
+        return Out(error);
+    if (!userId)
+        return Out(t.translate("SampleService", "Invalid user ID (internal)", "error"));
+    bool ok = false;
+    Sample entity;
+    entity.setSenderId(userId);
+    entity.setAuthors(requestData.authors());
+    entity.setDescription(requestData.description());
+    entity.setSource(requestData.project());
+    entity.setPreviewMainFile(compilePreview(requestData.project(), &ok));
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to compile project", "error"));
+    entity.setTags(requestData.tags());
+    entity.setTitle(requestData.title());
+    TransactionHolder holder(Source);
+    quint64 id = SampleRepo->add(entity, &ok);
+    if (!ok || !id)
+        return Out(t.translate("SampleService", "Failed to add sample (internal)", "error"));
+    entity = SampleRepo->findOne(id, &ok);
+    if (!ok || !entity.isValid())
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    TSampleInfo info = sampleToSampleInfo(entity, &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to create sample info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
+    TAddSampleReplyData replyData;
+    replyData.setSampleInfo(info);
+    return Out(replyData, info.creationDateTime());
+}
+
+RequestOut<TCompileTexProjectReplyData> SampleService::compileTexProject(
+        const RequestIn<TCompileTexProjectRequestData> &in)
+{
+    typedef RequestOut<TCompileTexProjectReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    const TCompileTexProjectRequestData &requestData = in.data();
+    if (!commonCheck(t, requestData, &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    TemporaryLocation loc(Source);
+    if (!loc.isValid())
+        return Out(t.translate("SampleService", "Failed to create temporary location (internal)", "error"));
+    QString path = loc.absolutePath();
+    QByteArray codecName = requestData.codec() ? requestData.codec()->name() : QByteArray("UTF-8");
+    QTextCodec *codec = QTextCodec::codecForName(codecName);
+    if (!Application::copyTexsample(path, codecName))
+        return Out(t.translate("SampleService", "Failed to copy texsample (internal)", "error"));
+    if (!requestData.project().save(path, codec))
+        return Out(t.translate("SampleService", "Failed to save project (internal)", "error"));
+    QString fileName = requestData.project().rootFile().fileName();
+    QString baseName = QFileInfo(fileName).baseName();
+    QStringList args = QStringList() << "-interaction=nonstopmode";
+    args << requestData.commands() << (loc.absoluteFilePath(fileName)) << requestData.options();
+    QString command = requestData.compiler().toString().toLower();
+    QString output;
+    int code = BeQt::execProcess(path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &output, codec);
+    TCompileTexProjectReplyData replyData;
+    replyData.setExitCode(code);
+    replyData.setOutput(output);
+    if (code >= 0 && requestData.makeindexEnabled()) {
+        QStringList margs = QStringList() << loc.absoluteFilePath(baseName);
+        QString moutput;
+        int mcode = BeQt::execProcess(path, "makeindex", margs, 5 * BeQt::Second, BeQt::Minute, &moutput, codec);
+        replyData.setMakeindexExitCode(mcode);
+        replyData.setMakeindexOutput(moutput);
+        if (!mcode) {
+            code = BeQt::execProcess(path, command, args, 5 * BeQt::Second, 5 * BeQt::Minute, &output, codec);
+            replyData.setExitCode(code);
+            replyData.setOutput(output);
+        }
+    }
+    if (code >= 0 && requestData.dvipsEnabled()) {
+        QStringList dargs = QStringList() << loc.absoluteFilePath(baseName);
+        QString doutput;
+        int dcode = BeQt::execProcess(path, "dvips", dargs, 5 * BeQt::Second, BeQt::Minute, &doutput, codec);
+        replyData.setDvipsExitCode(dcode);
+        replyData.setDvipsOutput(doutput);
+    }
+    if (code < 0)
+        return Out(replyData, dt);
+    QStringList nameFilters = QStringList() << (baseName + "*");
+    QStringList fileNames = BDirTools::entryList(path, nameFilters, QDir::Files);
+    fileNames.removeAll(loc.absoluteFilePath(fileName));
+    TBinaryFileList list;
+    foreach (const QString &fn, fileNames) {
+        TBinaryFile f(fn);
+        if (!f.isValid())
+            return Out(t.translate("SampleService", "Failed to load file (internal)", "error"));
+        list << f;
+    }
+    replyData.setFiles(list);
+    return Out(replyData, dt);
+}
+
 DataSource *SampleService::dataSource() const
 {
     return Source;
+}
+
+RequestOut<TDeleteSampleReplyData> SampleService::deleteSample(const RequestIn<TDeleteSampleRequestData> &in,
+                                                               quint64 userId)
+{
+    typedef RequestOut<TDeleteSampleReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    if (!checkUserId(t, userId, &error))
+        return Out(error);
+    bool ok = false;
+    const TDeleteSampleRequestData &requestData = in.data();
+    Sample entity = SampleRepo->findOne(requestData.id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    if (!entity.isValid())
+        return Out(t.translate("SampleService", "No such sample", "error"));
+    if (entity.senderId() != userId) {
+        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
+            return Out(t.translate("SampleService", "Not enough rights to delete sample", "error"));
+    }
+    TransactionHolder holder(Source);
+    QDateTime dt = SampleRepo->deleteOne(requestData.id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to edit sample (internal)", "error"));
+    TDeleteSampleReplyData replyData;
+    if (!commit(t, holder, &error))
+        return Out(error);
+    return Out(replyData, dt);
+}
+
+RequestOut<TEditSampleReplyData> SampleService::editSample(const RequestIn<TEditSampleRequestData> &in, quint64 userId)
+{
+    typedef RequestOut<TEditSampleReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    if (!checkUserId(t, userId, &error))
+        return Out(error);
+    bool ok = false;
+    const TEditSampleRequestData &requestData = in.data();
+    Sample entity = SampleRepo->findOne(requestData.id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    if (!entity.isValid())
+        return Out(t.translate("SampleService", "No such sample", "error"));
+    if (entity.senderId() != userId) {
+        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
+            return Out(t.translate("SampleService", "Not enough rights to edit sample", "error"));
+    }
+    entity.convertToCreatedByUser();
+    entity.setAuthors(requestData.authors());
+    entity.setDescription(requestData.description());
+    entity.setSaveAdminRemark(false);
+    entity.setSaveData(requestData.editProject());
+    if (requestData.editProject()) {
+        entity.setSource(requestData.project());
+        entity.setPreviewMainFile(compilePreview(requestData.project(), &ok));
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to compile project", "error"));
+    }
+    entity.setTags(requestData.tags());
+    entity.setTitle(requestData.title());
+    TransactionHolder holder(Source);
+    SampleRepo->edit(entity, &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to edit sample (internal)", "error"));
+    entity = SampleRepo->findOne(entity.id(), &ok);
+    if (!ok || !entity.isValid())
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    TEditSampleReplyData replyData;
+    TSampleInfo info = sampleToSampleInfo(entity, &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to create sample info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
+    replyData.setSampleInfo(info);
+    return Out(replyData, entity.lastModificationDateTime());
+}
+
+RequestOut<TEditSampleAdminReplyData> SampleService::editSampleAdmin(const RequestIn<TEditSampleAdminRequestData> &in,
+                                                                     quint64 userId)
+{
+    typedef RequestOut<TEditSampleAdminReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    if (!checkUserId(t, userId, &error))
+        return Out(error);
+    bool ok = false;
+    const TEditSampleAdminRequestData &requestData = in.data();
+    Sample entity = SampleRepo->findOne(requestData.id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    if (!entity.isValid())
+        return Out(t.translate("SampleService", "No such sample", "error"));
+    if (entity.senderId() != userId) {
+        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
+        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
+            return Out(t.translate("SampleService", "Not enough rights to edit sample", "error"));
+    }
+    entity.convertToCreatedByUser();
+    entity.setAdminRemark(requestData.adminRemark());
+    entity.setAuthors(requestData.authors());
+    entity.setDescription(requestData.description());
+    entity.setSaveAdminRemark(true);
+    entity.setSaveData(requestData.editProject());
+    if (requestData.editProject()) {
+        entity.setSource(requestData.project());
+        entity.setPreviewMainFile(compilePreview(requestData.project(), &ok));
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to compile project", "error"));
+    }
+    entity.setRating(requestData.rating());
+    entity.setTags(requestData.tags());
+    entity.setTitle(requestData.title());
+    entity.setType(requestData.type());
+    TransactionHolder holder(Source);
+    SampleRepo->edit(entity, &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to edit sample (internal)", "error"));
+    entity = SampleRepo->findOne(entity.id(), &ok);
+    if (!ok || !entity.isValid())
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    TEditSampleAdminReplyData replyData;
+    TSampleInfo info = sampleToSampleInfo(entity, &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to create sample info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
+    replyData.setSampleInfo(info);
+    return Out(replyData, entity.lastModificationDateTime());
+}
+
+RequestOut<TGetSampleInfoListReplyData> SampleService::getSampleInfoList(
+        const RequestIn<TGetSampleInfoListRequestData> &in)
+{
+    typedef RequestOut<TGetSampleInfoListReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTime();
+    bool ok = false;
+    QList<Sample> entities = SampleRepo->findAllNewerThan(in.lastRequestDateTime(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample list (internal)", "error"));
+    TSampleInfoList newSamples;
+    TIdList deletedSamples = SampleRepo->findAllDeletedNewerThan(in.lastRequestDateTime(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get deleted sample list (internal)", "error"));
+    foreach (const Sample &entity, entities) {
+        newSamples << sampleToSampleInfo(entity, &ok);
+        if (!ok)
+            return Out(t.translate("SampleService", "Failed to create sample info (internal)", "error"));
+    }
+    TGetSampleInfoListReplyData replyData;
+    replyData.setNewSamples(newSamples);
+    replyData.setDeletedSamples(deletedSamples);
+    return Out(replyData, dt);
+}
+
+RequestOut<TGetSamplePreviewReplyData> SampleService::getSamplePreview(
+        const RequestIn<TGetSamplePreviewRequestData> &in)
+{
+    typedef RequestOut<TGetSamplePreviewReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTime();
+    bool ok = false;
+    Sample entity = SampleRepo->findOne(in.data().id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    TGetSamplePreviewReplyData replyData;
+    replyData.setMainFile(entity.previewMainFile());
+    return Out(replyData, dt);
+}
+
+RequestOut<TGetSampleSourceReplyData> SampleService::getSampleSource(const RequestIn<TGetSampleSourceRequestData> &in)
+{
+    typedef RequestOut<TGetSampleSourceReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, &error))
+        return Out(error);
+    QDateTime dt = QDateTime::currentDateTime();
+    bool ok = false;
+    Sample entity = SampleRepo->findOne(in.data().id(), &ok);
+    if (!ok)
+        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
+    TGetSampleSourceReplyData replyData;
+    replyData.setProject(entity.source());
+    return Out(replyData, dt);
 }
 
 bool SampleService::isValid() const
@@ -54,355 +394,84 @@ bool SampleService::isValid() const
     return Source && Source->isValid() && SampleRepo->isValid();
 }
 
-/*
-bool Storage::copyTexsample(const QString &path, const QString &codecName)
+/*============================== Private methods ===========================*/
+
+bool SampleService::checkUserId(const Translator &t, quint64 userId, QString *error)
 {
-    if (!QDir(path).exists() || mtexsampleSty.isEmpty() || mtexsampleTex.isEmpty())
-        return false;
-    QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8")).toLower();
-    return BDirTools::writeTextFile(path + "/texsample.sty", mtexsampleSty, cn)
-            && BDirTools::writeTextFile(path + "/texsample.tex", mtexsampleTex, cn);
+    if (!userId)
+        return bRet(error, t.translate("SampleService", "Invalid user ID (internal)", "error"), false);
+    return bRet(error, QString(), true);
 }
 
-bool Storage::removeTexsample(const QString &path)
+bool SampleService::commit(const QLocale &locale, TransactionHolder &holder, QString *error)
 {
-    return BDirTools::removeFilesInDir(path, QStringList() << "texsample.sty" << "texsample.tex");
-}*/
+    Translator t(locale);
+    return commit(t, holder, error);
+}
 
-/*TCompilationResult compileProject(const CompileParameters &p)
+bool SampleService::commit(const Translator &t, TransactionHolder &holder, QString *error)
 {
-    static const QStringList Suffixes = QStringList() << "*.aux" << "*.dvi" << "*.idx" << "*.ilg" << "*.ind"
-                                                      << "*.log" << "*.out" << "*.pdf" << "*.toc";
-    if (!p.project.isValid())
-        return TCompilationResult(TMessage::InternalParametersError);
-    if (p.path.isEmpty() || !BDirTools::mkpath(p.path))
-        return TCompilationResult(TMessage::InternalFileSystemError);
-    QString codecName = p.compiledProject ? p.param.codecName() : QString("UTF-8");
-    if (!p.project.save(p.path, codecName) || !Storage::copyTexsample(p.path, codecName))
-    {
-        BDirTools::rmdir(p.path);
-        return TCompilationResult(TMessage::InternalFileSystemError);
-    }
-    QString fn = p.project.rootFileName();
-    QString tmpfn = BeQt::pureUuidText(QUuid::createUuid()) + ".tex";
-    QString baseName = QFileInfo(fn).baseName();
-    TCompilationResult r;
-    QString command = !p.compiledProject ? "pdflatex" : p.param.compilerCommand();
+    if (!holder.doCommit())
+        return bRet(error, t.translate("SampleService", "Failed to commit (internal)", "error"), false);
+    return bRet(error, QString(), true);
+}
+
+bool SampleService::commonCheck(const Translator &t, QString *error) const
+{
+    if (!isValid())
+        return bRet(error, t.translate("SampleService", "Invalid SampleService instance (internal)", "error"), false);
+    return bRet(error, QString(), true);
+}
+
+TBinaryFile SampleService::compilePreview(const TTexProject &source, bool *ok)
+{
+    if (!isValid() || !source.isValid())
+        return bRet(ok, false, TBinaryFile());
+    TemporaryLocation loc(Source);
+    if (!loc.isValid())
+        return bRet(ok, false, TBinaryFile());
+    if (!Application::copyTexsample(loc.absolutePath(), "UTF-8"))
+        return bRet(ok, false, TBinaryFile());
+    TTexProject src = source;
+    src.removeRestrictedCommands();
+    if (!src.save(loc.absolutePath(), QTextCodec::codecForName("UTF-8")))
+        return bRet(ok, false, TBinaryFile());
+    QString command = "pdflatex";
+    QString fileName = src.rootFile().fileName();
+    QString baseName = QFileInfo(fileName).baseName();
     QStringList args = QStringList() << "-interaction=nonstopmode";
-    if (!p.compiledProject)
-    {
-        if (!QFile::rename(p.path + "/" + fn, p.path + "/" + tmpfn))
-            return TCompilationResult(TMessage::InternalFileSystemError);
-        args << ("-jobname=" + baseName) << ("\\input texsample.tex \\input " + tmpfn + " \\end{document}");
-    }
-    else
-    {
-        args << p.param.commands() << (p.path + "/" + fn) << p.param.options();
-    }
-    QString log;
-    int code = BeQt::execProcess(p.path, command, args, 5 * BeQt::Second, 2 * BeQt::Minute, &log);
-    if (!p.compiledProject && !QFile::rename(p.path + "/" + tmpfn, p.path + "/" + fn))
-        return TCompilationResult(TMessage::InternalFileSystemError);
-    if (!Storage::removeTexsample(p.path))
-        return TCompilationResult(TMessage::InternalFileSystemError);
-    r.setSuccess(!code);
-    r.setExitCode(code);
-    r.setLog(log);
-    if (p.compiledProject && r && p.param.makeindexEnabled())
-    {
-        QString mlog;
-        int mcode = BeQt::execProcess(p.path, "makeindex", QStringList() << (p.path + "/" + baseName),
-                                      5 * BeQt::Second, BeQt::Minute, &mlog);
-        if (p.makeindexResult)
-        {
-            p.makeindexResult->setSuccess(!mcode);
-            p.makeindexResult->setExitCode(mcode);
-            p.makeindexResult->setLog(mlog);
-        }
-        if (!mcode)
-        {
-            code = BeQt::execProcess(p.path, p.param.compilerCommand(), args, 5 * BeQt::Second, 5 * BeQt::Minute, &log);
-            r.setSuccess(!code);
-            r.setExitCode(code);
-            r.setLog(log);
-        }
-    }
-    if (p.compiledProject && r && p.param.dvipsEnabled())
-    {
-        QString dlog;
-        int dcode = BeQt::execProcess(p.path, "dvips", QStringList() << (p.path + "/" + baseName),
-                                      5 * BeQt::Second, BeQt::Minute, &dlog);
-        if (p.dvipsResult)
-        {
-            p.dvipsResult->setSuccess(!dcode);
-            p.dvipsResult->setExitCode(dcode);
-            p.dvipsResult->setLog(dlog);
-        }
-    }
-    if (r && p.compiledProject)
-        p.compiledProject->load(p.path, Suffixes);
-    if (p.compiledProject || !r)
-        BDirTools::rmdir(p.path);
-    return r;
-}*/
-
-/*TCompilationResult Storage::addSample(quint64 userId, TTexProject project, const TSampleInfo &info)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!userId || !project.isValid() || !info.isValid(TSampleInfo::AddContext))
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    if (!mdb->transaction())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    qint64 msecs = QDateTime::currentDateTimeUtc().toMSecsSinceEpoch();
-    QVariantMap m;
-    m.insert("sender_id", userId);
-    m.insert("title", info.title());
-    m.insert("file_name", info.fileName());
-    m.insert("authors", BeQt::serialize(info.authors()));
-    m.insert("tags", BeQt::serialize(info.tags()));
-    m.insert("comment", info.comment());
-    m.insert("creation_dt", msecs);
-    m.insert("update_dt", msecs);
-    BSqlResult qr = mdb->insert("samples", m);
-    if (!qr)
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    project.rootFile()->setFileName(info.fileName());
-    project.removeRestrictedCommands();
-    Global::CompileParameters p;
-    p.project = project;
-    p.path = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
-    TCompilationResult cr = Global::compileProject(p);
-    if (!cr)
-    {
-        mdb->rollback();
-        BDirTools::rmdir(p.path);
-        return cr;
-    }
-    QString spath = rootDir() + "/samples/" + QString::number(qr.lastInsertId().toULongLong());
-    if (!BDirTools::moveDir(p.path, spath))
-    {
-        mdb->rollback();
-        BDirTools::rmdir(p.path);
-        return TOperationResult(TMessage::InternalFileSystemError);
-    }
-    if (!mdb->commit())
-    {
-        BDirTools::rmdir(p.path);
-        return TOperationResult(TMessage::InternalDatabaseError);
-    }
-    return cr;
+    args << ("-jobname=" + baseName);
+    args << ("\\input texsample.tex \\input " + fileName + " \\end{document}");
+    if (BeQt::execProcess(loc.absolutePath(), command, args, 5 * BeQt::Second, 2 * BeQt::Minute))
+        return bRet(ok, false, TBinaryFile());
+    TBinaryFile file(loc.absoluteFilePath(baseName + ".pdf"));
+    if (!file.isValid() || !file.size())
+        return bRet(ok, false, TBinaryFile());
+    return bRet(ok, true, file);
 }
 
-TCompilationResult Storage::editSample(const TSampleInfo &info, TTexProject project)
+TSampleInfo SampleService::sampleToSampleInfo(const Sample &entity, bool *ok)
 {
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!info.isValid(TSampleInfo::EditContext) && !info.isValid(TSampleInfo::UpdateContext))
-        return TOperationResult(TMessage::InvalidDataError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    QString pfn = sampleFileName(info.id());
-    if (pfn.isEmpty())
-        return TOperationResult(TMessage::NoSuchSampleError);
-    if (!mdb->transaction())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    QVariantMap m;
-    m.insert("title", info.title());
-    m.insert("authors", BeQt::serialize(info.authors()));
-    m.insert("tags", BeQt::serialize(info.tags()));
-    m.insert("comment", info.comment());
-    m.insert("update_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (info.context() == TSampleInfo::EditContext)
-    {
-        m.insert("type", info.type());
-        m.insert("rating", info.rating());
-        m.insert("admin_remark", info.adminRemark());
-    }
-    if (pfn != info.fileName())
-        m.insert("file_name", info.fileName());
-    BSqlResult qr = mdb->update("samples", m, BSqlWhere("id = :id", ":id", info.id()));
-    if (!qr)
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    QString spath = rootDir() + "/samples/" + QString::number(info.id());
-    if (pfn != info.fileName() && !project.isValid())
-    {
-        QDir sdir(spath);
-        QString pbn = QFileInfo(pfn).baseName();
-        QString bn = QFileInfo(info.fileName()).baseName();
-        foreach (const QString &fn, sdir.entryList(QStringList() << (pbn + ".*"), QDir::Files))
-        {
-            if (!QFile::rename(sdir.absoluteFilePath(fn), spath + "/" + bn + "." + QFileInfo(fn).suffix()))
-            {
-                mdb->rollback();
-                BDirTools::rmdir(spath);
-                return TOperationResult(TMessage::InternalFileSystemError);
-            }
-        }
-    }
-    TCompilationResult cr(true);
-    QString bupath = QDir::tempPath() + "/texsample-server/backup/" + BeQt::pureUuidText(QUuid::createUuid());
-    if (project.isValid())
-    {
-        project.rootFile()->setFileName(info.fileName());
-        project.removeRestrictedCommands();
-        Global::CompileParameters p;
-        p.project = project;
-        p.path = QDir::tempPath() + "/texsample-server/samples/" + BeQt::pureUuidText(QUuid::createUuid());
-        cr = Global::compileProject(p);
-        if (!cr)
-        {
-            mdb->rollback();
-            BDirTools::rmdir(p.path);
-            return cr;
-        }
-        if (!BDirTools::copyDir(spath, bupath, true))
-        {
-            mdb->rollback();
-            BDirTools::rmdir(bupath);
-            BDirTools::rmdir(p.path);
-            return TOperationResult(TMessage::InternalFileSystemError);
-        }
-        if (!BDirTools::rmdir(spath) || !BDirTools::moveDir(p.path, spath))
-        {
-            mdb->rollback();
-            BDirTools::rmdir(p.path);
-            BDirTools::copyDir(bupath, spath, true);
-            BDirTools::rmdir(bupath);
-            return TOperationResult(TMessage::InternalFileSystemError);
-        }
-    }
-    if (!mdb->commit())
-    {
-        BDirTools::rmdir(spath);
-        BDirTools::copyDir(bupath, spath, true);
-        BDirTools::rmdir(bupath);
-        return TOperationResult(TMessage::InternalDatabaseError);
-    }
-    BDirTools::rmdir(bupath);
-    return cr;
+    TSampleInfo info;
+    if (!isValid() || !entity.isValid() || !entity.isCreatedByRepo())
+        return bRet(ok, false, info);
+    info.setAdminRemark(entity.adminRemark());
+    info.setAuthors(entity.authors());
+    info.setCreationDateTime(entity.creationDateTime());
+    info.setDescription(entity.description());
+    info.setExtraSourceFiles(entity.sourceExtraFileInfos());
+    info.setId(entity.id());
+    info.setLastModificationDateTime(entity.lastModificationDateTime());
+    info.setMainPreviewFile(entity.previewMainFileInfo());
+    info.setMainSourceFile(entity.sourceMainFileInfo());
+    info.setRating(entity.rating());
+    info.setSenderId(entity.senderId());
+    bool b = false;
+    info.setSenderLogin(UserRepo->findLogin(entity.senderId(), &b));
+    if (!b)
+        return bRet(ok, false, TSampleInfo());
+    info.setTags(entity.tags());
+    info.setTitle(entity.title());
+    info.setType(entity.type());
+    return bRet(ok, true, info);
 }
-
-TOperationResult Storage::deleteSample(quint64 sampleId, const QString &reason)
-{
-    if (Global::readOnly())
-        return TOperationResult(TMessage::ReadOnlyError);
-    if (!sampleId)
-        return TOperationResult(TMessage::InvalidSampleIdError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    if (sampleState(sampleId) == DeletedState)
-        return TOperationResult(TMessage::SampleAlreadyDeletedError);
-    if (!mdb->transaction())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    QVariantMap bv;
-    bv.insert("state", 1);
-    bv.insert("deletion_reason", reason);
-    bv.insert("deletion_dt", QDateTime::currentDateTimeUtc().toMSecsSinceEpoch());
-    if (!mdb->update("samples", bv, BSqlWhere("id = :id", ":id", sampleId)))
-    {
-        mdb->rollback();
-        return TOperationResult(TMessage::InternalQueryError);
-    }
-    //Data is not deleted and files are not deleted, so the sample may be undeleted later
-    if (!mdb->commit())
-        return TOperationResult(TMessage::InternalDatabaseError);
-    return TOperationResult(true);
-}
-
-TOperationResult Storage::getSampleSource(quint64 sampleId, TTexProject &project, QDateTime &updateDT, bool &cacheOk)
-{
-    if (!sampleId)
-        return TOperationResult(TMessage::InvalidSampleIdError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    if (updateDT.toUTC() >= sampleUpdateDateTime(sampleId))
-    {
-        cacheOk = true;
-        return TOperationResult(true);
-    }
-    QString fn = sampleFileName(sampleId);
-    if (fn.isEmpty())
-        return TOperationResult(TMessage::NoSuchSampleError);
-    updateDT = QDateTime::currentDateTimeUtc();
-    bool b = project.load(rootDir() + "/samples/" + QString::number(sampleId) + "/" + fn, "UTF-8");
-    return TOperationResult(b, b ? TMessage::NoMessage : TMessage::InternalFileSystemError);
-}
-
-TOperationResult Storage::getSamplePreview(quint64 sampleId, TProjectFile &file, QDateTime &updateDT, bool &cacheOk)
-{
-    if (!sampleId)
-        return TOperationResult(TMessage::InvalidSampleIdError);
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    if (updateDT.toUTC() >= sampleUpdateDateTime(sampleId))
-    {
-        cacheOk = true;
-        return TOperationResult(true);
-    }
-    QString fn = sampleFileName(sampleId);
-    if (fn.isEmpty())
-        return TOperationResult(TMessage::NoSuchSampleError);
-    updateDT = QDateTime::currentDateTimeUtc();
-    fn = rootDir() + "/samples/" + QString::number(sampleId) + "/" + QFileInfo(fn).baseName() + ".pdf";
-    bool b = file.loadAsBinary(fn, "");
-    return TOperationResult(b, b ? TMessage::NoMessage : TMessage::InternalFileSystemError);
-}
-
-TOperationResult Storage::getSamplesList(TSampleInfoList &newSamples, TIdList &deletedSamples, QDateTime &updateDT)
-{
-    if (!isValid())
-        return TOperationResult(TMessage::InternalStorageError);
-    qint64 updateMsecs = updateDT.toUTC().toMSecsSinceEpoch();
-    QStringList sl1 = QStringList() << "id" << "sender_id" << "authors" << "title" << "file_name" << "type" << "tags"
-                                    << "comment" << "rating" << "admin_remark" << "creation_dt" << "update_dt";
-    BSqlWhere w1("state = :state AND update_dt >= :update_dt", ":state", 0, ":update_dt", updateMsecs);
-    BSqlResult r1 = mdb->select("samples", sl1, w1);
-    if (!r1)
-        return TOperationResult(TMessage::InternalQueryError);
-    QVariantMap wbv2;
-    wbv2.insert(":state", 1);
-    wbv2.insert(":update_dt", updateMsecs);
-    wbv2.insert(":update_dt_hack", updateMsecs);
-    BSqlWhere w2("state = :state AND deletion_dt >= :update_dt AND creation_dt < :update_dt_hack", wbv2);
-    BSqlResult r2 = mdb->select("samples", "id", w2);
-    if (!r2)
-        return TOperationResult(TMessage::InternalQueryError);
-    updateDT = QDateTime::currentDateTimeUtc();
-    newSamples.clear();
-    deletedSamples.clear();
-    foreach (const QVariantMap &m, r1.values())
-    {
-        TSampleInfo info;
-        info.setId(m.value("id").toULongLong());
-        TUserInfo uinfo;
-        TOperationResult ur = getShortUserInfo(m.value("sender_id").toULongLong(), uinfo);
-        if (!ur)
-            return ur;
-        info.setSender(uinfo);
-        info.setAuthors(BeQt::deserialize(m.value("authors").toByteArray()).toStringList());
-        info.setTitle(m.value("title").toString());
-        info.setFileName(m.value("file_name").toString());
-        info.setType(m.value("type").toInt());
-        info.setProjectSize(TTexProject::size(rootDir() + "/samples/" + info.idString() + "/" + info.fileName(),
-                                           "UTF-8"));
-        info.setTags(BeQt::deserialize(m.value("tags").toByteArray()).toStringList());
-        info.setRating(m.value("rating").toUInt());
-        info.setComment(m.value("comment").toString());
-        info.setAdminRemark(m.value("admin_remark").toString());
-        info.setCreationDateTime(QDateTime::fromMSecsSinceEpoch(m.value("creation_dt").toLongLong()));
-        info.setUpdateDateTime(QDateTime::fromMSecsSinceEpoch(m.value("update_dt").toLongLong()));
-        newSamples << info;
-    }
-    foreach (const QVariant &v, r2.values())
-        deletedSamples << v.toMap().value("id").toULongLong();
-    return TOperationResult(true);
-}*/

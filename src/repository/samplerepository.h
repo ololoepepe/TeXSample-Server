@@ -25,7 +25,11 @@
 class DataSource;
 
 class TBinaryFile;
+class TFileInfo;
+class TFileInfoList;
 class TTexProject;
+
+class QByteArray;
 
 #include "entity/sample.h"
 
@@ -48,15 +52,28 @@ public:
 public:
     quint64 add(const Sample &entity, bool *ok = 0);
     DataSource *dataSource() const;
+    QDateTime deleteOne(quint64 id, bool *ok = 0);
     void edit(const Sample &entity, bool *ok = 0);
     QList<Sample> findAllNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    TIdList findAllDeletedNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
     Sample findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
-    bool createSource(quint64 sampleId, const TTexProject &data);
+    static TFileInfo deserializedPreviewMainFileInfo(const QByteArray &data);
+    static TFileInfoList deserializedSouceExtraFileInfos(const QByteArray &data);
+    static TFileInfo deserializedSouceMainFileInfo(const QByteArray &data);
+    static QByteArray serializedPreviewMainFileInfo(const TBinaryFile &preview);
+    static QByteArray serializedSouceExtraFileInfos(const TTexProject &source);
+    static QByteArray serializedSouceMainFileInfo(const TTexProject &source);
+private:
+    bool createPreview(quint64 sampleId, const TBinaryFile &previewMainFile);
+    bool createSource(quint64 sampleId, const TTexProject &source);
+    bool deletePreview(quint64 sampleId);
+    bool deleteSource(quint64 sampleId);
     TBinaryFile fetchPreview(quint64 sampleId, bool *ok = false);
     TTexProject fetchSource(quint64 sampleId, bool *ok = false);
-    bool updateSource(quint64 sampleId, const TTexProject &data);
+    bool updatePreview(quint64 sampleId, const TBinaryFile &previewMainFile);
+    bool updateSource(quint64 sampleId, const TTexProject &source);
 private:
     friend class Sample;
     Q_DISABLE_COPY(SampleRepository)

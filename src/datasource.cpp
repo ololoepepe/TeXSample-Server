@@ -21,8 +21,10 @@
 
 #include "datasource.h"
 
+#include "application.h"
 #include "settings.h"
 #include "transactionholder.h"
+#include "translator.h"
 
 #include <BDirTools>
 #include <BSqlDatabase>
@@ -34,6 +36,7 @@
 #include <QByteArray>
 #include <QDebug>
 #include <QFileInfo>
+#include <QLocale>
 #include <QRegExp>
 #include <QString>
 #include <QStringList>
@@ -221,12 +224,29 @@ BSqlResult DataSource::select(const QString &table, const QString &field, const 
     return db->select(table, field, where);
 }
 
+bool DataSource::shrinkDB(const Translator &t, QString *error)
+{
+    if (!isValid())
+        return bRet(error, t.translate("DataSource", "Invalid DataSource instance (internal)", "error"), false);
+    if (trans) {
+        return bRet(error, t.translate("DataSource", "Unable to shrink DB while ther are active transactions",
+                                       "error"), false);
+    }
+    BSqlResult result = exec(BSqlQuery("VACUUM"));
+    if (!result.success())
+        return bRet(error, t.translate("DataSource", "Failed to execute VACUUM command (internal)", "error"), false);
+    return bRet(error, QString(), true);
+}
+
+bool DataSource::shrinkDB(QString *error)
+{
+    Translator t(Application::locale());
+    return shrinkDB(t, error);
+}
+
 bool DataSource::transaction()
 {
     if (trans || !isValid())
-        return false;
-    QString path = Location + "/transaction/" + BUuid::createUuid().toString(true);
-    if (!BDirTools::touch(path))
         return false;
     if (!db->transaction())
         return false;

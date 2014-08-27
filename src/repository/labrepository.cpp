@@ -65,7 +65,6 @@ quint64 LabRepository::add(const Lab &entity, bool *ok)
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
-    values.insert("deleted", false);
     values.insert("creation_date_time", dt.toMSecsSinceEpoch());
     values.insert("description", entity.description());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
@@ -98,7 +97,6 @@ void LabRepository::edit(const Lab &entity, bool *ok)
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
-    values.insert("deleted", false);
     values.insert("description", entity.description());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
@@ -134,7 +132,7 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
     QList<Lab> list;
     if (!isValid())
         return bRet(ok, false, list);
-    QString qs = "SELECT labs.id, labs.sender_id, labs.deleted, labs.creation_date_time, labs.description, "
+    QString qs = "SELECT labs.id, labs.sender_id, labs.creation_date_time, labs.description, "
         "labs.last_modification_date_time, labs.title, labs.type FROM labs";
     QVariantMap bv;
     if (newerThan.isValid()) {
@@ -159,7 +157,6 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
         Lab entity(this);
         entity.mid = m.value("labs.id").toULongLong();
         entity.msenderId = m.value("labs.sender_id").toULongLong();
-        entity.mdeleted = m.value("labs.deleted").toBool();
         entity.mcreationDateTime.setMSecsSinceEpoch(m.value("labs.creation_date_time").toLongLong());
         entity.mdescription = m.value("labs.description").toString();
         entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("labs.last_modification_date_time").toLongLong());
@@ -186,8 +183,8 @@ Lab LabRepository::findOne(quint64 id, bool *ok)
     Lab entity(this);
     if (!isValid() || !id)
         return bRet(ok, false, entity);
-    static const QStringList Fields = QStringList() << "sender_id" << "deleted" << "creation_date_time"
-        << "description" << "last_modification_date_time" << "title" << "type";
+    static const QStringList Fields = QStringList() << "sender_id" << "creation_date_time" << "description"
+                                                    << "last_modification_date_time" << "title" << "type";
     BSqlResult result = Source->select("labs", Fields, BSqlWhere("id = :id", ":id", id));
     if (!result.success())
         return bRet(ok, false, entity);
@@ -195,7 +192,6 @@ Lab LabRepository::findOne(quint64 id, bool *ok)
         return bRet(ok, true, entity);
     entity.mid = id;
     entity.msenderId = result.value("sender_id").toULongLong();
-    entity.mdeleted = result.value("deleted").toBool();
     entity.mcreationDateTime.setMSecsSinceEpoch(result.value("creation_date_time").toLongLong());
     entity.mdescription = result.value("description").toString();
     entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());

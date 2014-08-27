@@ -105,11 +105,6 @@ const TLabDataList &Lab::labDataList() const
     //
 }
 
-bool Lab::deleted() const
-{
-    return mdeleted;
-}
-
 QStringList Lab::deletedExtraFiles() const
 {
     return mdeletedExtraFiles;
@@ -149,7 +144,7 @@ bool Lab::isValid() const
 {
     if (createdByRepo)
         return valid;
-    return msenderId && !mdataList.isEmpty() && !mtitle.isEmpty() && ((mid && !msaveData) || !mdataList.isEmpty());
+    return msenderId && !mtitle.isEmpty() && ((mid && !msaveData) || !mdataList.isEmpty());
 }
 
 QDateTime Lab::lastModificationDateTime() const
@@ -180,11 +175,6 @@ void Lab::setAuthors(const TAuthorInfoList &authors)
 void Lab::setDataList(const TLabDataList &list)
 {
     mdataList = list;
-}
-
-void Lab::setDeleted(bool deleted)
-{
-    mdeleted = deleted;
 }
 
 void Lab::setDeletedExtraFiles(const QStringList &fileNames)
@@ -260,7 +250,6 @@ Lab &Lab::operator =(const Lab &other)
 {
     mid = other.mid;
     msenderId = other.msenderId;
-    mdeleted = other.mdeleted;
     mauthors = other.mauthors;
     mcreationDateTime = other.mcreationDateTime;
     mdataList = other.mdataList;
@@ -287,7 +276,6 @@ void Lab::init()
 {
     mid = 0;
     msenderId = 0;
-    mdeleted = false;
     mcreationDateTime = QDateTime().toUTC();
     mlastModificationDateTime = QDateTime().toUTC();
     msaveData = false;

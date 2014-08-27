@@ -30,6 +30,7 @@
 #include <BSqlWhere>
 
 #include <QDateTime>
+#include <QDebug>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -57,7 +58,7 @@ GroupRepository::~GroupRepository()
 
 quint64 GroupRepository::add(const Group &entity, bool *ok)
 {
-    if (!isValid() || !entity.isValid() || entity.isCreatedByRepo())
+    if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || entity.id())
         return bRet(ok, false, 0);
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
@@ -68,8 +69,6 @@ quint64 GroupRepository::add(const Group &entity, bool *ok)
     BSqlResult result = Source->insert("groups", values);
     if (!result.success())
         return bRet(ok, false, 0);
-    if (result.values().isEmpty())
-        return bRet(ok, true, 0);
     return bRet(ok, true, result.lastInsertId().toULongLong());
 }
 

@@ -75,7 +75,7 @@ CREATE TABLE IF NOT EXISTS user_services (
 );
 
 CREATE TABLE IF NOT EXISTS user_avatars (
-  user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  user_id                       INTEGER UNIQUE NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   avatar                        BLOB
 );
 
@@ -132,14 +132,21 @@ CREATE TABLE IF NOT EXISTS application_versions (
 CREATE TABLE IF NOT EXISTS samples (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
   sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-  deleted                       INTEGER NOT NULL DEFAULT 0,
   admin_remark                  TEXT,
   creation_date_time            INTEGER NOT NULL,
   description                   TEXT,
   last_modification_date_time   INTEGER NOT NULL,
   rating                        INTEGER NOT NULL DEFAULT 0 REFERENCES sample_ratings(rating) ON DELETE RESTRICT ON UPDATE CASCADE,
   title                         TEXT NOT NULL,
-  type                          INTEGER NOT NULL DEFAULT 0 REFERENCES sample_types(sample_type) ON DELETE RESTRICT ON UPDATE CASCADE
+  type                          INTEGER NOT NULL DEFAULT 0 REFERENCES sample_types(sample_type) ON DELETE RESTRICT ON UPDATE CASCADE,
+  source_main_file_info         BLOB NOT NULL,
+  source_extra_file_infos       BLOB NOT NULL,
+  preview_main_file_info        BLOB NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS deleted_samples (
+  id                            INTEGER UNIQUE NOT NULL,
+  deletion_date_time            INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sample_authors (
@@ -158,12 +165,12 @@ CREATE TABLE IF NOT EXISTS sample_tags (
 );
 
 CREATE TABLE IF NOT EXISTS sample_sources (
-  sample_id                     INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  sample_id                     INTEGER UNIQUE NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
   source                        BLOB NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS sample_previews (
-  sample_id                     INTEGER NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  sample_id                     INTEGER UNIQUE NOT NULL REFERENCES samples(id) ON DELETE CASCADE ON UPDATE CASCADE,
   main_file                     BLOB NOT NULL
 );
 
@@ -172,7 +179,6 @@ CREATE TABLE IF NOT EXISTS sample_previews (
 CREATE TABLE IF NOT EXISTS labs (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
   sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
-  deleted                       INTEGER NOT NULL DEFAULT 0,
   creation_date_time            INTEGER NOT NULL,
   description                   TEXT,
   last_modification_date_time   INTEGER NOT NULL,
@@ -180,19 +186,25 @@ CREATE TABLE IF NOT EXISTS labs (
   type                          INTEGER NOT NULL REFERENCES lab_types(lab_type) ON DELETE RESTRICT ON UPDATE CASCADE                 
 );
 
+CREATE TABLE IF NOT EXISTS deleted_labs (
+  id                            INTEGER UNIQUE NOT NULL,
+  deletion_date_time            INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS lab_desktop_applications (
   lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
   os_type                       INTEGER NOT NULL REFERENCES os_types(os_type) ON DELETE RESTRICT ON UPDATE CASCADE,
-  data                          BLOB NOT NULL
+  data                          BLOB NOT NULL,
+  UNIQUE(lab_id, os_type)
 );
 
 CREATE TABLE IF NOT EXISTS lab_web_applications (
-  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  lab_id                        INTEGER UNIQUE NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
   data                          BLOB NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS lab_urls (
-  lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  lab_id                        INTEGER UNIQUE NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
   url                           TEXT NOT NULL
 );
 

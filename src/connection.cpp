@@ -217,7 +217,12 @@ bool Connection::handleAddLabRequest(BNetworkOperation *op)
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TAddSampleRequestData> in(request);
+    return sendReply(op, SampleServ->addSample(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
@@ -301,7 +306,12 @@ bool Connection::handleCheckLoginAvailabilityRequest(BNetworkOperation *op)
 
 bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TCompileTexProjectRequestData> in(request);
+    return sendReply(op, SampleServ->compileTexProject(in).createReply());
 }
 
 bool Connection::handleConfirmEmailChangeRequest(BNetworkOperation *op)
@@ -351,7 +361,12 @@ bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TDeleteSampleRequestData> in(request);
+    return sendReply(op, SampleServ->deleteSample(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleDeleteUserRequest(BNetworkOperation *op)
@@ -379,12 +394,22 @@ bool Connection::handleEditLabRequest(BNetworkOperation *op)
 
 bool Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TEditSampleRequestData> in(request);
+    return sendReply(op, SampleServ->editSample(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleEditSampleAdminRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TEditSampleAdminRequestData> in(request);
+    return sendReply(op, SampleServ->editSampleAdmin(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleEditSelfRequest(BNetworkOperation *op)
@@ -468,17 +493,32 @@ bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSampleInfoListRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TGetSampleInfoListRequestData> in(request);
+    return sendReply(op, SampleServ->getSampleInfoList(in).createReply());
 }
 
 bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TGetSamplePreviewRequestData> in(request);
+    return sendReply(op, SampleServ->getSamplePreview(in).createReply());
 }
 
 bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 {
-    //TODO
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
+        return sendReply(op, error);
+    RequestIn<TGetSampleSourceRequestData> in(request);
+    return sendReply(op, SampleServ->getSampleSource(in).createReply());
 }
 
 bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
@@ -634,185 +674,7 @@ bool Connection::handleSubscribeRequest(BNetworkOperation *op)
     return sendReply(op, "", replyData);
 }
 
-/*bool Connection::handleAddSampleRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    TTexProject project = in.value("project").value<TTexProject>();
-    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    log("Add sample request: " + info.title());
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->addSample(muserId, project, info));
-}
-
-bool Connection::handleEditSampleRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    TTexProject project = in.value("project").value<TTexProject>();
-    log("Edit sample request: " + info.idString());
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->editSample(info, project));
-}
-
-bool Connection::handleUpdateSampleRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    TSampleInfo info = in.value("sample_info").value<TSampleInfo>();
-    TTexProject project = in.value("project").value<TTexProject>();
-    log("Update sample request: " + info.idString());
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    quint64 sId = mstorage->sampleSenderId(info.id());
-    if (sId != muserId)
-        return sendReply(op, TMessage::NotOwnSampleError);
-    if (mstorage->sampleType(info.type()) == TSampleInfo::Approved)
-        return sendReply(op, TMessage::NotModifiableSampleError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->editSample(info, project));
-}
-
-bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("sample_id").toULongLong();
-    QString reason = in.value("reason").toString();
-    log("Delete sample request: " + QString::number(id) + (!reason.isEmpty() ? (" (" + reason + ")") : QString()));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    quint64 sId = mstorage->sampleSenderId(id);
-    if (maccessLevel < TAccessLevel::AdminLevel)
-    {
-        if (sId != muserId)
-            return sendReply(op, TMessage::NotOwnSampleError);
-        else if (mstorage->sampleType(id) == TSampleInfo::Approved)
-            return sendReply(op, TMessage::NotModifiableSampleError);
-    }
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->deleteSample(id, reason));
-}
-
-bool Connection::handleGetSamplesListRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
-    log("Get samples list request");
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TSampleInfoList newSamples;
-    TIdList deletedSamples;
-    TOperationResult r = mstorage->getSamplesList(newSamples, deletedSamples, updateDT);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("update_dt", updateDT);
-    if (!newSamples.isEmpty())
-        out.insert("new_sample_infos", newSamples);
-    if (!deletedSamples.isEmpty())
-        out.insert("deleted_sample_infos", deletedSamples);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("sample_id").toULongLong();
-    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
-    log("Get sample source request: " + QString::number(id));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TTexProject project;
-    bool cacheOk = false;
-    TOperationResult r = mstorage->getSampleSource(id, project, updateDT, cacheOk);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("update_dt", updateDT);
-    if (cacheOk)
-        out.insert("cache_ok", true);
-    else
-        out.insert("project", project);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("sample_id").toULongLong();
-    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
-    log("Get sample preview request: " + QString::number(id));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TProjectFile file;
-    bool cacheOk = false;
-    TOperationResult r = mstorage->getSamplePreview(id, file, updateDT, cacheOk);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("update_dt", updateDT);
-    if (cacheOk)
-        out.insert("cache_ok", true);
-    else
-        out.insert("project_file", file);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleCompileProjectRequest(BNetworkOperation *op)
-{
-    log("Compile request");
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::TexsampleService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    Global::CompileParameters p;
-    QVariantMap in = op->variantData().toMap();
-    p.project = in.value("project").value<TTexProject>();
-    p.param = in.value("parameters").value<TCompilerParameters>();
-    p.path = QDir::tempPath() + "/texsample-server/compiler/" + BeQt::pureUuidText(uniqueId());
-    p.compiledProject = new TCompiledProject;
-    p.makeindexResult = p.param.makeindexEnabled() ? new TCompilationResult : 0;
-    p.dvipsResult = p.param.dvipsEnabled() ? new TCompilationResult : 0;
-    TCompilationResult r = Global::compileProject(p);
-    QVariantMap out;
-    if (p.makeindexResult)
-        out.insert("makeindex_result", *p.makeindexResult);
-    if (p.dvipsResult)
-        out.insert("dvips_result", *p.dvipsResult);
-    if (r)
-        out.insert("compiled_project", *p.compiledProject);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleAddLabRequest(BNetworkOperation *op)
+/*bool Connection::handleAddLabRequest(BNetworkOperation *op)
 {
     QVariantMap in = op->variantData().toMap();
     TLabInfo info = in.value("lab_info").value<TLabInfo>();

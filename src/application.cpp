@@ -50,6 +50,7 @@
 #include <BVersion>
 
 #include <QDateTime>
+#include <QDir>
 #include <QElapsedTimer>
 #include <QMap>
 #include <QMutex>
@@ -83,7 +84,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    setApplicationVersion("3.0.0-a");
+    setApplicationVersion("3.0.0-a2");
     setOrganizationDomain("https://github.com/ololoepepe/TeXSample-Server");
     setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
@@ -114,6 +115,20 @@ Application::~Application()
     Q_CLEANUP_RESOURCE(texsample_server);
     Q_CLEANUP_RESOURCE(texsample_server_translations);
 #endif
+}
+
+/*============================== Static public methods =====================*/
+
+bool Application::copyTexsample(const QString &path, const QString &codecName)
+{
+    if (!QDir(path).exists() || texsampleSty.isEmpty() || texsampleTex.isEmpty())
+        return false;
+    QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8"));
+    if (!BDirTools::writeTextFile(path + "/texsample.sty", texsampleSty, cn))
+        return false;
+    if (!BDirTools::writeTextFile(path + "/texsample.tex", texsampleTex, cn))
+        return false;
+    return true;
 }
 
 /*============================== Public methods ============================*/
@@ -147,11 +162,7 @@ bool Application::initializeStorage()
         bWriteLine(tr("Failed to check for (or delete) outdated entries", "error"));
         return false;
     }
-    if (UserServ->isRootInitialized()) {
-        bWriteLine(tr("Done!", "message"));
-        return true;
-    }
-    if (!UserServ->initializeRoot(&err)) {
+    if (!UserServ->isRootInitialized() && !UserServ->initializeRoot(&err)) {
         bWriteLine(tr("Error:", "error") + " " + err);
         return false;
     }
@@ -383,6 +394,25 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
     return true;
 }
 
+bool Application::handleShrinkDBCommand(const QString &, const QStringList &args)
+{
+    if (!args.isEmpty()) {
+        bWriteLine(tr("Invalid argument count. This command does not accept any arguments", "error"));
+        return false;
+    }
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
+    }
+    QString error;
+    if (!bApp->Source->shrinkDB(&error)) {
+        bWriteLine(tr("Failed to shrink DB due to the following error:", "error") + " " + error);
+        return false;
+    }
+    bWriteLine(tr("OK", "message"));
+    return true;
+}
+
 bool Application::handleStartCommand(const QString &, const QStringList &args)
 {
     QMutexLocker locker(&serverMutex);
@@ -510,6 +540,7 @@ void Application::initTerminal()
     BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
     BTerminal::installHandler("start", &handleStartCommand);
     BTerminal::installHandler("stop", &handleStopCommand);
+    BTerminal::installHandler("shrink-db", &handleShrinkDBCommand);
     BTerminal::installHandler("uptime", &handleUptimeCommand);
     BTerminal::installHandler("user-info", &handleUserInfoCommand);
     BSettingsNode *root = new BSettingsNode;
@@ -600,9 +631,13 @@ void Application::initTerminal()
         "Example:\n"
         "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
     BTerminal::setCommandHelp("set-app-version", ch);
+    ch.usage = "shrink-db";
+    ch.description = BTranslation::translate("BTerminalIOHandler", "Shrink the database with VACUUM command.\n"
+                                             "Note: This command will fail if there are active transactions");
+    BTerminal::setCommandHelp("shrink-db", ch);
     ch.usage = "uptime";
     ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Show information about server state (uptime, listening state, etc.)");
+                                             "Show for how long the application has been running");
     BTerminal::setCommandHelp("uptime", ch);
 }
 

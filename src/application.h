@@ -67,6 +67,8 @@ public:
     explicit Application(int &argc, char **argv, const QString &applicationName, const QString &organizationName);
     ~Application();
 public:
+    static bool copyTexsample(const QString &path, const QString &codecName = QString("UTF-8"));
+public:
     bool initializeEmail();
     bool initializeStorage();
     Server *server();
@@ -78,6 +80,7 @@ protected:
 private:
     static bool checkParsingError(BTextTools::OptionsParsingError error, const QString &errorData);
     static bool handleSetAppVersionCommand(const QString &cmd, const QStringList &args);
+    static bool handleShrinkDBCommand(const QString &cmd, const QStringList &args);
     static bool handleStartCommand(const QString &cmd, const QStringList &args);
     static bool handleStopCommand(const QString &cmd, const QStringList &args);
     static bool handleUnknownCommand(const QString &command, const QStringList &args);

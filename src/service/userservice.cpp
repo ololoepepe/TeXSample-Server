@@ -100,11 +100,11 @@ RequestOut<TAddGroupReplyData> UserService::addGroup(const RequestIn<TAddGroupRe
     entity = GroupRepo->findOne(id, &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get group (internal)", "error"));
-    if (!commit(t, holder, &error))
-        return Out(error);
     TGroupInfo info = groupToGroupInfo(entity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to create group info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     TAddGroupReplyData replyData;
     replyData.setGroupInfo(info);
     return Out(replyData, info.creationDateTime());
@@ -133,12 +133,12 @@ RequestOut<TAddUserReplyData> UserService::addUser(const RequestIn<TAddUserReque
     TransactionHolder holder(Source);
     if (!addUser(entity, entity, in.locale(), &error))
         return Out(error);
-    if (!commit(t, holder, &error))
-        return Out(error);
     bool ok = false;
     TUserInfo info = userToUserInfo(entity, true, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to create user info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     TAddUserReplyData replyData;
     replyData.setUserInfo(info);
     return Out(replyData, info.registrationDateTime());
@@ -324,7 +324,9 @@ bool UserService::checkOutdatedEntries(QString *error)
                                        "Failed to delete expired email change confirmation code list (internal)",
                                        "error"), false);
     }
-    return holder.doCommit();
+    if (!commit(t, holder, error))
+        return false;
+    return bRet(error, QString(), true);
 }
 
 RequestOut<TConfirmEmailChangeReplyData> UserService::confirmEmailChange(
@@ -492,12 +494,12 @@ RequestOut<TEditGroupReplyData> UserService::editGroup(const RequestIn<TEditGrou
     entity = GroupRepo->findOne(in.data().id(), &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get group (internal)", "error"));
-    if (!commit(t, holder, &error))
-        return Out(error);
     TEditGroupReplyData replyData;
     replyData.setGroupInfo(groupToGroupInfo(entity, &ok));
     if (!ok)
         return Out(t.translate("UserService", "Failed to create group info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     return Out(replyData, dt);
 }
 
@@ -529,12 +531,12 @@ RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRe
     entity = UserRepo->findOne(userId, &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
-    if (!commit(t, holder, &error))
-        return Out(error);
     TEditSelfReplyData replyData;
     TUserInfo info = userToUserInfo(entity, true, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to create user info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     replyData.setUserInfo(info);
     return Out(replyData, entity.lastModificationDateTime());
 
@@ -585,12 +587,12 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     entity = UserRepo->findOne(userId, &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
-    if (!commit(t, holder, &error))
-        return Out(error);
     TEditUserReplyData replyData;
     TUserInfo info = userToUserInfo(entity, true, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to create user info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     replyData.setUserInfo(info);
     return Out(replyData, entity.lastModificationDateTime());
 }
@@ -626,8 +628,6 @@ RequestOut<TGenerateInvitesReplyData> UserService::generateInvites(const Request
             return Out(t.translate("UserService", "Failed to get invite code (internal)", "error"));
         entityList << newEntity;
     }
-    if (!commit(t, holder, &error))
-        return Out(error);
     TGenerateInvitesReplyData replyData;
     TInviteInfoList infoList;
     foreach (const InviteCode &e, entityList) {
@@ -635,6 +635,8 @@ RequestOut<TGenerateInvitesReplyData> UserService::generateInvites(const Request
         if (!ok)
             return Out(t.translate("UserService", "Failed to create invite code info (internal)", "error"));
     }
+    if (!commit(t, holder, &error))
+        return Out(error);
     replyData.setGeneratedInvites(infoList);
     return Out(replyData, dt);
 }
@@ -972,11 +974,11 @@ RequestOut<TRegisterReplyData> UserService::registerUser(const RequestIn<TRegist
     entity.setSurname(data.surname());
     if (!addUser(entity, entity, in.locale(), &error))
         return Out(error);
-    if (!commit(t, holder, &error))
-        return Out(error);
     TUserInfo info = userToUserInfo(entity, true, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to create user info (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
     TRegisterReplyData replyData;
     replyData.setUserInfo(info);
     return Out(replyData, info.registrationDateTime());
@@ -1077,7 +1079,7 @@ bool UserService::addUser(const User &entity, User &newEntity, const QLocale &lo
         return bRet(error, t.translate("UserService", "E-mail is occupied", "error"), false);
     quint64 id = UserRepo->add(entity, &ok);
     if (!ok || !id)
-        return bRet(error, t.translate("UserService", "Failed to add add user (internal)", "error"), false);
+        return bRet(error, t.translate("UserService", "Failed to add user (internal)", "error"), false);
     newEntity = UserRepo->findOne(id, &ok);
     if (!ok || !newEntity.isValid())
         return bRet(error, t.translate("UserService", "Failed to get user (internal)", "error"), false);
@@ -1112,19 +1114,17 @@ bool UserService::commit(const QLocale &locale, TransactionHolder &holder, QStri
     return commit(t, holder, error);
 }
 
-bool UserService::commit(const Translator &translator, TransactionHolder &holder, QString *error)
+bool UserService::commit(const Translator &t, TransactionHolder &holder, QString *error)
 {
     if (!holder.doCommit())
-        return bRet(error, translator.translate("UserService", "Failed to commit (internal)", "error"), false);
+        return bRet(error, t.translate("UserService", "Failed to commit (internal)", "error"), false);
     return bRet(error, QString(), true);
 }
 
-bool UserService::commonCheck(const Translator &translator, QString *error) const
+bool UserService::commonCheck(const Translator &t, QString *error) const
 {
-    if (!isValid()) {
-        return bRet(error, translator.translate("UserService", "Invalid UserService instance (internal)", "error"),
-                    false);
-    }
+    if (!isValid())
+        return bRet(error, t.translate("UserService", "Invalid UserService instance (internal)", "error"), false);
     return bRet(error, QString(), true);
 }
 

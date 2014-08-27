@@ -22,6 +22,8 @@
 #ifndef DATASOURCE_H
 #define DATASOURCE_H
 
+class Translator;
+
 class BSqlDatabase;
 class BSqlQuery;
 class BSqlResult;
@@ -73,6 +75,8 @@ public:
     bool rollback();
     BSqlResult select(const QString &table, const QStringList &fields, const BSqlWhere &where = BSqlWhere());
     BSqlResult select(const QString &table, const QString &field, const BSqlWhere &where = BSqlWhere());
+    bool shrinkDB(const Translator &t, QString *error = 0);
+    bool shrinkDB(QString *error = 0);
     bool transaction();
     BSqlResult update(const QString &table, const QVariantMap &values, const BSqlWhere &where = BSqlWhere());
     BSqlResult update(const QString &table, const QString &field, const QVariant &value,
