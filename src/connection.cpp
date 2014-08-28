@@ -70,6 +70,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QSt
         close();
         return;
     }
+    setTranslationsEnabled(false);
     setCriticalBufferSize(3 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
     mtimer.setInterval(5 * BeQt::Minute);
@@ -371,10 +372,12 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteUserRequest(BNetworkOperation *op)
 {
-    //TODO
     TRequest request = op->variantData().value<TRequest>();
-    Translator t(request.locale());
-    return sendReply(op, t.translate("Connection", "This operation is not supported yet", "message"));
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::SuperuserLevel))
+        return sendReply(op, error);
+    RequestIn<TDeleteUserRequestData> in(request);
+    return sendReply(op, UserServ->deleteUser(in).createReply());
 }
 
 bool Connection::handleEditGroupRequest(BNetworkOperation *op)

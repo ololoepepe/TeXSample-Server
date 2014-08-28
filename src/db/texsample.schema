@@ -56,6 +56,11 @@ CREATE TABLE IF NOT EXISTS users (
   surname                       TEXT
 );
 
+CREATE TABLE IF NOT EXISTS deleted_users (
+  id                            INTEGER UNIQUE NOT NULL,
+  deletion_date_time            INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS groups (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
   owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
@@ -131,7 +136,7 @@ CREATE TABLE IF NOT EXISTS application_versions (
 
 CREATE TABLE IF NOT EXISTS samples (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
-  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   admin_remark                  TEXT,
   creation_date_time            INTEGER NOT NULL,
   description                   TEXT,
@@ -178,12 +183,14 @@ CREATE TABLE IF NOT EXISTS sample_previews (
 
 CREATE TABLE IF NOT EXISTS labs (
   id                            INTEGER PRIMARY KEY AUTOINCREMENT,
-  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE RESTRICT ON UPDATE CASCADE,
+  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   creation_date_time            INTEGER NOT NULL,
   description                   TEXT,
   last_modification_date_time   INTEGER NOT NULL,
   title                         TEXT NOT NULL,
-  type                          INTEGER NOT NULL REFERENCES lab_types(lab_type) ON DELETE RESTRICT ON UPDATE CASCADE                 
+  type                          INTEGER NOT NULL REFERENCES lab_types(lab_type) ON DELETE RESTRICT ON UPDATE CASCADE,
+  data_infos                    BLOB NOT NULL,
+  extra_file_infos              BLOB NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS deleted_labs (

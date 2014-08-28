@@ -106,17 +106,10 @@ QDateTime SampleRepository::deleteOne(quint64 id, bool *ok)
 {
     if (!isValid() || !id)
         return bRet(ok, false, QDateTime());
-    static const QStringList Tables = QStringList() << "sample_authors" << "sample_tags";
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    if (!RepositoryTools::deleteHelper(Source, Tables, "sample_id", id))
-        return bRet(ok, false, QDateTime());
-    if (!deleteSource(id))
-        return bRet(ok, false, QDateTime());
-    if (!deletePreview(id))
-        return bRet(ok, false, QDateTime());
     if (!Source->deleteFrom("samples", BSqlWhere("id = :id", ":id", id)).success())
         return bRet(ok, false, QDateTime());
-    if (!Source->insert("deleted_samples", "id", id, "deletion_date_time", dt.toMSecsSinceEpoch()))
+    if (!Source->insert("deleted_samples", "id", id, "deletion_date_time", dt.toMSecsSinceEpoch()).success())
         return bRet(ok, false, QDateTime());
     return bRet(ok, true, dt);
 }
@@ -154,6 +147,24 @@ void SampleRepository::edit(const Sample &entity, bool *ok)
     if (entity.saveData() && (!updateSource(id, entity.source()) || !updatePreview(id, entity.previewMainFile())))
         return bSet(ok, false);
     bSet(ok, true);
+}
+
+TIdList SampleRepository::findAllDeletedNewerThan(const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_samples", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return bRet(ok, true, list);
 }
 
 QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan, bool *ok)
@@ -200,22 +211,19 @@ QList<Sample> SampleRepository::findAllNewerThan(const QDateTime &newerThan, boo
     return bRet(ok, true, list);
 }
 
-TIdList SampleRepository::findAllDeletedNewerThan(const QDateTime &newerThan, bool *ok)
+QDateTime SampleRepository::findLastModificationDateTime(quint64 id, bool *ok)
 {
-    TIdList list;
-    if (!isValid())
-        return bRet(ok, false, list);
-    BSqlWhere where;
-    if (newerThan.isValid()) {
-        where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
-                          newerThan.toUTC().toMSecsSinceEpoch());
-    }
-    BSqlResult result = Source->select("deleted_samples", "id", where);
+    if (!isValid() || !id)
+        return bRet(ok, false, QDateTime());
+    BSqlResult result = Source->select("samples", "last_modification_date_time", BSqlWhere("id = :id", ":id", id));
     if (!result.success())
-        return bRet(ok, false, list);
-    foreach (const QVariantMap &m, result.values())
-        list << m.value("id").toULongLong();
-    return bRet(ok, true, list);
+        return bRet(ok, false, QDateTime());
+    if (result.values().isEmpty())
+        return bRet(ok, true, QDateTime());
+    QDateTime dt;
+    dt.setTimeSpec(Qt::UTC);
+    dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    return bRet(ok, true, dt);
 }
 
 Sample SampleRepository::findOne(quint64 id, bool *ok)
@@ -335,22 +343,6 @@ bool SampleRepository::createSource(quint64 sampleId, const TTexProject &source)
     TTexProject src = source;
     src.removeRestrictedCommands();
     return Source->insert("sample_sources", "sample_id", sampleId, "source", BeQt::serialize(src)).success();
-}
-
-bool SampleRepository::deletePreview(quint64 sampleId)
-{
-    if (!isValid() || !sampleId)
-        return false;
-    BSqlWhere where("sample_id = :sample_id", ":sample_id", sampleId);
-    return Source->deleteFrom("sample_previews", where).success();
-}
-
-bool SampleRepository::deleteSource(quint64 sampleId)
-{
-    if (!isValid() || !sampleId)
-        return false;
-    BSqlWhere where("sample_id = :sample_id", ":sample_id", sampleId);
-    return Source->deleteFrom("sample_sources", where).success();
 }
 
 TBinaryFile SampleRepository::fetchPreview(quint64 sampleId, bool *ok)

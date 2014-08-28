@@ -29,15 +29,25 @@
 #include <TAuthorInfoList>
 #include <TBinaryFile>
 #include <TBinaryFileList>
+#include <TFileInfo>
+#include <TFileInfoList>
 #include <TIdList>
+#include <TLabDataInfo>
+#include <TLabDataInfoList>
+#include <TLabData>
+#include <TLabDataList>
+#include <TLabType>
 #include <TTexProject>
 
+#include <BeQt>
 #include <BSqlResult>
 #include <BSqlWhere>
 
+#include <QByteArray>
 #include <QList>
 #include <QString>
 #include <QStringList>
+#include <QVariant>
 
 /*============================================================================
 ================================ LabRepository ===============================
@@ -88,6 +98,18 @@ quint64 LabRepository::add(const Lab &entity, bool *ok)
 DataSource *LabRepository::dataSource() const
 {
     return Source;
+}
+
+QDateTime LabRepository::deleteOne(quint64 id, bool *ok)
+{
+    if (!isValid() || !id)
+        return bRet(ok, false, QDateTime());
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    if (!Source->deleteFrom("labs", BSqlWhere("id = :id", ":id", id)).success())
+        return bRet(ok, false, QDateTime());
+    if (!Source->insert("deleted_labs", "id", id, "deletion_date_time", dt.toMSecsSinceEpoch()).success())
+        return bRet(ok, false, QDateTime());
+    return bRet(ok, true, dt);
 }
 
 void LabRepository::edit(const Lab &entity, bool *ok)
@@ -214,6 +236,44 @@ Lab LabRepository::findOne(quint64 id, bool *ok)
 bool LabRepository::isValid() const
 {
     return Source && Source->isValid();
+}
+
+/*============================== Static private methods ====================*/
+
+TLabDataInfoList LabRepository::deserializedDataInfos(const QByteArray &data)
+{
+    return BeQt::deserialize(data).value<TLabDataInfoList>();
+}
+
+TFileInfoList LabRepository::deserializedExtraFileInfos(const QByteArray &data)
+{
+    return BeQt::deserialize(data).value<TFileInfoList>();
+}
+
+QByteArray LabRepository::serializedDataInfos(const TLabDataList &list, const TLabType &type)
+{
+    TLabDataInfoList infos;
+    foreach (const TLabData &data, list) {
+        TLabDataInfo info;
+        info.setOs(data.os());
+        info.setSize(data.size());
+        info.setType(type);
+        infos << info;
+    }
+    return BeQt::serialize(infos);
+}
+
+QByteArray LabRepository::serializedExtraFileInfos(const TBinaryFileList &list)
+{
+    TFileInfoList infos;
+    foreach (const TBinaryFile &f, list) {
+        TFileInfo info;
+        info.setFileName(f.fileName());
+        info.setFileSize(f.size());
+        info.setDescription(f.description());
+        infos << info;
+    }
+    return BeQt::serialize(infos);
 }
 
 /*============================== Private methods ===========================*/
