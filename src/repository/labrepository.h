@@ -25,7 +25,12 @@
 class DataSource;
 
 class TBinaryFileList;
+class TFileInfoList;
+class TLabDataInfoList;
 class TLabDataList;
+class TLabType;
+
+class QByteArray;
 
 #include "entity/lab.h"
 
@@ -48,11 +53,17 @@ public:
 public:
     quint64 add(const Lab &entity, bool *ok = 0);
     DataSource *dataSource() const;
+    QDateTime deleteOne(quint64 id, bool *ok = 0);
     void edit(const Lab &entity, bool *ok = 0);
     QList<Lab> findAllNewerThan(const TIdList &groups = TIdList(), bool *ok = 0);
     QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList(), bool *ok = 0);
     Lab findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
+private:
+    static TLabDataInfoList deserializedDataInfos(const QByteArray &data);
+    static TFileInfoList deserializedExtraFileInfos(const QByteArray &data);
+    static QByteArray serializedDataInfos(const TLabDataList &list, const TLabType &type);
+    static QByteArray serializedExtraFileInfos(const TBinaryFileList &list);
 private:
     //fetch
     bool createData(quint64 labId, const TLabDataList &data);

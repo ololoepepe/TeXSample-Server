@@ -107,19 +107,43 @@ DataSource *UserRepository::dataSource() const
     return Source;
 }
 
-void UserRepository::deleteOne(quint64 userId, bool *ok)
+QDateTime UserRepository::deleteOne(const TUserIdentifier &id, bool *ok)
 {
-    if (!isValid() || !userId)
-        return bSet(ok, false);
-    if (!deleteAvatar(userId))
-        return bSet(ok, false);
-    bSet(ok, Source->deleteFrom("users", BSqlWhere("user_id = :user_id", ":user_id", userId)).success());
+    if (!isValid() || !id.isValid())
+        return bRet(ok, false, QDateTime());
+    QDateTime dt = QDateTime::currentDateTimeUtc();
+    quint64 userId = 0;
+    BSqlResult result;
+    bool b = false;
+    switch (id.type()) {
+    case TUserIdentifier::IdType: {
+        userId = id.id();
+        result = Source->deleteFrom("users", BSqlWhere("id = :id", ":id", id.id()));
+        break;
+    }
+    case TUserIdentifier::LoginType: {
+        User entity = findOne(id, &b);
+        if (!b)
+            return bRet(ok, false, QDateTime());
+        userId = entity.id();
+        result = Source->deleteFrom("users", BSqlWhere("login = :login", ":login", id.login()));
+        break;
+    }
+    default: {
+        break;
+    }
+    }
+    if (!result.success())
+        return bRet(ok, false, QDateTime());
+    if (!Source->insert("deleted_users", "id", userId, "deletion_date_time", dt.toMSecsSinceEpoch()).success())
+        return bRet(ok, false, QDateTime());
+    return bRet(ok, true, dt);
 }
 
-void UserRepository::edit(const User &entity, bool *ok)
+QDateTime UserRepository::edit(const User &entity, bool *ok)
 {
     if (!isValid() || !entity.isValid() || entity.isCreatedByRepo() || !entity.id())
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     QDateTime dt = QDateTime::currentDateTimeUtc();
     QVariantMap values;
     values.insert("access_level", int(entity.accessLevel()));
@@ -133,17 +157,17 @@ void UserRepository::edit(const User &entity, bool *ok)
     values.insert("surname", entity.surname());
     BSqlResult result = Source->update("users", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     static const QStringList Tables = QStringList() << "user_groups" << "user_services";
     if (!RepositoryTools::deleteHelper(Source, Tables, "user_id", entity.id()))
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     if (!RepositoryTools::setGroupIdList(Source, "user_groups", "user_id", entity.id(), entity.groups()))
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     if (!RepositoryTools::setServices(Source, "user_services", "user_id", entity.id(), entity.availableServices()))
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     if (!updateAvatar(entity.id(), entity.avatar()))
-        return bSet(ok, false);
-    return bSet(ok, true);
+        return bRet(ok, false, QDateTime());
+    return bRet(ok, true, dt);
 }
 
 bool UserRepository::emailOccupied(const QString &email, bool *ok)
@@ -176,6 +200,24 @@ TAccessLevel UserRepository::findAccessLevel(quint64 id, bool *ok)
     if (!result.success())
         return bRet(ok, false, TAccessLevel());
     return bRet(ok, true, result.value("access_level").toInt());
+}
+
+TIdList UserRepository::findAllDeletedNewerThan(const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_users", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return bRet(ok, true, list);
 }
 
 QList<User> UserRepository::findAllNewerThan(const QDateTime &newerThan, bool *ok)
@@ -395,13 +437,6 @@ bool UserRepository::createAvatar(quint64 userId, const QImage &avatar)
         buff.close();
     }
     return Source->insert("user_avatars", "user_id", userId, "avatar", data).success();
-}
-
-bool UserRepository::deleteAvatar(quint64 userId)
-{
-    if (!isValid() || !userId)
-        return false;
-    return Source->deleteFrom("user_avatars", BSqlWhere("user_id = :user_id", ":user_id", userId)).success();
 }
 
 QImage UserRepository::fetchAvatar(quint64 userId, bool *ok)

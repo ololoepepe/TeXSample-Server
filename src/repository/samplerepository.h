@@ -56,6 +56,7 @@ public:
     void edit(const Sample &entity, bool *ok = 0);
     QList<Sample> findAllNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
     TIdList findAllDeletedNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    QDateTime findLastModificationDateTime(quint64 id, bool *ok = 0);
     Sample findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
@@ -68,8 +69,6 @@ private:
 private:
     bool createPreview(quint64 sampleId, const TBinaryFile &previewMainFile);
     bool createSource(quint64 sampleId, const TTexProject &source);
-    bool deletePreview(quint64 sampleId);
-    bool deleteSource(quint64 sampleId);
     TBinaryFile fetchPreview(quint64 sampleId, bool *ok = false);
     TTexProject fetchSource(quint64 sampleId, bool *ok = false);
     bool updatePreview(quint64 sampleId, const TBinaryFile &previewMainFile);

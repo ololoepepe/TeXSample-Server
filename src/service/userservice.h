@@ -92,6 +92,7 @@ public:
     DataSource *dataSource() const;
     RequestOut<TDeleteGroupReplyData> deleteGroup(const RequestIn<TDeleteGroupRequestData> &in, quint64 userId);
     RequestOut<TDeleteInvitesReplyData> deleteInvites(const RequestIn<TDeleteInvitesRequestData> &in, quint64 userId);
+    RequestOut<TDeleteUserReplyData> deleteUser(const RequestIn<TDeleteUserRequestData> &in);
     RequestOut<TEditGroupReplyData> editGroup(const RequestIn<TEditGroupRequestData> &in, quint64 userId);
     RequestOut<TEditSelfReplyData> editSelf(const RequestIn<TEditSelfRequestData> &in, quint64 userId);
     RequestOut<TEditUserReplyData> editUser(const RequestIn<TEditUserRequestData> &in, quint64 userId);
@@ -132,7 +133,8 @@ private:
     bool commit(const QLocale &locale, TransactionHolder &holder, QString *error);
     bool commit(const Translator &t, TransactionHolder &holder, QString *error);
     bool commonCheck(const Translator &t, QString *error) const;
-    bool confirmRegistration(const BUuid &code, const QLocale &locale = Application::locale(), QString *error = 0);
+    bool confirmRegistration(const BUuid &code, QDateTime &dt, const QLocale &locale = Application::locale(),
+                             QString *error = 0);
     TGroupInfoList getAllGroups(bool *ok = 0);
     TGroupInfoList getGroups(const TIdList &ids, bool *ok = 0);
     TGroupInfoList getGroups(quint64 userId, bool *ok = 0);

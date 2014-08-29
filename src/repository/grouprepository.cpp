@@ -77,12 +77,24 @@ DataSource *GroupRepository::dataSource() const
     return Source;
 }
 
-void GroupRepository::deleteOne(quint64 id, bool *ok)
+QDateTime GroupRepository::deleteOne(quint64 id, bool *ok)
 {
     if (!isValid() || !id)
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
+    QDateTime dt = QDateTime::currentDateTimeUtc();
     BSqlWhere where("id = :id", ":id", id);
-    bSet(ok, Source->deleteFrom("groups", where).success());
+    BSqlResult result = Source->select("groups", "owner_id", where);
+    if (!result.success() || result.values().isEmpty())
+        return bRet(ok, false, QDateTime());
+    if (!Source->deleteFrom("groups", where).success())
+        return bRet(ok, false, QDateTime());
+    QVariantMap values;
+    values.insert("id", id);
+    values.insert("owner_id", result.value("owner_id").toULongLong());
+    values.insert("deletion_date_time", dt.toMSecsSinceEpoch());
+    if (!Source->insert("deleted_groups", values))
+        return bRet(ok, false, QDateTime());
+    return bRet(ok, true, dt);
 }
 
 void GroupRepository::edit(const Group &entity, bool *ok)
@@ -96,14 +108,19 @@ void GroupRepository::edit(const Group &entity, bool *ok)
     bSet(ok, Source->update("groups", values, BSqlWhere("id = :id", ":id", entity.id())).success());
 }
 
-QList<Group> GroupRepository::findAll(bool *ok)
+QList<Group> GroupRepository::findAll(const QDateTime &newerThan, bool *ok)
 {
     QList<Group> list;
     if (!isValid())
         return bRet(ok, false, list);
     static const QStringList Fields = QStringList() << "id" << "owner_id" << "creation_date_time"
                                                     << "last_modification_date_time" << "name";
-    BSqlResult result = Source->select("groups", Fields);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("last_modification_date_time > :last_modification_date_time", ":last_modification_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("groups", Fields, where);
     if (!result.success())
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
@@ -181,6 +198,45 @@ QList<Group> GroupRepository::findAllByUserId(quint64 userId, const QDateTime &n
         entity.valid = true;
         list << entity;
     }
+    return bRet(ok, true, list);
+}
+
+TIdList GroupRepository::findAllDeleted(const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_groups", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return bRet(ok, true, list);
+}
+
+TIdList GroupRepository::findAllDeletedByUserId(quint64 userId, const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid() || !userId)
+        return bRet(ok, false, list);
+    QString ws = "owner_id = :owner_id";
+    QVariantMap wvalues;
+    wvalues.insert(":owner_id", userId);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        ws += " AND deletion_date_time > :deletion_date_time";
+        wvalues.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_invites", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
     return bRet(ok, true, list);
 }
 

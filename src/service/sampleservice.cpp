@@ -364,6 +364,15 @@ RequestOut<TGetSamplePreviewReplyData> SampleService::getSamplePreview(
         return Out(error);
     QDateTime dt = QDateTime::currentDateTime();
     bool ok = false;
+    if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
+        QDateTime lastModDT = SampleRepo->findLastModificationDateTime(in.data().id(), &ok);
+        if (!ok) {
+            return Out(t.translate("SampleService", "Failed to get sample last modification date time (internal)",
+                                   "error"));
+        }
+        if (in.lastRequestDateTime() >= lastModDT)
+            return Out(dt);
+    }
     Sample entity = SampleRepo->findOne(in.data().id(), &ok);
     if (!ok)
         return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
@@ -381,6 +390,15 @@ RequestOut<TGetSampleSourceReplyData> SampleService::getSampleSource(const Reque
         return Out(error);
     QDateTime dt = QDateTime::currentDateTime();
     bool ok = false;
+    if (in.cachingEnabled() && in.lastRequestDateTime().isValid()) {
+        QDateTime lastModDT = SampleRepo->findLastModificationDateTime(in.data().id(), &ok);
+        if (!ok) {
+            return Out(t.translate("SampleService", "Failed to get sample last modification date time (internal)",
+                                   "error"));
+        }
+        if (in.lastRequestDateTime() >= lastModDT)
+            return Out(dt);
+    }
     Sample entity = SampleRepo->findOne(in.data().id(), &ok);
     if (!ok)
         return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));

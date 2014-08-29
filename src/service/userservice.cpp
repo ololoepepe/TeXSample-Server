@@ -223,7 +223,6 @@ RequestOut<TChangePasswordReplyData> UserService::changePassword(const RequestIn
         return Out(error);
     if (!checkUserId(t, userId, &error))
         return Out(error);
-    QDateTime dt = QDateTime::currentDateTime();
     bool ok = false;
     User entity = UserRepo->findOne(userId, &ok);
     if (!ok)
@@ -236,7 +235,7 @@ RequestOut<TChangePasswordReplyData> UserService::changePassword(const RequestIn
     TransactionHolder holder(Source);
     entity.convertToCreatedByUser();
     entity.setPassword(requestData.newPassword());
-    UserRepo->edit(entity, &ok);
+    QDateTime dt = UserRepo->edit(entity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
     if (!commit(t, holder, &error))
@@ -337,7 +336,6 @@ RequestOut<TConfirmEmailChangeReplyData> UserService::confirmEmailChange(
     QString error;
     if (!commonCheck(t, in.data(), &error))
         return Out(error);
-    QDateTime dt = QDateTime::currentDateTime();
     bool ok = false;
     TConfirmEmailChangeReplyData replyData;
     replyData.setSuccess(false);
@@ -353,7 +351,7 @@ RequestOut<TConfirmEmailChangeReplyData> UserService::confirmEmailChange(
     entity.convertToCreatedByUser();
     entity.setEmail(ecccEntity.email());
     TransactionHolder holder(Source);
-    UserRepo->edit(entity, &ok);
+    QDateTime dt = UserRepo->edit(entity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
     EmailChangeConfirmationCodeRepo->deleteOneByUserId(ecccEntity.userId(), &ok);
@@ -373,11 +371,11 @@ RequestOut<TConfirmRegistrationReplyData>  UserService::confirmRegistration(
     QString error;
     if (!commonCheck(t, in.data(), &error))
         return Out(error);
-    QDateTime dt = QDateTime::currentDateTime();
     TConfirmRegistrationReplyData replyData;
     replyData.setSuccess(false);
     TransactionHolder holder(Source);
-    if (!confirmRegistration(in.data().confirmationCode(), in.locale(), &error))
+    QDateTime dt;
+    if (!confirmRegistration(in.data().confirmationCode(), dt, in.locale(), &error))
         return Out(error);
     if (!commit(t, holder, &error))
         return Out(error);
@@ -461,6 +459,24 @@ RequestOut<TDeleteInvitesReplyData> UserService::deleteInvites(const RequestIn<T
     return Out(replyData, dt);
 }
 
+RequestOut<TDeleteUserReplyData> UserService::deleteUser(const RequestIn<TDeleteUserRequestData> &in)
+{
+    typedef RequestOut<TDeleteUserReplyData> Out;
+    Translator t(in.locale());
+    QString error;
+    if (!commonCheck(t, in.data(), &error))
+        return Out(error);
+    bool ok = false;
+    TransactionHolder holder(Source);
+    QDateTime dt = UserRepo->deleteOne(in.data().identifier(), &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to delete user (internal)", "error"));
+    if (!commit(t, holder, &error))
+        return Out(error);
+    TDeleteUserReplyData replyData;
+    return Out(replyData, dt);
+}
+
 RequestOut<TEditGroupReplyData> UserService::editGroup(const RequestIn<TEditGroupRequestData> &in, quint64 userId)
 {
     typedef RequestOut<TEditGroupReplyData> Out;
@@ -483,7 +499,6 @@ RequestOut<TEditGroupReplyData> UserService::editGroup(const RequestIn<TEditGrou
         if (entity.ownerId() != userId)
             return Out(t.translate("UserService", "Unable to edit group owned by another user", "error"));
     }
-    QDateTime dt = QDateTime::currentDateTime();
     TEditGroupRequestData requestData = in.data();
     entity.convertToCreatedByUser();
     entity.setName(requestData.name());
@@ -500,7 +515,7 @@ RequestOut<TEditGroupReplyData> UserService::editGroup(const RequestIn<TEditGrou
         return Out(t.translate("UserService", "Failed to create group info (internal)", "error"));
     if (!commit(t, holder, &error))
         return Out(error);
-    return Out(replyData, dt);
+    return Out(replyData, entity.lastModificationDateTime());
 }
 
 RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRequestData> &in, quint64 userId)
@@ -656,18 +671,24 @@ RequestOut<TGetGroupInfoListReplyData> UserService::getGroupInfoList(const Reque
     bool superuser = (UserRepo->findAccessLevel(userId, &ok).level() >= TAccessLevel::SuperuserLevel);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user access level (internal)", "error"));
-    QList<Group> entityList = superuser ? GroupRepo->findAll(&ok) :
-                                          GroupRepo->findAllByUserId(userId, QDateTime(), &ok);
+    TGroupInfoList newGroups;
+    TIdList deletedGroups = superuser ? GroupRepo->findAllDeleted(in.lastRequestDateTime(), &ok) :
+                                        GroupRepo->findAllDeletedByUserId(userId, in.lastRequestDateTime(), &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get deleted group list (internal)", "error"));
+    QList<Group> entityList = superuser ? GroupRepo->findAll(in.lastRequestDateTime(), &ok) :
+                                          GroupRepo->findAllByUserId(userId, in.lastRequestDateTime(), &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get group list (internal)", "error"));
-    TGetGroupInfoListReplyData replyData;
-    TGroupInfoList infoList;
+
     foreach (const Group &e, entityList) {
-        infoList << groupToGroupInfo(e, &ok);
+        newGroups << groupToGroupInfo(e, &ok);
         if (!ok)
             return Out(t.translate("UserService", "Failed to create group info (internal)", "error"));
     }
-    replyData.setNewGroups(infoList);
+    TGetGroupInfoListReplyData replyData;
+    replyData.setNewGroups(newGroups);
+    replyData.setDeletedGroups(deletedGroups);
     return Out(replyData, dt);
 }
 
@@ -686,18 +707,24 @@ RequestOut<TGetInviteInfoListReplyData> UserService::getInviteInfoList(
     bool superuser = (UserRepo->findAccessLevel(userId, &ok).level() >= TAccessLevel::SuperuserLevel);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user access level (internal)", "error"));
-    QList<InviteCode> entityList = superuser ? InviteCodeRepo->findAll(&ok) :
-                                               InviteCodeRepo->findAllByOwnerId(userId, &ok);
+    QDateTime last = in.lastRequestDateTime();
+    TInviteInfoList newInvites;
+    TIdList deletedInvites = superuser ? InviteCodeRepo->findAllDeleted(last, &ok) :
+                                         InviteCodeRepo->findAllDeletedByOwnerId(userId, last, &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get deleted invite code list (internal)", "error"));
+    QList<InviteCode> entityList = superuser ? InviteCodeRepo->findAll(last, &ok) :
+                                               InviteCodeRepo->findAllByOwnerId(userId, last, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get invite code list (internal)", "error"));
-    TGetInviteInfoListReplyData replyData;
-    TInviteInfoList infoList;
     foreach (const InviteCode &e, entityList) {
-        infoList << inviteCodeToInviteInfo(e, &ok);
+        newInvites << inviteCodeToInviteInfo(e, &ok);
         if (!ok)
             return Out(t.translate("UserService", "Failed to create invite code info (internal)", "error"));
     }
-    replyData.setNewInvites(infoList);
+    TGetInviteInfoListReplyData replyData;
+    replyData.setNewInvites(newInvites);
+    replyData.setDeletedInvites(deletedInvites);
     return Out(replyData, dt);
 }
 
@@ -813,14 +840,16 @@ RequestOut<TGetUserInfoListAdminReplyData> UserService::getUserInfoListAdmin(
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user list (internal)", "error"));
     TUserInfoList newUsers;
-    //TIdList deletedUsers;
+    TIdList deletedUsers = UserRepo->findAllDeletedNewerThan(in.lastRequestDateTime(), &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get deleted user list (internal)", "error"));
     foreach (const User &entity, entities) {
         newUsers << userToUserInfo(entity, true, &ok);
         if (!ok)
             return Out(t.translate("UserService", "Failed to create user info (internal)", "error"));
     }
     TGetUserInfoListAdminReplyData replyData;
-    //replyData.setDeletedUsers(deletedUsers);
+    replyData.setDeletedUsers(deletedUsers);
     replyData.setNewUsers(newUsers);
     return Out(replyData, dt);
 }
@@ -879,7 +908,8 @@ bool UserService::initializeRoot(QString *error)
     if (confirmation.isEmpty())
         return bRet(error, tr("Confirmation code is empty", "error"), false);
     BUuid code = BUuid(confirmation);
-    if (!confirmRegistration(code, Application::locale(), error))
+    QDateTime dt;
+    if (!confirmRegistration(code, dt, Application::locale(), error))
         return false;
     if (!commit(Application::locale(), holder, error))
         return false;
@@ -923,11 +953,10 @@ RequestOut<TRecoverAccountReplyData> UserService::recoverAccount(const RequestIn
     User userEntity = UserRepo->findOne(arcEntity.userId(), &ok);
     if (!ok || !userEntity.isValid())
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
-    QDateTime dt = QDateTime::currentDateTimeUtc();
     TransactionHolder holder(Source);
     userEntity.convertToCreatedByUser();
     userEntity.setPassword(requestData.password());
-    UserRepo->edit(userEntity, &ok);
+    QDateTime dt = UserRepo->edit(userEntity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
     AccountRecoveryCodeRepo->deleteOneByUserId(userEntity.id(), &ok);
@@ -1128,7 +1157,7 @@ bool UserService::commonCheck(const Translator &t, QString *error) const
     return bRet(error, QString(), true);
 }
 
-bool UserService::confirmRegistration(const BUuid &code, const QLocale &locale, QString *error)
+bool UserService::confirmRegistration(const BUuid &code, QDateTime &dt, const QLocale &locale, QString *error)
 {
     Translator t(locale);
     if (code.isNull())
@@ -1146,7 +1175,7 @@ bool UserService::confirmRegistration(const BUuid &code, const QLocale &locale, 
         return bRet(error, t.translate("UserService", "Failed to get user (internal)", "error"), false);
     userEntity.convertToCreatedByUser();
     userEntity.setActive(true);
-    UserRepo->edit(userEntity, &ok);
+    dt = UserRepo->edit(userEntity, &ok);
     if (!ok)
         return bRet(error, t.translate("UserService", "Failed to edit user (internal)", "error"), false);
     RegistrationConfirmationCodeRepo->deleteOneByUserId(codeEntity.userId(), &ok);
@@ -1163,7 +1192,7 @@ TGroupInfoList UserService::getAllGroups(bool *ok)
     if (!isValid())
         return bRet(ok, false, groups);
     bool b = false;
-    QList<Group> entityList = GroupRepo->findAll(&b);
+    QList<Group> entityList = GroupRepo->findAll(QDateTime(), &b);
     if (!b)
         return bRet(ok, false, groups);
     foreach (const Group &entity, entityList) {

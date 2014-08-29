@@ -53,11 +53,12 @@ public:
     quint64 add(const User &entity, bool *ok = 0);
     long countByAccessLevel(const TAccessLevel &accessLevel, bool *ok = 0);
     DataSource *dataSource() const;
-    void deleteOne(quint64 userId, bool *ok = 0);
-    void edit(const User &entity, bool *ok = 0);
+    QDateTime deleteOne(const TUserIdentifier &id, bool *ok = 0);
+    QDateTime edit(const User &entity, bool *ok = 0);
     bool emailOccupied(const QString &email, bool *ok = 0);
     bool exists(const TUserIdentifier &id, bool *ok = 0);
     TAccessLevel findAccessLevel(quint64 id, bool *ok = 0);
+    TIdList findAllDeletedNewerThan(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
     QList<User> findAllNewerThan(const QDateTime &newerThan, bool *ok = 0);
     QDateTime findLastModificationDateTime(const TUserIdentifier &id, bool *ok = 0);
     QString findLogin(quint64 id, bool *ok = 0);
@@ -68,7 +69,6 @@ public:
     bool loginOccupied(const QString &login, bool *ok = 0);
 private:
     bool createAvatar(quint64 userId, const QImage &avatar);
-    bool deleteAvatar(quint64 userId);
     QImage fetchAvatar(quint64 userId, bool *ok = 0);
     bool updateAvatar(quint64 userId, const QImage &avatar);
 private:
