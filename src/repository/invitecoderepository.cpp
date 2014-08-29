@@ -241,7 +241,7 @@ TIdList InviteCodeRepository::findAllDeleted(const QDateTime &newerThan, bool *o
         where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
                           newerThan.toUTC().toMSecsSinceEpoch());
     }
-    BSqlResult result = Source->select("deleted_invites", "id", where);
+    BSqlResult result = Source->select("deleted_invite_codes", "id", where);
     if (!result.success())
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values())
@@ -262,7 +262,7 @@ TIdList InviteCodeRepository::findAllDeletedByOwnerId(quint64 ownerId, const QDa
         ws += " AND deletion_date_time > :deletion_date_time";
         wvalues.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
     }
-    BSqlResult result = Source->select("deleted_invites", "id", where);
+    BSqlResult result = Source->select("deleted_invite_codes", "id", where);
     if (!result.success())
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values())
