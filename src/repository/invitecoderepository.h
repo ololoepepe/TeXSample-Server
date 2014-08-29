@@ -46,11 +46,13 @@ public:
 public:
     quint64 add(const InviteCode &entity, bool *ok = 0);
     DataSource *dataSource() const;
-    void deleteExpired(bool *ok = 0);
-    void deleteOne(quint64 id, bool *ok = 0);
-    void deleteSome(const TIdList &ids, bool *ok = 0);
-    QList<InviteCode> findAll(bool *ok = 0);
-    QList<InviteCode> findAllByOwnerId(quint64 ownerId, bool *ok = 0);
+    QDateTime deleteExpired(bool *ok = 0);
+    QDateTime deleteOne(quint64 id, bool *ok = 0);
+    QDateTime deleteSome(const TIdList &ids, bool *ok = 0);
+    QList<InviteCode> findAll(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    QList<InviteCode> findAllByOwnerId(quint64 ownerId, const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    TIdList findAllDeleted(const QDateTime &newerThan = QDateTime(), bool *ok = 0);
+    TIdList findAllDeletedByOwnerId(quint64 ownerId, const QDateTime &newerThan = QDateTime(), bool *ok = 0);
     InviteCode findOne(quint64 id, bool *ok = 0);
     InviteCode findOneByCode(const BUuid &code, bool *ok = 0);
     bool isValid() const;

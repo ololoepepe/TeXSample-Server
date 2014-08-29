@@ -671,18 +671,24 @@ RequestOut<TGetGroupInfoListReplyData> UserService::getGroupInfoList(const Reque
     bool superuser = (UserRepo->findAccessLevel(userId, &ok).level() >= TAccessLevel::SuperuserLevel);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user access level (internal)", "error"));
-    QList<Group> entityList = superuser ? GroupRepo->findAll(&ok) :
-                                          GroupRepo->findAllByUserId(userId, QDateTime(), &ok);
+    TGroupInfoList newGroups;
+    TIdList deletedGroups = superuser ? GroupRepo->findAllDeleted(in.lastRequestDateTime(), &ok) :
+                                        GroupRepo->findAllDeletedByUserId(userId, in.lastRequestDateTime(), &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get deleted group list (internal)", "error"));
+    QList<Group> entityList = superuser ? GroupRepo->findAll(in.lastRequestDateTime(), &ok) :
+                                          GroupRepo->findAllByUserId(userId, in.lastRequestDateTime(), &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get group list (internal)", "error"));
-    TGetGroupInfoListReplyData replyData;
-    TGroupInfoList infoList;
+
     foreach (const Group &e, entityList) {
-        infoList << groupToGroupInfo(e, &ok);
+        newGroups << groupToGroupInfo(e, &ok);
         if (!ok)
             return Out(t.translate("UserService", "Failed to create group info (internal)", "error"));
     }
-    replyData.setNewGroups(infoList);
+    TGetGroupInfoListReplyData replyData;
+    replyData.setNewGroups(newGroups);
+    replyData.setDeletedGroups(deletedGroups);
     return Out(replyData, dt);
 }
 
@@ -701,18 +707,24 @@ RequestOut<TGetInviteInfoListReplyData> UserService::getInviteInfoList(
     bool superuser = (UserRepo->findAccessLevel(userId, &ok).level() >= TAccessLevel::SuperuserLevel);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user access level (internal)", "error"));
-    QList<InviteCode> entityList = superuser ? InviteCodeRepo->findAll(&ok) :
-                                               InviteCodeRepo->findAllByOwnerId(userId, &ok);
+    QDateTime last = in.lastRequestDateTime();
+    TInviteInfoList newInvites;
+    TIdList deletedInvites = superuser ? InviteCodeRepo->findAllDeleted(last, &ok) :
+                                         InviteCodeRepo->findAllDeletedByOwnerId(userId, last, &ok);
+    if (!ok)
+        return Out(t.translate("UserService", "Failed to get deleted invite code list (internal)", "error"));
+    QList<InviteCode> entityList = superuser ? InviteCodeRepo->findAll(last, &ok) :
+                                               InviteCodeRepo->findAllByOwnerId(userId, last, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get invite code list (internal)", "error"));
-    TGetInviteInfoListReplyData replyData;
-    TInviteInfoList infoList;
     foreach (const InviteCode &e, entityList) {
-        infoList << inviteCodeToInviteInfo(e, &ok);
+        newInvites << inviteCodeToInviteInfo(e, &ok);
         if (!ok)
             return Out(t.translate("UserService", "Failed to create invite code info (internal)", "error"));
     }
-    replyData.setNewInvites(infoList);
+    TGetInviteInfoListReplyData replyData;
+    replyData.setNewInvites(newInvites);
+    replyData.setDeletedInvites(deletedInvites);
     return Out(replyData, dt);
 }
 
@@ -1180,7 +1192,7 @@ TGroupInfoList UserService::getAllGroups(bool *ok)
     if (!isValid())
         return bRet(ok, false, groups);
     bool b = false;
-    QList<Group> entityList = GroupRepo->findAll(&b);
+    QList<Group> entityList = GroupRepo->findAll(QDateTime(), &b);
     if (!b)
         return bRet(ok, false, groups);
     foreach (const Group &entity, entityList) {

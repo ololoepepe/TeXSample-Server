@@ -69,6 +69,12 @@ CREATE TABLE IF NOT EXISTS groups (
   name                          TEXT UNIQUE NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS deleted_groups (
+  id                            INTEGER UNIQUE NOT NULL,
+  owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  deletion_date_time            INTEGER NOT NULL
+);
+
 CREATE TABLE IF NOT EXISTS user_groups (
   user_id                       INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   group_id                      INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
@@ -91,6 +97,12 @@ CREATE TABLE IF NOT EXISTS invite_codes (
   code                          TEXT UNIQUE NOT NULL,
   creation_date_time            INTEGER NOT NULL,
   expiration_date_time          INTEGER NOT NULL
+);
+
+CREATE TABLE IF NOT EXISTS deleted_invite_codes (
+  id                            INTEGER UNIQUE NOT NULL,
+  owner_id                      INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  deletion_date_time            INTEGER NOT NULL
 );
 
 CREATE TABLE IF NOT EXISTS invite_code_groups (

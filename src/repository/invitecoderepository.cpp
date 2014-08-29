@@ -87,30 +87,38 @@ DataSource *InviteCodeRepository::dataSource() const
     return Source;
 }
 
-void InviteCodeRepository::deleteExpired(bool *ok)
+QDateTime InviteCodeRepository::deleteExpired(bool *ok)
 {
     if (!isValid())
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     QDateTime dt = QDateTime::currentDateTimeUtc();
     BSqlWhere where("expiration_date_time <= :date_time", ":date_time", dt.toMSecsSinceEpoch());
-    bSet(ok, Source->deleteFrom("invite_codes", where).success());
+    BSqlResult result = Source->select("invite_codes", "id", where);
+    if (!result.success())
+        bRet(ok, false, QDateTime());
+    TIdList list;
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return deleteSome(list, ok);
 }
 
-void InviteCodeRepository::deleteOne(quint64 id, bool *ok)
+QDateTime InviteCodeRepository::deleteOne(quint64 id, bool *ok)
 {
     if (!id)
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     TIdList list;
     list << id;
-    deleteSome(list, ok);
+    return deleteSome(list, ok);
 }
 
-void InviteCodeRepository::deleteSome(const TIdList &ids, bool *ok)
+QDateTime InviteCodeRepository::deleteSome(const TIdList &ids, bool *ok)
 {
     if (!isValid())
-        return bSet(ok, false);
+        return bRet(ok, false, QDateTime());
     if (ids.isEmpty())
-        return bSet(ok, true);
+        return bRet(ok, true, QDateTime());
+    static const QStringList Fields = QStringList() << "id" << "owner_id";
+    QDateTime dt = QDateTime::currentDateTimeUtc();
     QString ws = "id IN (";
     QVariantMap values;
     foreach (int i, bRangeD(0, ids.size() - 1)) {
@@ -120,17 +128,44 @@ void InviteCodeRepository::deleteSome(const TIdList &ids, bool *ok)
         values.insert(":id" + QString::number(i), ids.at(i));
     }
     ws += ")";
-    bSet(ok, Source->deleteFrom("invite_codes", BSqlWhere(ws, values)).success());
+    BSqlWhere where(ws, values);
+    BSqlResult result = Source->select("invite_codes", Fields, where);
+    if (!result.success())
+        bRet(ok, false, QDateTime());
+    QList<InviteCode> entities;
+    foreach (const QVariantMap &m, result.values()) {
+        InviteCode entity(this);
+        entity.mid = m.value("id").toULongLong();
+        entity.mownerId = m.value("owner_id").toULongLong();
+        entity.valid = true;
+        entities << entity;
+    }
+    if (!Source->deleteFrom("invite_codes", where).success())
+        bRet(ok, false, QDateTime());
+    foreach (const InviteCode &e, entities) {
+        QVariantMap values;
+        values.insert("id", e.id());
+        values.insert("owner_id", e.ownerId());
+        values.insert("deletion_date_time", dt.toMSecsSinceEpoch());
+        if (!Source->insert("deleted_invite_codes", values))
+            bRet(ok, false, QDateTime());
+    }
+    return bRet(ok, true, dt);
 }
 
-QList<InviteCode> InviteCodeRepository::findAll(bool *ok)
+QList<InviteCode> InviteCodeRepository::findAll(const QDateTime &newerThan, bool *ok)
 {
     QList<InviteCode> list;
     if (!isValid())
         return bRet(ok, false, list);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "code" << "creation_date_time"
                                                     << "expiration_date_time" << "owner_id";
-    BSqlResult result = Source->select("invite_codes", Fields);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("creation_date_time >= :creation_date_time", ":creation_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("invite_codes", Fields, where);
     if (!result.success())
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
@@ -156,15 +191,21 @@ QList<InviteCode> InviteCodeRepository::findAll(bool *ok)
     return bRet(ok, true, list);
 }
 
-QList<InviteCode> InviteCodeRepository::findAllByOwnerId(quint64 ownerId, bool *ok)
+QList<InviteCode> InviteCodeRepository::findAllByOwnerId(quint64 ownerId, const QDateTime &newerThan, bool *ok)
 {
     QList<InviteCode> list;
     if (!isValid() || !ownerId)
         return bRet(ok, false, list);
     static const QStringList Fields = QStringList() << "id" << "access_level" << "code" << "creation_date_time"
                                                     << "expiration_date_time";
-    BSqlWhere where("owner_id = :owner_id", ":owner_id", ownerId);
-    BSqlResult result = Source->select("invite_codes", Fields, where);
+    QString ws = "owner_id = :owner_id";
+    QVariantMap wvalues;
+    wvalues.insert(":owner_id", ownerId);
+    if (newerThan.isValid()) {
+        ws += " AND creation_date_time > :creation_date_time";
+        wvalues.insert(":creation_date_time", newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("invite_codes", Fields, BSqlWhere(ws, wvalues));
     if (!result.success())
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
@@ -187,6 +228,45 @@ QList<InviteCode> InviteCodeRepository::findAllByOwnerId(quint64 ownerId, bool *
         entity.valid = true;
         list << entity;
     }
+    return bRet(ok, true, list);
+}
+
+TIdList InviteCodeRepository::findAllDeleted(const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        where = BSqlWhere("deletion_date_time > :deletion_date_time", ":deletion_date_time",
+                          newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_invites", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return bRet(ok, true, list);
+}
+
+TIdList InviteCodeRepository::findAllDeletedByOwnerId(quint64 ownerId, const QDateTime &newerThan, bool *ok)
+{
+    TIdList list;
+    if (!isValid() || !ownerId)
+        return bRet(ok, false, list);
+    QString ws = "owner_id = :owner_id";
+    QVariantMap wvalues;
+    wvalues.insert(":owner_id", ownerId);
+    BSqlWhere where;
+    if (newerThan.isValid()) {
+        ws += " AND deletion_date_time > :deletion_date_time";
+        wvalues.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    BSqlResult result = Source->select("deleted_invites", "id", where);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
     return bRet(ok, true, list);
 }
 
