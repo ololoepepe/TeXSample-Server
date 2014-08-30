@@ -608,7 +608,7 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     UserRepo->edit(entity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
-    entity = UserRepo->findOne(userId, &ok);
+    entity = UserRepo->findOne(requestData.identifier(), &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
     TEditUserReplyData replyData;
