@@ -42,6 +42,8 @@ class TUserInfo;
 
 class BUuid;
 
+class QImage;
+
 #include "application.h"
 #include "requestin.h"
 #include "requestout.h"
@@ -129,6 +131,7 @@ private:
 private:
     bool addUser(const User &entity, User &newEntity, const QLocale &locale = Application::locale(),
                  QString *error = 0);
+    bool checkUserAvatar(const Translator &t, const QImage &avatar, QString *error);
     bool checkUserId(const Translator &t, quint64 userId, QString *error);
     bool commit(const QLocale &locale, TransactionHolder &holder, QString *error);
     bool commit(const Translator &t, TransactionHolder &holder, QString *error);

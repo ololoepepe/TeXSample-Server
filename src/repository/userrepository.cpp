@@ -165,7 +165,7 @@ QDateTime UserRepository::edit(const User &entity, bool *ok)
         return bRet(ok, false, QDateTime());
     if (!RepositoryTools::setServices(Source, "user_services", "user_id", entity.id(), entity.availableServices()))
         return bRet(ok, false, QDateTime());
-    if (!updateAvatar(entity.id(), entity.avatar()))
+    if (entity.saveAvatar() && !updateAvatar(entity.id(), entity.avatar()))
         return bRet(ok, false, QDateTime());
     return bRet(ok, true, dt);
 }

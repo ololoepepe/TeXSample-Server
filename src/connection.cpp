@@ -70,6 +70,7 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QSt
         close();
         return;
     }
+    setLoggingMode(DetailedLogging);
     setTranslationsEnabled(false);
     setCriticalBufferSize(3 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
@@ -258,6 +259,14 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
         return sendReply(op, out.createReply());
     muserInfo = out.data().userInfo();
     mclientInfo = in.data().clientInfo();
+    QString s = "Client info:\n";
+    s += "User ID: " + QString::number(muserInfo.id()) + "\n";
+    s += "User login: " + muserInfo.login() + "\n";
+    s += "Unique ID: " + uniqueId().toString(true) + "\n";
+    s += "Access level: " + muserInfo.accessLevel().toStringNoTr() + "\n";
+    s += mclientInfo.toString("Client: %n v%v (%p)\nTeXSample version: %t\nBeQt version: %b\nQt version: %q\n");
+    s += mclientInfo.toString("OS: %o (%a)");
+    log(s);
     return sendReply(op, out.createReply());
 }
 
@@ -488,7 +497,7 @@ bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 {
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
+    if (!commonCheck(request.locale(), &error))
         return sendReply(op, error);
     RequestIn<TGetLatestAppVersionRequestData> in(request);
     return sendReply(op, ApplicationVersionServ->getLatestAppVersion(in).createReply());

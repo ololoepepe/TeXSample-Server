@@ -74,7 +74,7 @@ RequestOut<TGetLatestAppVersionReplyData> ApplicationVersionService::getLatestAp
     typedef RequestOut<TGetLatestAppVersionReplyData> Out;
     Translator t(in.locale());
     QString error;
-    if (!commonCheck(t, &error))
+    if (!commonCheck(t, in.data(), &error))
         return Out(error);
     TClientInfo info = in.data().clientInfo();
     QDateTime dt = QDateTime::currentDateTimeUtc();
