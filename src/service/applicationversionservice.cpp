@@ -166,7 +166,7 @@ RequestOut<TSetLatestAppVersionReplyData> ApplicationVersionService::setLatestAp
     BVersion version = requestData.version();
     QUrl downloadUrl = requestData.downloadUrl();
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    if (setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, &error))
+    if (!setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, &error))
         return Out(error);
     TSetLatestAppVersionReplyData replyData;
     return Out(replyData, dt);

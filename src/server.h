@@ -50,6 +50,8 @@ public:
     TUserConnectionInfoList userConnections(
             const QString &matchPattern, TGetUserConnectionInfoListRequestData::MatchType type =
             TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId, int *total = 0) const;
+public slots:
+    bool listenSlot(const QString &address, quint16 port);
 protected:
     BNetworkConnection *createConnection(BGenericSocket *socket, const QString &serverAddress, quint16 serverPort);
     BGenericSocket *createSocket();

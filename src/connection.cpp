@@ -658,7 +658,13 @@ bool Connection::handleSetServerStateRequest(BNetworkOperation *op)
     if (requestData.listening()) {
         if (server()->isListening())
             return sendReply(op, t.translate("Connection", "Server is already listening", "error"), false);
-        if (!server()->listen(requestData.address(), Texsample::MainPort))
+        QString address = requestData.address();
+        if (address.isEmpty())
+            address = "0.0.0.0";
+        bool b = false;
+        QMetaObject::invokeMethod(server(), "listenSlot", Qt::BlockingQueuedConnection, Q_RETURN_ARG(bool, b),
+                                  Q_ARG(QString, address), Q_ARG(quint16, Texsample::MainPort));
+        if (!b)
             return sendReply(op, t.translate("Connection", "Failed to start server", "error"), false);
     } else {
         server()->close();

@@ -87,6 +87,13 @@ TUserConnectionInfoList Server::userConnections(
     return list;
 }
 
+/*============================== Public slots ==============================*/
+
+bool Server::listenSlot(const QString &address, quint16 port)
+{
+    return listen(address, port);
+}
+
 /*============================== Protected methods =========================*/
 
 BNetworkConnection *Server::createConnection(BGenericSocket *socket, const QString &, quint16)

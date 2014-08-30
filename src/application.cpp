@@ -254,8 +254,7 @@ void Application::updateLoggingMode()
     } else if (2 == m) {
         bLogger->setLogToConsoleEnabled(false);
         bLogger->setLogToFileEnabled(true);
-    } else if (m >= 3)
-    {
+    } else if (m >= 3) {
         bLogger->setLogToConsoleEnabled(true);
         bLogger->setLogToFileEnabled(true);
     }
@@ -363,7 +362,7 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
     QString options = "client:-c|--client=" + QStringList(clientMap.keys()).join("|") + ",";
     options += "os:-o|--os=" + QStringList(osMap.keys()).join("|") + ",";
     options += "arch:-a|--arch=" + QStringList(archMap.keys()).join("|") + ",";
-    options += "[portable:-p|--portable],version:-v|--version=,url:-u|--url=";
+    options += "[portable:-p|--portable],version:-v|--version=,[url:-u|--url=]";
     BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
     if (!checkParsingError(error, errorData))
         return false;
@@ -377,7 +376,7 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
         bWriteLine(tr("Invalid version", "error"));
         return false;
     }
-    if (!url.isValid()) {
+    if (!result.value("url").isEmpty() && !url.isValid()) {
         bWriteLine(tr("Invalid url", "error"));
         return false;
     }
@@ -586,30 +585,27 @@ void Application::initTerminal()
                                                "  true - read-only mode\n"
                                                "  false - normal mode (read and write)"));
     BTerminal::setRootSettingsNode(root);
-    BTerminal::setHelpDescription(BTranslation::translate("BTerminalIOHandler",
+    BTerminal::setHelpDescription(BTranslation::translate("Application",
         "This is TeXSample Server. Enter \"help --all\" to see full Help"));
-    BTerminal::CommandHelpList chl;
     BTerminal::CommandHelp ch;
     ch.usage = "user-info [--match-type|-m=<match_type>] --match-pattern|-p=<match_pattern>";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
+    ch.description = BTranslation::translate("Application",
         "Show information about connected users matching <match_pattern>, which is to be a wildcard.\n"
         "<match_type> may be one of the following:\n"
         "  login-and-unique-id|a - attempt to match both login and uinque id (default)\n"
         "  login|l - match login only\n"
         "  unique-id|u - match unique id only");
-    chl << ch;
-    BTerminal::setCommandHelp("user-info", chl);
+    BTerminal::setCommandHelp("user-info", ch);
     ch.usage = "start [address]";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
+    ch.description = BTranslation::translate("Application", "Start the server.\n"
         "If [address] is passed, server will listen on that address.\n"
         "Otherwise it will listen on all available addresses.");
     BTerminal::setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server.\n"
-                                             "Note: Users are not disconnected.");
+    ch.description = BTranslation::translate("Application", "Stop the server.\nNote: Users are not disconnected.");
     BTerminal::setCommandHelp("stop", ch);
     ch.usage = "set-app-version <parameters>";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
+    ch.description = BTranslation::translate("Application",
         "Set the latest version of an application along with the download URL.\n"
         "The parameters are:\n"
         "  --client|-c=<client>, where <client> must be one of the following:\n"
@@ -632,12 +628,11 @@ void Application::initTerminal()
         "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
     BTerminal::setCommandHelp("set-app-version", ch);
     ch.usage = "shrink-db";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Shrink the database with VACUUM command.\n"
+    ch.description = BTranslation::translate("Application", "Shrink the database with VACUUM command.\n"
                                              "Note: This command will fail if there are active transactions");
     BTerminal::setCommandHelp("shrink-db", ch);
     ch.usage = "uptime";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Show for how long the application has been running");
+    ch.description = BTranslation::translate("Application", "Show for how long the application has been running");
     BTerminal::setCommandHelp("uptime", ch);
 }
 

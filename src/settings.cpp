@@ -199,7 +199,7 @@ void setLoggingMode(int mode)
 
 bool setLoggingMode(const BSettingsNode *, const QVariant &v)
 {
-    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Settings::Email", "Enter logging mode:") + " ");
+    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Settings::Log", "Enter logging mode:") + " ");
     if (s.isEmpty())
         return false;
     bool ok = false;
