@@ -89,6 +89,9 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QSt
 
 Connection::~Connection()
 {
+    delete ApplicationVersionServ;
+    delete LabServ;
+    delete SampleServ;
     delete UserServ;
     delete Source;
 }

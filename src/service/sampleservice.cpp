@@ -60,7 +60,8 @@ SampleService::SampleService(DataSource *source) :
 
 SampleService::~SampleService()
 {
-    //
+    delete SampleRepo;
+    delete UserRepo;
 }
 
 /*============================== Public methods ============================*/

@@ -58,7 +58,7 @@ ApplicationVersionService::ApplicationVersionService(DataSource *source) :
 
 ApplicationVersionService::~ApplicationVersionService()
 {
-    //
+    delete ApplicationVersionRepo;
 }
 
 /*============================== Public methods ============================*/

@@ -39,7 +39,7 @@ LabService::LabService(DataSource *source) :
 
 LabService::~LabService()
 {
-    //
+    delete LabRepo;
 }
 
 /*============================== Public methods ============================*/

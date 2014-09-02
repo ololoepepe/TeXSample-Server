@@ -77,7 +77,12 @@ UserService::UserService(DataSource *source) :
 
 UserService::~UserService()
 {
-    //
+    delete AccountRecoveryCodeRepo;
+    delete EmailChangeConfirmationCodeRepo;
+    delete GroupRepo;
+    delete InviteCodeRepo;
+    delete RegistrationConfirmationCodeRepo;
+    delete UserRepo;
 }
 
 /*============================== Public methods ============================*/
