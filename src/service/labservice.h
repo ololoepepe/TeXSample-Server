@@ -24,6 +24,7 @@
 
 class DataSource;
 class LabRepository;
+class UserRepository;
 
 #include <QCoreApplication>
 
@@ -37,6 +38,7 @@ class LabService
 private:
     LabRepository * const LabRepo;
     DataSource * const Source;
+    UserRepository * const UserRepo;
 public:
     explicit LabService(DataSource *source);
     ~LabService();

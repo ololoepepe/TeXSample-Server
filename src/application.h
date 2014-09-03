@@ -53,8 +53,6 @@ class Application : public TCoreApplication
     Q_OBJECT
 private:
     static QMutex serverMutex;
-    static QString texsampleSty;
-    static QString texsampleTex;
 private:
     DataSource * const Source;
     ApplicationVersionService * const ApplicationVersionServ;

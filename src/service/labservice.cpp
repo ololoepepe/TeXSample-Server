@@ -24,6 +24,7 @@
 #include "datasource.h"
 #include "entity/lab.h"
 #include "repository/labrepository.h"
+#include "repository/userrepository.h"
 
 /*============================================================================
 ================================ LabService ==================================
@@ -32,7 +33,7 @@
 /*============================== Public constructors =======================*/
 
 LabService::LabService(DataSource *source) :
-    LabRepo(new LabRepository(source)), Source(source)
+    LabRepo(new LabRepository(source)), Source(source), UserRepo(new UserRepository(source))
 {
     //
 }
@@ -40,6 +41,7 @@ LabService::LabService(DataSource *source) :
 LabService::~LabService()
 {
     delete LabRepo;
+    delete UserRepo;
 }
 
 /*============================== Public methods ============================*/

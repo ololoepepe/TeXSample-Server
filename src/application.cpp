@@ -52,6 +52,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QMap>
 #include <QMutex>
 #include <QMutexLocker>
@@ -70,8 +71,6 @@
 /*============================== Static private variables ==================*/
 
 QMutex Application::serverMutex(QMutex::Recursive);
-QString Application::texsampleSty;
-QString Application::texsampleTex;
 
 /*============================== Public constructors =======================*/
 
@@ -121,13 +120,27 @@ Application::~Application()
 
 bool Application::copyTexsample(const QString &path, const QString &codecName)
 {
-    if (!QDir(path).exists() || texsampleSty.isEmpty() || texsampleTex.isEmpty())
+
+    if (!QFileInfo(path).isDir() || !QFileInfo(Settings::Texsample::path()).isDir())
+        return false;
+    QStringList fileNames = BDirTools::entryListRecursive(Settings::Texsample::path(), QDir::Files);
+    if (fileNames.isEmpty())
         return false;
     QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8"));
-    if (!BDirTools::writeTextFile(path + "/texsample.sty", texsampleSty, cn))
-        return false;
-    if (!BDirTools::writeTextFile(path + "/texsample.tex", texsampleTex, cn))
-        return false;
+    foreach (const QString &fn, fileNames) {
+        QString nfn = path + "/" + QFileInfo(fn).fileName();
+        if (!cn.compare("UTF-8", Qt::CaseInsensitive)) {
+            if (!QFile::copy(fn, nfn))
+                return false;
+        } else {
+            bool ok = false;
+            QString text = BDirTools::readTextFile(fn, "UTF-8", &ok);
+            if (!ok)
+                return false;
+            if (!BDirTools::writeTextFile(nfn, text, cn))
+                return false;
+        }
+    }
     return true;
 }
 
@@ -141,17 +154,18 @@ bool Application::initializeStorage()
         return true;
     }
     bWriteLine(tr("Initializing storage...", "message"));
-    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
-    sty = BDirTools::readTextFile(sty, "UTF-8");
-    if (sty.isEmpty()) {
-        bWriteLine(tr("Failed to load texsample.sty", "error"));
-        return false;
-    }
-    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
-    tex = BDirTools::readTextFile(tex, "UTF-8");
-    if (tex.isEmpty()) {
-        bWriteLine(tr("Failed to load texsample.tex", "error"));
-        return false;
+    QString texsamplePath = Settings::Texsample::path();
+    if (texsamplePath.isEmpty()) {
+        texsamplePath = bReadLine(tr("Enter path to TeXSample Framework:") + " ");
+        if (texsamplePath.isEmpty()) {
+            bWriteLine(tr("Empty path", "error"));
+            return false;
+        }
+        if (!QFileInfo(texsamplePath).isDir()) {
+            bWriteLine(tr("Invalid path", "error"));
+            return false;
+        }
+        Settings::Texsample::setPath(texsamplePath);
     }
     QString err;
     if (!Source->initialize(&err)) {
@@ -166,8 +180,6 @@ bool Application::initializeStorage()
         bWriteLine(tr("Error:", "error") + " " + err);
         return false;
     }
-    texsampleSty = sty;
-    texsampleTex = tex;
     initialized = true;
     bWriteLine(tr("Done!", "message"));
     return true;
@@ -584,6 +596,9 @@ void Application::initTerminal()
     nn->setDescription(BTranslation::translate("Application", "Read-only mode. Possible values:\n"
                                                "  true - read-only mode\n"
                                                "  false - normal mode (read and write)"));
+    n = new BSettingsNode(Settings::Texsample::RootPath, root);
+    nn = new BSettingsNode(Settings::Texsample::PathSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Path to TeXSample Framework"));
     BTerminal::setRootSettingsNode(root);
     BTerminal::setHelpDescription(BTranslation::translate("Application",
         "This is TeXSample Server. Enter \"help --all\" to see full Help"));
