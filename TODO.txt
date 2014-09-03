@@ -12,6 +12,7 @@
 [done] Implement e-mail change confirmation
 [done] Add access level info to invites
 [done] Make invite codes generation available for administrators only
+[done] Change Texsample Framework depend strategy
 [done] Change copyright owner
 [done] Use BeQt 4.0.0
 [done] Use TeXSample 2.0.0

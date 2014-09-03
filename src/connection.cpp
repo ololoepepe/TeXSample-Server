@@ -70,7 +70,6 @@ Connection::Connection(BNetworkServer *server, BGenericSocket *socket, const QSt
         close();
         return;
     }
-    setLoggingMode(DetailedLogging);
     setTranslationsEnabled(false);
     setCriticalBufferSize(3 * BeQt::Megabyte);
     setCloseOnCriticalBufferSize(true);
@@ -207,6 +206,7 @@ bool Connection::commonCheck(const QLocale &locale, QString *error, const TAcces
 
 bool Connection::handleAddGroupRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -217,11 +217,18 @@ bool Connection::handleAddGroupRequest(BNetworkOperation *op)
 
 bool Connection::handleAddLabRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TAddLabRequestData> in(request);
+    return sendReply(op, LabServ->addLab(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -232,6 +239,7 @@ bool Connection::handleAddSampleRequest(BNetworkOperation *op)
 
 bool Connection::handleAddUserRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -246,6 +254,7 @@ bool Connection::handleAddUserRequest(BNetworkOperation *op)
 
 bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -275,6 +284,7 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
 
 bool Connection::handleChangeEmailRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -286,6 +296,7 @@ bool Connection::handleChangeEmailRequest(BNetworkOperation *op)
 
 bool Connection::handleChangePasswordRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -297,6 +308,7 @@ bool Connection::handleChangePasswordRequest(BNetworkOperation *op)
 
 bool Connection::handleCheckEmailAvailabilityRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -308,6 +320,7 @@ bool Connection::handleCheckEmailAvailabilityRequest(BNetworkOperation *op)
 
 bool Connection::handleCheckLoginAvailabilityRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -319,6 +332,7 @@ bool Connection::handleCheckLoginAvailabilityRequest(BNetworkOperation *op)
 
 bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -329,6 +343,7 @@ bool Connection::handleCompileTexProjectRequest(BNetworkOperation *op)
 
 bool Connection::handleConfirmEmailChangeRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -339,6 +354,7 @@ bool Connection::handleConfirmEmailChangeRequest(BNetworkOperation *op)
 
 bool Connection::handleConfirmRegistrationRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -349,6 +365,7 @@ bool Connection::handleConfirmRegistrationRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteGroupRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -359,6 +376,7 @@ bool Connection::handleDeleteGroupRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteInvitesRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -369,11 +387,18 @@ bool Connection::handleDeleteInvitesRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TDeleteLabRequestData> in(request);
+    return sendReply(op, LabServ->deleteLab(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel, TService::TexsampleService))
@@ -384,6 +409,7 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
 
 bool Connection::handleDeleteUserRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::SuperuserLevel))
@@ -394,6 +420,7 @@ bool Connection::handleDeleteUserRequest(BNetworkOperation *op)
 
 bool Connection::handleEditGroupRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -404,11 +431,18 @@ bool Connection::handleEditGroupRequest(BNetworkOperation *op)
 
 bool Connection::handleEditLabRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TEditLabRequestData> in(request);
+    return sendReply(op, LabServ->editLab(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleEditSampleRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -419,6 +453,7 @@ bool Connection::handleEditSampleRequest(BNetworkOperation *op)
 
 bool Connection::handleEditSampleAdminRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel, TService::TexsampleService))
@@ -429,6 +464,7 @@ bool Connection::handleEditSampleAdminRequest(BNetworkOperation *op)
 
 bool Connection::handleEditSelfRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
@@ -439,6 +475,7 @@ bool Connection::handleEditSelfRequest(BNetworkOperation *op)
 
 bool Connection::handleEditUserRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -449,6 +486,7 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
 
 bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -463,6 +501,7 @@ bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
 
 bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -473,6 +512,7 @@ bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -483,21 +523,40 @@ bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetLabDataRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TGetLabDataRequestData> in(request);
+    return sendReply(op, LabServ->getLabData(in).createReply());
 }
 
 bool Connection::handleGetLabExtraFileRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TGetLabExtraFileRequestData> in(request);
+    return sendReply(op, LabServ->getLabExtraFile(in).createReply());
 }
 
 bool Connection::handleGetLabInfoListRequest(BNetworkOperation *op)
 {
-    //TODO
+    log("Request: " + op->metaData().operation());
+    TRequest request = op->variantData().value<TRequest>();
+    QString error;
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+        return sendReply(op, error);
+    RequestIn<TGetLabInfoListRequestData> in(request);
+    return sendReply(op, LabServ->getLabInfoList(in, muserInfo.id()).createReply());
 }
 
 bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -508,6 +567,7 @@ bool Connection::handleGetLatestAppVersionRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSampleInfoListRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -518,6 +578,7 @@ bool Connection::handleGetSampleInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -528,6 +589,7 @@ bool Connection::handleGetSamplePreviewRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
@@ -538,6 +600,7 @@ bool Connection::handleGetSampleSourceRequest(BNetworkOperation *op)
 
 bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
@@ -548,6 +611,7 @@ bool Connection::handleGetSelfInfoRequest(BNetworkOperation *op)
 
 bool Connection::handleGetServerStateRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -562,6 +626,7 @@ bool Connection::handleGetServerStateRequest(BNetworkOperation *op)
 
 bool Connection::handleGetUserConnectionInfoListRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -576,6 +641,7 @@ bool Connection::handleGetUserConnectionInfoListRequest(BNetworkOperation *op)
 
 bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -586,6 +652,7 @@ bool Connection::handleGetUserInfoAdminRequest(BNetworkOperation *op)
 
 bool Connection::handleGetUserInfoListAdminRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -596,6 +663,7 @@ bool Connection::handleGetUserInfoListAdminRequest(BNetworkOperation *op)
 
 bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel))
@@ -606,12 +674,19 @@ bool Connection::handleGetUserInfoRequest(BNetworkOperation *op)
 
 bool Connection::handleNoopRequest(BNetworkOperation *op)
 {
+    int l = bSettings->value("Log/noop").toInt();
+    QString s = "Replying to connection test";
+    if (1 == l)
+        logLocal(s);
+    else if (l > 1)
+        log(s);
     op->reply();
     return true;
 }
 
 bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -622,6 +697,7 @@ bool Connection::handleRecoverAccountRequest(BNetworkOperation *op)
 
 bool Connection::handleRegisterRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -632,6 +708,7 @@ bool Connection::handleRegisterRequest(BNetworkOperation *op)
 
 bool Connection::handleRequestRecoveryCodeRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error))
@@ -642,6 +719,7 @@ bool Connection::handleRequestRecoveryCodeRequest(BNetworkOperation *op)
 
 bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel))
@@ -652,6 +730,7 @@ bool Connection::handleSetLatestAppVersionRequest(BNetworkOperation *op)
 
 bool Connection::handleSetServerStateRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     Translator t(request.locale());
     QString error;
@@ -682,6 +761,7 @@ bool Connection::handleSetServerStateRequest(BNetworkOperation *op)
 
 bool Connection::handleSubscribeRequest(BNetworkOperation *op)
 {
+    log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
     if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel))
@@ -694,140 +774,6 @@ bool Connection::handleSubscribeRequest(BNetworkOperation *op)
     TSubscribeReplyData replyData;
     return sendReply(op, "", replyData);
 }
-
-/*bool Connection::handleAddLabRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    TLabInfo info = in.value("lab_info").value<TLabInfo>();
-    TLabProject webProject = in.value("web_project").value<TLabProject>();
-    TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
-    TLabProject macProject = in.value("mac_project").value<TLabProject>();
-    TLabProject winProject = in.value("win_project").value<TLabProject>();
-    TProjectFileList extraFiles = in.value("extra_files").value<TProjectFileList>();
-    QString url = in.value("lab_url").toString();
-    log("Add lab request: " + info.title());
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->addLab(muserId, info, webProject, linuxProject, macProject, winProject, url,
-                                          extraFiles));
-}
-
-bool Connection::handleEditLabRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    TLabInfo info = in.value("lab_info").value<TLabInfo>();
-    TLabProject webProject = in.value("web_project").value<TLabProject>();
-    TLabProject linuxProject = in.value("linux_project").value<TLabProject>();
-    TLabProject macProject = in.value("mac_project").value<TLabProject>();
-    TLabProject winProject = in.value("win_project").value<TLabProject>();
-    QStringList deletedExtraFiles = in.value("deleted_extra_files").toStringList();
-    TProjectFileList newExtraFiles = in.value("new_extra_files").value<TProjectFileList>();
-    QString url = in.value("lab_url").toString();
-    log("Edit lab request: " + info.title());
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (maccessLevel < TAccessLevel::ModeratorLevel && mstorage->labSenderId(info.id()) != muserId)
-        return sendReply(op, TMessage::NotOwnLabError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->editLab(info, webProject, linuxProject, macProject, winProject, url,
-                                           deletedExtraFiles, newExtraFiles));
-}
-
-bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("lab_id").toULongLong();
-    QString reason = in.value("reason").toString();
-    log("Delete lab request: " + QString::number(id) + (!reason.isEmpty() ? (" (" + reason + ")") : QString()));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::ModeratorLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (maccessLevel < TAccessLevel::AdminLevel && mstorage->labSenderId(id) != muserId)
-        return sendReply(op, TMessage::NotOwnLabError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    return sendReply(op, mstorage->deleteLab(id, reason));
-}
-
-bool Connection::handleGetLabsListRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    QDateTime updateDT = in.value("update_dt").toDateTime().toUTC();
-    log("Get labs list request");
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TLabInfoList newLabs;
-    TIdList deletedLabs;
-    TOperationResult r = mstorage->getLabsList(muserId, mclientInfo.osType(), newLabs, deletedLabs, updateDT);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("update_dt", updateDT);
-    if (!newLabs.isEmpty())
-        out.insert("new_lab_infos", newLabs);
-    if (!deletedLabs.isEmpty())
-        out.insert("deleted_lab_infos", deletedLabs);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleGetLabRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("lab_id").toULongLong();
-    log("Get lab request: " + QString::number(id));
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TLabProject project;
-    QString url;
-    TLabInfo::Type t;
-    TOperationResult r = mstorage->getLab(id, mclientInfo.osType(), project, t, url);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("type", (int) t);
-    if (project.isValid())
-        out.insert("project", project);
-    else
-        out.insert("url", url);
-    return sendReply(op, out, r);
-}
-
-bool Connection::handleGetLabExtraAttachedFileRequest(BNetworkOperation *op)
-{
-    QVariantMap in = op->variantData().toMap();
-    quint64 id = in.value("lab_id").toULongLong();
-    QString fn = in.value("file_name").toString();
-    log("Get lab extra file request: " + QString::number(id) + "/" + fn);
-    if (!muserId)
-        return sendReply(op, TMessage::NotAuthorizedError);
-    if (maccessLevel < TAccessLevel::UserLevel)
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    if (!mservices.contains(TService::ClabService))
-        return sendReply(op, TMessage::NotEnoughRightsError);
-    TProjectFile file;
-    TOperationResult r = mstorage->getLabExtraAttachedFile(id, fn, file);
-    if (!r)
-        return sendReply(op, r);
-    QVariantMap out;
-    out.insert("file", file);
-    return sendReply(op, out, r);
-}*/
 
 void Connection::initHandlers()
 {
@@ -890,6 +836,7 @@ void Connection::initHandlers()
 
 bool Connection::sendReply(BNetworkOperation *op, const TReply &reply)
 {
+    log("Request: " + op->metaData().operation() + " - " + (reply.success() ? "success" : "fail"));
     return op->reply(QVariant::fromValue(reply)) && reply.success();
 }
 

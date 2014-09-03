@@ -210,6 +210,11 @@ CREATE TABLE IF NOT EXISTS deleted_labs (
   deletion_date_time            INTEGER NOT NULL
 );
 
+CREATE TABLE IF NOT EXISTS deleted_lab_groups (
+  lab_id                        INTEGER NOT NULL REFERENCES deleted_labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
+  group_id                      INTEGER NOT NULL REFERENCES groups(id) ON DELETE CASCADE ON UPDATE CASCADE
+);
+
 CREATE TABLE IF NOT EXISTS lab_desktop_applications (
   lab_id                        INTEGER NOT NULL REFERENCES labs(id) ON DELETE CASCADE ON UPDATE CASCADE,
   os_type                       INTEGER NOT NULL REFERENCES os_types(os_type) ON DELETE RESTRICT ON UPDATE CASCADE,

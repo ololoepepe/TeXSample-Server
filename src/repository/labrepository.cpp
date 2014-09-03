@@ -32,6 +32,7 @@
 #include <TFileInfo>
 #include <TFileInfoList>
 #include <TIdList>
+#include <TLabApplication>
 #include <TLabDataInfo>
 #include <TLabDataInfoList>
 #include <TLabData>
@@ -105,10 +106,18 @@ QDateTime LabRepository::deleteOne(quint64 id, bool *ok)
     if (!isValid() || !id)
         return bRet(ok, false, QDateTime());
     QDateTime dt = QDateTime::currentDateTimeUtc();
+    BSqlResult result = Source->select("lab_groups", "group_id", BSqlWhere("lab_id = :lab_id", ":lab_id", id));
+    if (!result.success())
+        return bRet(ok, false, QDateTime());
     if (!Source->deleteFrom("labs", BSqlWhere("id = :id", ":id", id)).success())
         return bRet(ok, false, QDateTime());
     if (!Source->insert("deleted_labs", "id", id, "deletion_date_time", dt.toMSecsSinceEpoch()).success())
         return bRet(ok, false, QDateTime());
+    foreach (const QVariantMap &m, result.values()) {
+        quint64 groupId = m.value("group_id").toULongLong();
+        if (!Source->insert("deleted_lab_groups", "lab_id", id, "group_id", groupId).success())
+            return bRet(ok, false, QDateTime());
+    }
     return bRet(ok, true, dt);
 }
 
@@ -117,12 +126,26 @@ void LabRepository::edit(const Lab &entity, bool *ok)
     if (!isValid() || !entity.isValid() || !entity.id() || entity.isCreatedByRepo())
         return bSet(ok, false);
     QDateTime dt = QDateTime::currentDateTimeUtc();
+    BSqlResult r = Source->select("labs", "extra_file_infos", BSqlWhere("id = :id", ":id", entity.id()));
+    if (!r.success())
+        return bSet(ok, false);
+    TFileInfoList fil = deserializedExtraFileInfos(r.value("extra_file_infos").toByteArray());
+    foreach (const QString &fn, entity.deletedExtraFiles()) {
+        foreach (int i, bRangeR(fil.size() - 1, 0)) {
+            if (fil.at(i).fileName() == fn) {
+                fil.removeAt(i);
+                break;
+            }
+        }
+    }
     QVariantMap values;
     values.insert("sender_id", entity.senderId());
     values.insert("description", entity.description());
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
+    values.insert("data_infos", serializedDataInfos(entity.labDataList(), entity.type()));
+    values.insert("extra_file_infos", serializedExtraFileInfos(entity.extraFiles(), fil));
     BSqlResult result = Source->update("labs", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
         return bSet(ok, false);
@@ -144,6 +167,37 @@ void LabRepository::edit(const Lab &entity, bool *ok)
     bSet(ok, true);
 }
 
+TIdList LabRepository::findAllDeletedNewerThan(const QDateTime &newerThan, const TIdList &groups, bool *ok)
+{
+    TIdList list;
+    if (!isValid())
+        return bRet(ok, false, list);
+    QString qs = "SELECT deleted_labs.id FROM deleted_labs";
+    QVariantMap bv;
+    if (newerThan.isValid()) {
+        qs += " WHERE labs.deletion_date_time > :deletion_date_time";
+        bv.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
+    }
+    if (!groups.isEmpty()) {
+        qs += newerThan.isValid() ? " AND" : " WHERE";
+        qs += " (SELECT COUNT(*) FROM deleted_lab_groups WHERE deleted_lab_groups.lab_id = deleted_labs.id "
+              "AND deleted_lab_groups.group_id IN (";
+        foreach (int i, bRangeD(0, groups.size() - 1)) {
+            qs += ":" + QString::number(groups.at(i));
+            if (i < groups.size() - 1)
+                qs += ", ";
+            bv.insert(":" + QString::number(groups.at(i)), groups.at(i));
+        }
+        qs += ")) > 0";
+    }
+    BSqlResult result = Source->exec(qs, bv);
+    if (!result.success())
+        return bRet(ok, false, list);
+    foreach (const QVariantMap &m, result.values())
+        list << m.value("id").toULongLong();
+    return bRet(ok, true, list);
+}
+
 QList<Lab> LabRepository::findAllNewerThan(const TIdList &groups, bool *ok)
 {
     return findAllNewerThan(QDateTime(), groups, ok);
@@ -155,7 +209,7 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
     if (!isValid())
         return bRet(ok, false, list);
     QString qs = "SELECT labs.id, labs.sender_id, labs.creation_date_time, labs.description, "
-        "labs.last_modification_date_time, labs.title, labs.type FROM labs";
+        "labs.last_modification_date_time, labs.title, labs.type labs.data_infos labs.extra_file_infos FROM labs";
     QVariantMap bv;
     if (newerThan.isValid()) {
         qs += " WHERE labs.last_modification_date_time > :last_modification_date_time";
@@ -184,6 +238,8 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
         entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("labs.last_modification_date_time").toLongLong());
         entity.mtitle = m.value("labs.title").toString();
         entity.mtype = m.value("labs.type").toInt();
+        entity.mdataInfoList = deserializedDataInfos(m.value("data_infos").toByteArray());
+        entity.mextraFileInfos = deserializedExtraFileInfos(m.value("extra_file_infos").toByteArray());
         bool b = false;
         entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", entity.id(), &b);
         if (!b)
@@ -200,13 +256,28 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
     return bRet(ok, true, list);
 }
 
+QDateTime LabRepository::findLastModificationDateTime(quint64 id, bool *ok)
+{
+    if (!isValid() || !id)
+        return bRet(ok, false, QDateTime());
+    BSqlResult result = Source->select("labs", "last_modification_date_time", BSqlWhere("id = :id", ":id", id));
+    if (!result.success())
+        return bRet(ok, false, QDateTime());
+    if (result.values().isEmpty())
+        return bRet(ok, true, QDateTime());
+    QDateTime dt;
+    dt.setTimeSpec(Qt::UTC);
+    dt.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
+    return bRet(ok, true, dt);
+}
+
 Lab LabRepository::findOne(quint64 id, bool *ok)
 {
     Lab entity(this);
     if (!isValid() || !id)
         return bRet(ok, false, entity);
     static const QStringList Fields = QStringList() << "sender_id" << "creation_date_time" << "description"
-                                                    << "last_modification_date_time" << "title" << "type";
+        << "last_modification_date_time" << "title" << "type" << "data_infos" << "extra_file_infos";
     BSqlResult result = Source->select("labs", Fields, BSqlWhere("id = :id", ":id", id));
     if (!result.success())
         return bRet(ok, false, entity);
@@ -219,6 +290,8 @@ Lab LabRepository::findOne(quint64 id, bool *ok)
     entity.mlastModificationDateTime.setMSecsSinceEpoch(result.value("last_modification_date_time").toLongLong());
     entity.mtitle = result.value("title").toString();
     entity.mtype = result.value("type").toInt();
+    entity.mdataInfoList = deserializedDataInfos(result.value("data_infos").toByteArray());
+    entity.mextraFileInfos = deserializedExtraFileInfos(result.value("extra_file_infos").toByteArray());
     bool b = false;
     entity.mauthors = RepositoryTools::getAuthorInfoList(Source, "lab_authors", "lab_id", id, &b);
     if (!b)
@@ -263,7 +336,7 @@ QByteArray LabRepository::serializedDataInfos(const TLabDataList &list, const TL
     return BeQt::serialize(infos);
 }
 
-QByteArray LabRepository::serializedExtraFileInfos(const TBinaryFileList &list)
+QByteArray LabRepository::serializedExtraFileInfos(const TBinaryFileList &list, const TFileInfoList &previous)
 {
     TFileInfoList infos;
     foreach (const TBinaryFile &f, list) {
@@ -273,29 +346,145 @@ QByteArray LabRepository::serializedExtraFileInfos(const TBinaryFileList &list)
         info.setDescription(f.description());
         infos << info;
     }
+    infos << previous;
     return BeQt::serialize(infos);
 }
 
 /*============================== Private methods ===========================*/
 
-//fetch
-
-bool LabRepository::createData(quint64 labId, const TLabDataList &data)
+bool LabRepository::createData(quint64 labId, const TLabDataList &list)
 {
-    //
+    if (!isValid() || !labId)
+        return false;
+    foreach (const TLabData &data, list) {
+        BSqlResult result;
+        switch (data.type()) {
+        case TLabType::DesktopApplication: {
+            QByteArray ba = BeQt::serialize(data.application());
+            QVariantMap values;
+            values.insert("lab_id", labId);
+            values.insert("os_type", int(data.os()));
+            values.insert("data", ba);
+            result = Source->insert("lab_desktop_applications", values);
+            break;
+        }
+        case TLabType::Url: {
+            result = Source->insert("lab_urls", "lab_id", labId, "url", data.url());
+            break;
+        }
+        case TLabType::WebApplication: {
+            QByteArray ba = BeQt::serialize(data.application());
+            result = Source->insert("lab_web_applications", "lab_id", labId, "data", ba);
+            break;
+        }
+        case TLabType::NoType:
+        default: {
+            return false;
+        }
+        }
+        if (!result.success())
+            return false;
+    }
+    return true;
 }
 
 bool LabRepository::createExtraFiles(quint64 labId, const TBinaryFileList &files)
 {
-    //
+    if (!isValid() || !labId)
+        return false;
+    foreach (const TBinaryFile &f, files) {
+        if (!f.isValid())
+            return false;
+        QVariantMap values;
+        values.insert("lab_id", labId);
+        values.insert("file_name", f.fileName());
+        values.insert("data", f.data());
+        values.insert("description", f.description());
+        if (!Source->insert("lab_extra_files", values).success())
+            return false;
+    }
+    return true;
 }
 
 bool LabRepository::deleteExtraFiles(quint64 labId, const QStringList &fileNames)
 {
-    //
+    if (!isValid() || !labId)
+        return false;
+    foreach (const QString &fn, fileNames) {
+        if (fn.isEmpty())
+            return false;
+        BSqlWhere where("lab_id = :lab_id AND file_name = :file_name", ":lab_id", labId, ":file_name", fn);
+        if (!Source->deleteFrom("lab_extra_files", where).success())
+            return false;
+    }
+    return true;
 }
 
-bool LabRepository::updateData(quint64 labId, const TLabDataList &data)
+TLabData LabRepository::fetchData(quint64 labId, const TLabType &type, BeQt::OSType os, bool *ok)
 {
-    //
+    if (!isValid() || !labId || !type.isValid())
+        return bRet(ok, false, TLabData());
+    switch (type) {
+    case TLabType::DesktopApplication: {
+        if (BeQt::UnknownOS == os || BeQt::UnixOS == os)
+            return bRet(ok, false, TLabData());
+        BSqlWhere where("lab_id = :lab_id AND os_type = :os_type", ":lab_id", labId, ":os_type", int(os));
+        BSqlResult result = Source->select("lab_desktop_applications", "data", where);
+        if (!result.success() || result.values().isEmpty())
+            return bRet(ok, false, TLabData());
+        TLabData data;
+        TLabApplication app = BeQt::deserialize(result.value("data").toByteArray()).value<TLabApplication>();
+        data.setApplication(app);
+        return bRet(ok, true, data);
+    }
+    case TLabType::Url: {
+        BSqlResult result = Source->select("lab_urls", "url", BSqlWhere("lab_id = :lab_id", ":lab_id", labId));
+        if (!result.success() || result.values().isEmpty())
+            return bRet(ok, false, TLabData());
+        TLabData data;
+        data.setUrl(result.value("url").toString());
+        return bRet(ok, true, data);
+    }
+    case TLabType::WebApplication: {
+        BSqlWhere where("lab_id = :lab_id", ":lab_id", labId);
+        BSqlResult result = Source->select("lab_web_applications", "data", where);
+        if (!result.success() || result.values().isEmpty())
+            return bRet(ok, false, TLabData());
+        TLabData data;
+        TLabApplication app = BeQt::deserialize(result.value("data").toByteArray()).value<TLabApplication>();
+        data.setApplication(app);
+        return bRet(ok, true, data);
+    }
+    case TLabType::NoType:
+    default: {
+        return bRet(ok, false, TLabData());
+    }
+    }
+}
+
+TBinaryFile LabRepository::fetchExtraFile(quint64 labId, const QString &fileName, bool *ok)
+{
+    if (!isValid() || !labId || fileName.isEmpty())
+        return bRet(ok, false, TBinaryFile());
+    static const QStringList Fields = QStringList() << "data" << "description";
+    BSqlWhere where("lab_id = :lab_id AND file_name = :file_name", ":lab_id", labId, ":file_name", fileName);
+    BSqlResult result = Source->select("lab_extra_files", Fields, where);
+    if (!result.success() || result.values().isEmpty())
+        return bRet(ok, false, TBinaryFile());
+    TBinaryFile f;
+    f.setFileName(fileName);
+    f.setData(result.value("data").toByteArray());
+    f.setDescription(result.value("description").toString());
+    return bRet(ok, true, f);
+}
+
+bool LabRepository::updateData(quint64 labId, const TLabDataList &list)
+{
+    if (!isValid() || !labId)
+        return false;
+    static const QStringList Tables = QStringList() << "lab_desktop_applications" << "lab_web_applications"
+                                                    << "lab_urls";
+    if (!RepositoryTools::deleteHelper(Source, Tables, "lab_id", labId))
+        return false;
+    return createData(labId, list);
 }

@@ -29,7 +29,9 @@ class TLabData;
 
 #include <TAuthorInfoList>
 #include <TBinaryFileList>
+#include <TFileInfoList>
 #include <TIdList>
+#include <TLabDataInfoList>
 #include <TLabDataList>
 #include <TLabType>
 
@@ -51,9 +53,11 @@ private:
     quint64 msenderId;
     TAuthorInfoList mauthors;
     QDateTime mcreationDateTime;
+    TLabDataInfoList mdataInfoList;
     TLabDataList mdataList;
     QStringList mdeletedExtraFiles;
     QString mdescription;
+    TFileInfoList mextraFileInfos;
     TBinaryFileList mextraFiles;
     TIdList mgroups;
     QDateTime mlastModificationDateTime;
@@ -76,16 +80,18 @@ public:
     TAuthorInfoList authors() const;
     void convertToCreatedByUser();
     QDateTime creationDateTime() const;
-    const TLabData &labData(BeQt::OSType os) const;
-    const TLabDataList &labDataList() const;
     QStringList deletedExtraFiles() const;
     QString description() const;
     const TBinaryFile &extraFile(const QString &fileName) const;
+    TFileInfoList extraFileInfos() const;
     const TBinaryFileList &extraFiles() const;
     TIdList groups() const;
     quint64 id() const;
     bool isCreatedByRepo() const;
     bool isValid() const;
+    const TLabData &labData(BeQt::OSType os) const;
+    TLabDataInfoList labDataInfos() const;
+    const TLabDataList &labDataList() const;
     QDateTime lastModificationDateTime() const;
     LabRepository *repository() const;
     bool saveData() const;
@@ -109,9 +115,7 @@ public:
     Lab &operator =(const Lab &other);
 private:
     void init();
-    bool fetchAllData();
-    bool fetchData(BeQt::OSType os);
-    bool fetchExtraFile(const QString &fileName = QString());
+    Lab *getSelf() const;
 private:
     friend class LabRepository;
 };

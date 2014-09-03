@@ -27,8 +27,11 @@
 #include <TBinaryFile>
 #include <TBinaryFileList>
 #include <TeXSample>
+#include <TFileInfoList>
 #include <TIdList>
 #include <TLabData>
+#include <TLabDataInfo>
+#include <TLabDataInfoList>
 #include <TLabDataList>
 #include <TLabType>
 
@@ -84,6 +87,8 @@ void Lab::convertToCreatedByUser()
     createdByRepo = false;
     repo = 0;
     valid = false;
+    mdataInfoList.clear();
+    mextraFileInfos.clear();
     mextraFiles.clear();
     mgroups.clear();
     fetchedData.clear();
@@ -93,16 +98,6 @@ void Lab::convertToCreatedByUser()
 QDateTime Lab::creationDateTime() const
 {
     return mcreationDateTime;
-}
-
-const TLabData &Lab::labData(BeQt::OSType os) const
-{
-    //
-}
-
-const TLabDataList &Lab::labDataList() const
-{
-    //
 }
 
 QStringList Lab::deletedExtraFiles() const
@@ -117,7 +112,38 @@ QString Lab::description() const
 
 const TBinaryFile &Lab::extraFile(const QString &fileName) const
 {
-    //return mextraFiles;
+    static const TBinaryFile Default;
+    if (!createdByRepo || fetchedExtraFiles.contains(fileName)) {
+        foreach (int i, bRangeD(0, mextraFiles.size() - 1)) {
+            if (mextraFiles.at(i).fileName() == fileName)
+                return mextraFiles.at(i);
+        }
+        return Default;
+    }
+    if (!repo || !repo->isValid())
+        return Default;
+    bool b = false;
+    foreach (const TFileInfo &fi, mextraFileInfos) {
+        if (fi.fileName() == fileName) {
+            b = true;
+            break;
+        }
+    }
+    if (!b)
+        return Default;
+    Lab *self = getSelf();
+    bool ok = false;
+    TBinaryFile f = self->repo->fetchExtraFile(mid, fileName, &ok);
+    if (!ok)
+        return Default;
+    self->mextraFiles << f;
+    self->fetchedExtraFiles << fileName;
+    return mextraFiles.last();
+}
+
+TFileInfoList Lab::extraFileInfos() const
+{
+    return mextraFileInfos;
 }
 
 const TBinaryFileList &Lab::extraFiles() const
@@ -145,6 +171,47 @@ bool Lab::isValid() const
     if (createdByRepo)
         return valid;
     return msenderId && !mtitle.isEmpty() && ((mid && !msaveData) || !mdataList.isEmpty());
+}
+
+const TLabData &Lab::labData(BeQt::OSType os) const
+{
+    static const TLabData Default;
+    if (!createdByRepo || fetchedData.contains(os)) {
+        foreach (int i, bRangeD(0, mdataList.size() - 1)) {
+            if (mdataList.at(i).os() == os)
+                return mdataList.at(i);
+        }
+        return Default;
+    }
+    if (!repo || !repo->isValid())
+        return Default;
+    bool b = false;
+    foreach (const TLabDataInfo &ldi, mdataInfoList) {
+        if (ldi.os() == os) {
+            b = true;
+            break;
+        }
+    }
+    if (!b)
+        return Default;
+    Lab *self = getSelf();
+    bool ok = false;
+    TLabData data = self->repo->fetchData(mid, mtype, os, &ok);
+    if (!ok)
+        return Default;
+    self->mdataList << data;
+    self->fetchedData.insert(os, true);
+    return mdataList.last();
+}
+
+TLabDataInfoList Lab::labDataInfos() const
+{
+    return mdataInfoList;
+}
+
+const TLabDataList &Lab::labDataList() const
+{
+    return mdataList;
 }
 
 QDateTime Lab::lastModificationDateTime() const
@@ -252,9 +319,11 @@ Lab &Lab::operator =(const Lab &other)
     msenderId = other.msenderId;
     mauthors = other.mauthors;
     mcreationDateTime = other.mcreationDateTime;
+    mdataInfoList = other.mdataInfoList;
     mdataList = other.mdataList;
     mdeletedExtraFiles = other.mdeletedExtraFiles;
     mdescription = other.mdescription;
+    mextraFileInfos = other.mextraFileInfos;
     mextraFiles = other.mextraFiles;
     mgroups = other.mgroups;
     mlastModificationDateTime = other.mlastModificationDateTime;
@@ -284,17 +353,7 @@ void Lab::init()
     valid = false;
 }
 
-bool Lab::fetchAllData()
+Lab *Lab::getSelf() const
 {
-    //
-}
-
-bool Lab::fetchData(BeQt::OSType os)
-{
-    //
-}
-
-bool Lab::fetchExtraFile(const QString &fileName)
-{
-    //
+    return const_cast<Lab *>(this);
 }

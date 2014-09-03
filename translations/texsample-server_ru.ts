@@ -505,43 +505,43 @@ Note: This command will fail if there are active transactions</source>
         <translation>Недействительный экземпляр хранилища</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="189"/>
+        <location filename="../src/connection.cpp" line="188"/>
         <source>Invalid Connection instance (internal)</source>
         <comment>error</comment>
         <translation>Недействительный экземпляр Connection (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="193"/>
+        <location filename="../src/connection.cpp" line="192"/>
         <source>Not authorized</source>
         <comment>error</comment>
         <translation>Не авторизован</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="195"/>
+        <location filename="../src/connection.cpp" line="194"/>
         <source>Not enough rights</source>
         <comment>error</comment>
         <translation>Недостаточно прав</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="197"/>
+        <location filename="../src/connection.cpp" line="196"/>
         <source>No access to service</source>
         <comment>error</comment>
         <translation>Нет доступа к сервису</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="257"/>
+        <location filename="../src/connection.cpp" line="266"/>
         <source>Already authorized</source>
         <comment>message</comment>
         <translation>Уже авторизован</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="663"/>
+        <location filename="../src/connection.cpp" line="742"/>
         <source>Server is already listening</source>
         <comment>error</comment>
         <translation>Сервер уже прослушивает порт</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="671"/>
+        <location filename="../src/connection.cpp" line="750"/>
         <source>Failed to start server</source>
         <comment>error</comment>
         <translation>Не удалось запустить сервер</translation>
@@ -590,6 +590,125 @@ Note: This command will fail if there are active transactions</source>
         <source>Failed to execute VACUUM command (internal)</source>
         <comment>error</comment>
         <translation>Не удалось выполнить команду  VACUUM (внутренняя)</translation>
+    </message>
+</context>
+<context>
+    <name>LabService</name>
+    <message>
+        <location filename="../src/service/labservice.h" line="74"/>
+        <source>Invalid data</source>
+        <comment>error</comment>
+        <translation>Некорректные данные</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="73"/>
+        <location filename="../src/service/labservice.cpp" line="296"/>
+        <source>Invalid user ID (internal)</source>
+        <comment>error</comment>
+        <translation>Некорректный идентификатор пользователя (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="88"/>
+        <source>Failed to add lab (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось добавить лаб. работу (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="91"/>
+        <location filename="../src/service/labservice.cpp" line="120"/>
+        <location filename="../src/service/labservice.cpp" line="156"/>
+        <location filename="../src/service/labservice.cpp" line="188"/>
+        <location filename="../src/service/labservice.cpp" line="217"/>
+        <location filename="../src/service/labservice.cpp" line="241"/>
+        <source>Failed to get lab (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось отредактировать лаб. работу (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="94"/>
+        <location filename="../src/service/labservice.cpp" line="192"/>
+        <location filename="../src/service/labservice.cpp" line="278"/>
+        <source>Failed to create lab info (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось создать информацию о лаб. работе (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="122"/>
+        <location filename="../src/service/labservice.cpp" line="158"/>
+        <source>No such lab</source>
+        <comment>error</comment>
+        <translation>Нет такой лаб. работы</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="126"/>
+        <location filename="../src/service/labservice.cpp" line="129"/>
+        <location filename="../src/service/labservice.cpp" line="162"/>
+        <location filename="../src/service/labservice.cpp" line="165"/>
+        <location filename="../src/service/labservice.cpp" line="262"/>
+        <source>Failed to get user access level (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить уровень доступа пользователя (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="131"/>
+        <source>Not enough rights to delete lab</source>
+        <comment>error</comment>
+        <translation>Недостаточно прав для удаления лаб. работы</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="136"/>
+        <source>Failed to delete lab (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось удалить лаб. работу (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="167"/>
+        <source>Not enough rights to edit lab</source>
+        <comment>error</comment>
+        <translation>Недостаточно прав для редактирования лаб. работы</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="185"/>
+        <source>Failed to edit lab (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось отредактировать лаб. работу (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="211"/>
+        <location filename="../src/service/labservice.cpp" line="235"/>
+        <source>Failed to get lab last modification date time (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить дату и время последнего изменения лаб. работы (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="266"/>
+        <source>Failed to get user group list (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить список групп пользователя (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="270"/>
+        <source>Failed to get lab list (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить список лаб. работ (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="274"/>
+        <source>Failed to get deleted lab list (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось получить список удаленных лаб. работ (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="303"/>
+        <source>Failed to commit (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="310"/>
+        <source>Invalid LabService instance (internal)</source>
+        <comment>error</comment>
+        <translation>Некорректный экземпляр LabService (внутренняя)</translation>
     </message>
 </context>
 <context>
@@ -688,6 +807,11 @@ Note: This command will fail if there are active transactions</source>
     </message>
     <message>
         <location filename="../src/service/sampleservice.cpp" line="207"/>
+        <source>Failed to delete sample (internal)</source>
+        <comment>error</comment>
+        <translation>Не удалось удалить сэмпл (внутренняя)</translation>
+    </message>
+    <message>
         <location filename="../src/service/sampleservice.cpp" line="256"/>
         <location filename="../src/service/sampleservice.cpp" line="316"/>
         <source>Failed to edit sample (internal)</source>
@@ -721,19 +845,19 @@ Note: This command will fail if there are active transactions</source>
         <translation>Не удалось получить дату и время последнего изменения сэмпла (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="434"/>
+        <location filename="../src/service/sampleservice.cpp" line="428"/>
         <source>Failed to commit (internal)</source>
         <comment>error</comment>
         <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="441"/>
+        <location filename="../src/service/sampleservice.cpp" line="435"/>
         <source>Invalid SampleService instance (internal)</source>
         <comment>error</comment>
         <translation>Некорректный экземпляр SampleService (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.h" line="74"/>
+        <location filename="../src/service/sampleservice.h" line="72"/>
         <source>Invalid data</source>
         <comment>error</comment>
         <translation>Некорректные данные</translation>
@@ -1302,13 +1426,13 @@ Note: This command will fail if there are active transactions</source>
         <translation>Не удалось удалить код подтверждения регистрации (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="169"/>
+        <location filename="../src/connection.cpp" line="168"/>
         <source>No access to service</source>
         <comment>error</comment>
         <translation>Нет доступа к сервису</translation>
     </message>
     <message>
-        <location filename="../src/connection.cpp" line="173"/>
+        <location filename="../src/connection.cpp" line="172"/>
         <source>No access to group</source>
         <comment>error</comment>
         <translation>Нет доступа к группе</translation>
