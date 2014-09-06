@@ -45,6 +45,7 @@
 #include <BSqlWhere>
 
 #include <QByteArray>
+#include <QDebug>
 #include <QList>
 #include <QString>
 #include <QStringList>
@@ -209,7 +210,7 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
     if (!isValid())
         return bRet(ok, false, list);
     QString qs = "SELECT labs.id, labs.sender_id, labs.creation_date_time, labs.description, "
-        "labs.last_modification_date_time, labs.title, labs.type labs.data_infos labs.extra_file_infos FROM labs";
+        "labs.last_modification_date_time, labs.title, labs.type, labs.data_infos, labs.extra_file_infos FROM labs";
     QVariantMap bv;
     if (newerThan.isValid()) {
         qs += " WHERE labs.last_modification_date_time > :last_modification_date_time";

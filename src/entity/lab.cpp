@@ -178,7 +178,7 @@ const TLabData &Lab::labData(BeQt::OSType os) const
     static const TLabData Default;
     if (!createdByRepo || fetchedData.contains(os)) {
         foreach (int i, bRangeD(0, mdataList.size() - 1)) {
-            if (mdataList.at(i).os() == os)
+            if (mdataList.at(i).os() == os || TLabType::DesktopApplication != mdataList.at(i).type())
                 return mdataList.at(i);
         }
         return Default;
@@ -187,7 +187,7 @@ const TLabData &Lab::labData(BeQt::OSType os) const
         return Default;
     bool b = false;
     foreach (const TLabDataInfo &ldi, mdataInfoList) {
-        if (ldi.os() == os) {
+        if (ldi.os() == os || TLabType::DesktopApplication != ldi.type()) {
             b = true;
             break;
         }
@@ -201,6 +201,10 @@ const TLabData &Lab::labData(BeQt::OSType os) const
         return Default;
     self->mdataList << data;
     self->fetchedData.insert(os, true);
+    if (int(data.type()) != TLabType::DesktopApplication) {
+        foreach (BeQt::OSType t, BeQt::allOSTypes())
+            self->fetchedData.insert(t, true);
+    }
     return mdataList.last();
 }
 
