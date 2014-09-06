@@ -35,6 +35,7 @@
 #include <TeXSample/TeXSampleCore>
 
 #include <QDateTime>
+#include <QDebug>
 #include <QList>
 #include <QString>
 #include <QStringList>

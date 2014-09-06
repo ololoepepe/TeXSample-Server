@@ -82,6 +82,8 @@ quint64 LabRepository::add(const Lab &entity, bool *ok)
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
+    values.insert("data_infos", serializedDataInfos(entity.labDataList(), entity.type()));
+    values.insert("extra_file_infos", serializedExtraFileInfos(entity.extraFiles()));
     BSqlResult result = Source->insert("labs", values);
     if (!result.success())
         return bRet(ok, false, 0);
@@ -145,7 +147,8 @@ void LabRepository::edit(const Lab &entity, bool *ok)
     values.insert("last_modification_date_time", dt.toMSecsSinceEpoch());
     values.insert("title", entity.title());
     values.insert("type", int(entity.type()));
-    values.insert("data_infos", serializedDataInfos(entity.labDataList(), entity.type()));
+    if (entity.saveData())
+        values.insert("data_infos", serializedDataInfos(entity.labDataList(), entity.type()));
     values.insert("extra_file_infos", serializedExtraFileInfos(entity.extraFiles(), fil));
     BSqlResult result = Source->update("labs", values, BSqlWhere("id = :id", ":id", entity.id()));
     if (!result.success())
@@ -176,7 +179,7 @@ TIdList LabRepository::findAllDeletedNewerThan(const QDateTime &newerThan, const
     QString qs = "SELECT deleted_labs.id FROM deleted_labs";
     QVariantMap bv;
     if (newerThan.isValid()) {
-        qs += " WHERE labs.deletion_date_time > :deletion_date_time";
+        qs += " WHERE deleted_labs.deletion_date_time > :deletion_date_time";
         bv.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
     }
     if (!groups.isEmpty()) {
@@ -232,13 +235,13 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
         return bRet(ok, false, list);
     foreach (const QVariantMap &m, result.values()) {
         Lab entity(this);
-        entity.mid = m.value("labs.id").toULongLong();
-        entity.msenderId = m.value("labs.sender_id").toULongLong();
-        entity.mcreationDateTime.setMSecsSinceEpoch(m.value("labs.creation_date_time").toLongLong());
-        entity.mdescription = m.value("labs.description").toString();
-        entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("labs.last_modification_date_time").toLongLong());
-        entity.mtitle = m.value("labs.title").toString();
-        entity.mtype = m.value("labs.type").toInt();
+        entity.mid = m.value("id").toULongLong();
+        entity.msenderId = m.value("sender_id").toULongLong();
+        entity.mcreationDateTime.setMSecsSinceEpoch(m.value("creation_date_time").toLongLong());
+        entity.mdescription = m.value("description").toString();
+        entity.mlastModificationDateTime.setMSecsSinceEpoch(m.value("last_modification_date_time").toLongLong());
+        entity.mtitle = m.value("title").toString();
+        entity.mtype = m.value("type").toInt();
         entity.mdataInfoList = deserializedDataInfos(m.value("data_infos").toByteArray());
         entity.mextraFileInfos = deserializedExtraFileInfos(m.value("extra_file_infos").toByteArray());
         bool b = false;

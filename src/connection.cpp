@@ -269,6 +269,7 @@ bool Connection::handleAuthorizeRequest(BNetworkOperation *op)
     RequestOut<TAuthorizeReplyData> out = UserServ->authorize(in);
     if (!out.success())
         return sendReply(op, out.createReply());
+    setCriticalBufferSize(200 * BeQt::Megabyte);
     muserInfo = out.data().userInfo();
     mclientInfo = in.data().clientInfo();
     QString s = "Client info:\n";
