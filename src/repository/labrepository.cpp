@@ -109,12 +109,20 @@ QDateTime LabRepository::deleteOne(quint64 id, bool *ok)
     if (!isValid() || !id)
         return bRet(ok, false, QDateTime());
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    BSqlResult result = Source->select("lab_groups", "group_id", BSqlWhere("lab_id = :lab_id", ":lab_id", id));
+    BSqlResult result = Source->select("labs", "sender_id", BSqlWhere("id = :id", ":id", id));
+    if (!result.success() || result.values().isEmpty())
+        return bRet(ok, false, QDateTime());
+    quint64 senderId = result.value("sender_id").toULongLong();
+    result = Source->select("lab_groups", "group_id", BSqlWhere("lab_id = :lab_id", ":lab_id", id));
     if (!result.success())
         return bRet(ok, false, QDateTime());
     if (!Source->deleteFrom("labs", BSqlWhere("id = :id", ":id", id)).success())
         return bRet(ok, false, QDateTime());
-    if (!Source->insert("deleted_labs", "id", id, "deletion_date_time", dt.toMSecsSinceEpoch()).success())
+    QVariantMap values;
+    values.insert("id", id);
+    values.insert("sender_id", senderId);
+    values.insert("deletion_date_time", dt.toMSecsSinceEpoch());
+    if (!Source->insert("deleted_labs", values).success())
         return bRet(ok, false, QDateTime());
     foreach (const QVariantMap &m, result.values()) {
         quint64 groupId = m.value("group_id").toULongLong();
@@ -171,21 +179,19 @@ void LabRepository::edit(const Lab &entity, bool *ok)
     bSet(ok, true);
 }
 
-TIdList LabRepository::findAllDeletedNewerThan(const QDateTime &newerThan, const TIdList &groups, bool *ok)
+TIdList LabRepository::findAllDeletedNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups,
+                                               bool *ok)
 {
     TIdList list;
-    if (!isValid())
+    if (!isValid() || !userId)
         return bRet(ok, false, list);
-    QString qs = "SELECT deleted_labs.id FROM deleted_labs";
+    QString qs = "SELECT deleted_labs.id FROM deleted_labs WHERE (deleted_labs.sender_id = :sender_id";
+    qs += " OR (SELECT COUNT(*) FROM deleted_lab_groups WHERE deleted_lab_groups.lab_id = deleted_labs.id) = 0";
     QVariantMap bv;
-    if (newerThan.isValid()) {
-        qs += " WHERE deleted_labs.deletion_date_time > :deletion_date_time";
-        bv.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
-    }
+    bv.insert(":sender_id", userId);
     if (!groups.isEmpty()) {
-        qs += newerThan.isValid() ? " AND" : " WHERE";
-        qs += " (SELECT COUNT(*) FROM deleted_lab_groups WHERE deleted_lab_groups.lab_id = deleted_labs.id "
-              "AND deleted_lab_groups.group_id IN (";
+        qs += " OR (SELECT COUNT(*) FROM deleted_lab_groups WHERE deleted_lab_groups.lab_id = deleted_labs.id"
+              " AND deleted_lab_groups.group_id IN (";
         foreach (int i, bRangeD(0, groups.size() - 1)) {
             qs += ":" + QString::number(groups.at(i));
             if (i < groups.size() - 1)
@@ -193,6 +199,11 @@ TIdList LabRepository::findAllDeletedNewerThan(const QDateTime &newerThan, const
             bv.insert(":" + QString::number(groups.at(i)), groups.at(i));
         }
         qs += ")) > 0";
+    }
+    qs += ")";
+    if (newerThan.isValid()) {
+        qs += " AND deleted_labs.deletion_date_time > :deletion_date_time";
+        bv.insert(":deletion_date_time", newerThan.toUTC().toMSecsSinceEpoch());
     }
     BSqlResult result = Source->exec(qs, bv);
     if (!result.success())
@@ -202,26 +213,19 @@ TIdList LabRepository::findAllDeletedNewerThan(const QDateTime &newerThan, const
     return bRet(ok, true, list);
 }
 
-QList<Lab> LabRepository::findAllNewerThan(const TIdList &groups, bool *ok)
-{
-    return findAllNewerThan(QDateTime(), groups, ok);
-}
-
-QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TIdList &groups, bool *ok)
+QList<Lab> LabRepository::findAllNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups, bool *ok)
 {
     QList<Lab> list;
-    if (!isValid())
+    if (!isValid() || !userId)
         return bRet(ok, false, list);
     QString qs = "SELECT labs.id, labs.sender_id, labs.creation_date_time, labs.description, "
-        "labs.last_modification_date_time, labs.title, labs.type, labs.data_infos, labs.extra_file_infos FROM labs";
+        "labs.last_modification_date_time, labs.title, labs.type, labs.data_infos, labs.extra_file_infos FROM labs"
+        " WHERE (labs.sender_id = :sender_id"
+        " OR (SELECT COUNT(*) FROM lab_groups WHERE lab_groups.lab_id = labs.id) = 0";
     QVariantMap bv;
-    if (newerThan.isValid()) {
-        qs += " WHERE labs.last_modification_date_time > :last_modification_date_time";
-        bv.insert(":last_modification_date_time", newerThan.toUTC().toMSecsSinceEpoch());
-    }
+    bv.insert(":sender_id", userId);
     if (!groups.isEmpty()) {
-        qs += newerThan.isValid() ? " AND" : " WHERE";
-        qs += " (SELECT COUNT(*) FROM lab_groups WHERE lab_groups.lab_id = labs.id AND lab_groups.group_id IN (";
+        qs += " OR (SELECT COUNT(*) FROM lab_groups WHERE lab_groups.lab_id = labs.id AND lab_groups.group_id IN (";
         foreach (int i, bRangeD(0, groups.size() - 1)) {
             qs += ":" + QString::number(groups.at(i));
             if (i < groups.size() - 1)
@@ -229,6 +233,11 @@ QList<Lab> LabRepository::findAllNewerThan(const QDateTime &newerThan, const TId
             bv.insert(":" + QString::number(groups.at(i)), groups.at(i));
         }
         qs += ")) > 0";
+    }
+    qs += ")";
+    if (newerThan.isValid()) {
+        qs += " AND labs.last_modification_date_time > :last_modification_date_time";
+        bv.insert(":last_modification_date_time", newerThan.toUTC().toMSecsSinceEpoch());
     }
     BSqlResult result = Source->exec(qs, bv);
     if (!result.success())

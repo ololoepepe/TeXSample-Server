@@ -220,7 +220,7 @@ bool Connection::handleAddLabRequest(BNetworkOperation *op)
     log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+    if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel, TService::CloudlabService))
         return sendReply(op, error);
     RequestIn<TAddLabRequestData> in(request);
     return sendReply(op, LabServ->addLab(in, muserInfo.id()).createReply());
@@ -391,7 +391,7 @@ bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
     log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel, TService::CloudlabService))
+    if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel, TService::CloudlabService))
         return sendReply(op, error);
     RequestIn<TDeleteLabRequestData> in(request);
     return sendReply(op, LabServ->deleteLab(in, muserInfo.id()).createReply());
@@ -402,7 +402,7 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::AdminLevel, TService::TexsampleService))
+    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::TexsampleService))
         return sendReply(op, error);
     RequestIn<TDeleteSampleRequestData> in(request);
     return sendReply(op, SampleServ->deleteSample(in, muserInfo.id()).createReply());
@@ -435,7 +435,7 @@ bool Connection::handleEditLabRequest(BNetworkOperation *op)
     log("Request: " + op->metaData().operation());
     TRequest request = op->variantData().value<TRequest>();
     QString error;
-    if (!commonCheck(request.locale(), &error, TAccessLevel::UserLevel, TService::CloudlabService))
+    if (!commonCheck(request.locale(), &error, TAccessLevel::ModeratorLevel, TService::CloudlabService))
         return sendReply(op, error);
     RequestIn<TEditLabRequestData> in(request);
     return sendReply(op, LabServ->editLab(in, muserInfo.id()).createReply());

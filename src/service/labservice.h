@@ -78,6 +78,7 @@ private:
     bool checkUserId(const Translator &t, quint64 userId, QString *error);
     bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
     bool commonCheck(const Translator &translator, QString *error) const;
+    TIdList getAllGroups(bool *ok = 0);
     TIdList getGroups(quint64 userId, bool *ok = 0);
     TLabInfo labToLabInfo(const Lab &entity, bool *ok = 0);
 private:

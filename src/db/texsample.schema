@@ -207,6 +207,7 @@ CREATE TABLE IF NOT EXISTS labs (
 
 CREATE TABLE IF NOT EXISTS deleted_labs (
   id                            INTEGER UNIQUE NOT NULL,
+  sender_id                     INTEGER NOT NULL REFERENCES users(id) ON DELETE CASCADE ON UPDATE CASCADE,
   deletion_date_time            INTEGER NOT NULL
 );
 

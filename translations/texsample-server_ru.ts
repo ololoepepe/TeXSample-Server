@@ -602,7 +602,7 @@ Note: This command will fail if there are active transactions</source>
     </message>
     <message>
         <location filename="../src/service/labservice.cpp" line="74"/>
-        <location filename="../src/service/labservice.cpp" line="297"/>
+        <location filename="../src/service/labservice.cpp" line="303"/>
         <source>Invalid user ID (internal)</source>
         <comment>error</comment>
         <translation>Некорректный идентификатор пользователя (внутренняя)</translation>
@@ -619,7 +619,7 @@ Note: This command will fail if there are active transactions</source>
         <location filename="../src/service/labservice.cpp" line="157"/>
         <location filename="../src/service/labservice.cpp" line="189"/>
         <location filename="../src/service/labservice.cpp" line="218"/>
-        <location filename="../src/service/labservice.cpp" line="242"/>
+        <location filename="../src/service/labservice.cpp" line="251"/>
         <source>Failed to get lab (internal)</source>
         <comment>error</comment>
         <translation>Не удалось отредактировать лаб. работу (внутренняя)</translation>
@@ -627,7 +627,7 @@ Note: This command will fail if there are active transactions</source>
     <message>
         <location filename="../src/service/labservice.cpp" line="95"/>
         <location filename="../src/service/labservice.cpp" line="193"/>
-        <location filename="../src/service/labservice.cpp" line="279"/>
+        <location filename="../src/service/labservice.cpp" line="285"/>
         <source>Failed to create lab info (internal)</source>
         <comment>error</comment>
         <translation>Не удалось создать информацию о лаб. работе (внутренняя)</translation>
@@ -644,7 +644,7 @@ Note: This command will fail if there are active transactions</source>
         <location filename="../src/service/labservice.cpp" line="130"/>
         <location filename="../src/service/labservice.cpp" line="163"/>
         <location filename="../src/service/labservice.cpp" line="166"/>
-        <location filename="../src/service/labservice.cpp" line="263"/>
+        <location filename="../src/service/labservice.cpp" line="271"/>
         <source>Failed to get user access level (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить уровень доступа пользователя (внутренняя)</translation>
@@ -675,37 +675,43 @@ Note: This command will fail if there are active transactions</source>
     </message>
     <message>
         <location filename="../src/service/labservice.cpp" line="212"/>
-        <location filename="../src/service/labservice.cpp" line="236"/>
+        <location filename="../src/service/labservice.cpp" line="245"/>
         <source>Failed to get lab last modification date time (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить дату и время последнего изменения лаб. работы (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/labservice.cpp" line="267"/>
+        <location filename="../src/service/labservice.cpp" line="227"/>
+        <source>No application for your platform</source>
+        <comment>error</comment>
+        <translation>Нет приложения для вашей платформы</translation>
+    </message>
+    <message>
+        <location filename="../src/service/labservice.cpp" line="274"/>
         <source>Failed to get user group list (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить список групп пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/labservice.cpp" line="271"/>
+        <location filename="../src/service/labservice.cpp" line="277"/>
         <source>Failed to get lab list (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить список лаб. работ (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/labservice.cpp" line="275"/>
+        <location filename="../src/service/labservice.cpp" line="281"/>
         <source>Failed to get deleted lab list (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить список удаленных лаб. работ (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/labservice.cpp" line="304"/>
+        <location filename="../src/service/labservice.cpp" line="310"/>
         <source>Failed to commit (internal)</source>
         <comment>error</comment>
         <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/labservice.cpp" line="311"/>
+        <location filename="../src/service/labservice.cpp" line="317"/>
         <source>Invalid LabService instance (internal)</source>
         <comment>error</comment>
         <translation>Некорректный экземпляр LabService (внутренняя)</translation>

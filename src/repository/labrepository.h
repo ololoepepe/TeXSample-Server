@@ -60,10 +60,8 @@ public:
     DataSource *dataSource() const;
     QDateTime deleteOne(quint64 id, bool *ok = 0);
     void edit(const Lab &entity, bool *ok = 0);
-    TIdList findAllDeletedNewerThan(const QDateTime &newerThan = QDateTime(), const TIdList &groups = TIdList(),
-                                    bool *ok = 0);
-    QList<Lab> findAllNewerThan(const TIdList &groups = TIdList(), bool *ok = 0);
-    QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList(), bool *ok = 0);
+    TIdList findAllDeletedNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups, bool *ok = 0);
+    QList<Lab> findAllNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups, bool *ok = 0);
     QDateTime findLastModificationDateTime(quint64 id, bool *ok = 0);
     Lab findOne(quint64 id, bool *ok = 0);
     bool isValid() const;

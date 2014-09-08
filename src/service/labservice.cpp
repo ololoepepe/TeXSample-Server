@@ -216,6 +216,15 @@ RequestOut<TGetLabDataReplyData> LabService::getLabData(const RequestIn<TGetLabD
     Lab entity = LabRepo->findOne(in.data().labId(), &ok);
     if (!ok)
         return Out(t.translate("LabService", "Failed to get lab (internal)", "error"));
+    ok = false;
+    foreach (const TLabDataInfo &ldi, entity.labDataInfos()) {
+        if (int(ldi.type()) != TLabType::DesktopApplication || ldi.os() == in.data().os()) {
+            ok = true;
+            break;
+        }
+    }
+    if (!ok)
+        return Out(t.translate("LabService", "No application for your platform", "error"));
     TGetLabDataReplyData replyData;
     replyData.setData(entity.labData(in.data().os()));
     return Out(replyData, dt);
@@ -257,20 +266,17 @@ RequestOut<TGetLabInfoListReplyData> LabService::getLabInfoList(const RequestIn<
         return Out(error);
     QDateTime dt = QDateTime::currentDateTime();
     bool ok = false;
-    TIdList groups;
     int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
     if (!ok)
         return Out(t.translate("LabService", "Failed to get user access level (internal)", "error"));
-    if (lvlSelf < TAccessLevel::ModeratorLevel) {
-        groups = getGroups(userId, &ok);
-        if (!ok)
-            return Out(t.translate("LabService", "Failed to get user group list (internal)", "error"));
-    }
-    QList<Lab> entities = LabRepo->findAllNewerThan(in.lastRequestDateTime(), groups, &ok);
+    TIdList groups = (lvlSelf < TAccessLevel::ModeratorLevel) ? getGroups(userId, &ok) : getAllGroups(&ok);
+    if (!ok)
+        return Out(t.translate("LabService", "Failed to get user group list (internal)", "error"));
+    QList<Lab> entities = LabRepo->findAllNewerThan(userId, in.lastRequestDateTime(), groups, &ok);
     if (!ok)
         return Out(t.translate("LabService", "Failed to get lab list (internal)", "error"));
     TLabInfoList newLabs;
-    TIdList deletedLabs = LabRepo->findAllDeletedNewerThan(in.lastRequestDateTime(), groups, &ok);
+    TIdList deletedLabs = LabRepo->findAllDeletedNewerThan(userId, in.lastRequestDateTime(), groups, &ok);
     if (!ok)
         return Out(t.translate("LabService", "Failed to get deleted lab list (internal)", "error"));
     foreach (const Lab &entity, entities) {
@@ -312,18 +318,29 @@ bool LabService::commonCheck(const Translator &t, QString *error) const
     return bRet(error, QString(), true);
 }
 
-TIdList LabService::getGroups(quint64 userId, bool *ok)
+TIdList LabService::getAllGroups(bool *ok)
 {
     TIdList list;
-    if (!isValid() || !userId)
+    if (!isValid())
         return bRet(ok, false, list);
     bool b = false;
-    QList<Group> entityList = GroupRepo->findAllByUserId(userId, QDateTime(), &b);
+    QList<Group> entityList = GroupRepo->findAll(QDateTime(), &b);
     if (!b)
         return bRet(ok, false, list);
     foreach (const Group &entity, entityList)
         list << entity.id();
     return bRet(ok, true, list);
+}
+
+TIdList LabService::getGroups(quint64 userId, bool *ok)
+{
+    if (!isValid() || !userId)
+        return bRet(ok, false, TIdList());
+    bool b = false;
+    User entity = UserRepo->findOne(userId, &b);
+    if (!b || !entity.isValid())
+        return bRet(ok, false, TIdList());
+    return bRet(ok, true, entity.groups());
 }
 
 TLabInfo LabService::labToLabInfo(const Lab &entity, bool *ok)
