@@ -168,7 +168,7 @@ bool Connection::accessCheck(const Translator &translator, QString *error, const
             return bRet(error, translator.translate("UserService", "No access to service", "error"), false);
     }
     foreach (quint64 groupId, groups) {
-        if (!muserInfo.groups().contains(groupId))
+        if (!muserInfo.availableGroups().contains(groupId))
             return bRet(error, translator.translate("UserService", "No access to group", "error"), false);
     }
     return bRet(error, QString(), true);
