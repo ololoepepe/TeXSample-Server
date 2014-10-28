@@ -69,6 +69,7 @@ public:
 public:
     bool initializeEmail();
     bool initializeStorage();
+    void initializeTerminal();
     Server *server();
     void updateLoggingMode();
     void updateReadonly();
@@ -84,7 +85,6 @@ private:
     static bool handleUnknownCommand(const QString &command, const QStringList &args);
     static bool handleUptimeCommand(const QString &cmd, const QStringList &args);
     static bool handleUserInfoCommand(const QString &cmd, const QStringList &args);
-    static void initTerminal();
     static QString msecsToString(qint64 msecs);
 private:
     void compatibility();
