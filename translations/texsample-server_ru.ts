@@ -95,14 +95,6 @@
         <translation>Недействительный логин</translation>
     </message>
     <message>
-        <source>Your e-mail password is required. Continue? [Y/n]:</source>
-        <translation type="obsolete">Требуется ваш пароль эл. почты. Продолжить? [Y/n]:</translation>
-    </message>
-    <message>
-        <source>Operation cancelled</source>
-        <translation type="obsolete">Операция отменена</translation>
-    </message>
-    <message>
         <location filename="../src/application.cpp" line="195"/>
         <source>Enter e-mail password:</source>
         <translation>Введите пароль от эл. почты:</translation>

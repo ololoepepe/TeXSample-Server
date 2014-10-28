@@ -94,6 +94,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     installBeqtTranslator("beqt");
     installBeqtTranslator("texsample");
     installBeqtTranslator("texsample-server");
+    initializeTerminal();
     updateReadonly();
     bWriteLine(tr("This is") + " " + Application::applicationName() + " v" + applicationVersion());
     logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
@@ -246,117 +247,6 @@ bool Application::initializeStorage()
     initialized = true;
     bWriteLine(tr("Done!", "message"));
     return true;
-}
-
-void Application::initializeTerminal()
-{
-    BTerminal::setMode(BTerminal::StandardMode);
-    BTerminal::installHandler(BTerminal::QuitCommand);
-    BTerminal::installHandler(BTerminal::SetCommand);
-    BTerminal::installHandler(BTerminal::HelpCommand);
-    BTerminal::installHandler(BTerminal::LastCommand);
-    BTerminal::installDefaultHandler(&handleUnknownCommand);
-    BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
-    BTerminal::installHandler("start", &handleStartCommand);
-    BTerminal::installHandler("stop", &handleStopCommand);
-    BTerminal::installHandler("shrink-db", &handleShrinkDBCommand);
-    BTerminal::installHandler("uptime", &handleUptimeCommand);
-    BTerminal::installHandler("user-info", &handleUserInfoCommand);
-    BSettingsNode *root = new BSettingsNode;
-    BSettingsNode *n = new BSettingsNode(Settings::Email::RootPath, root);
-    BSettingsNode *nn = new BSettingsNode(Settings::Email::ServerAddressSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "E-mail server address used for e-mail delivery."));
-    nn = new BSettingsNode(QVariant::UInt, Settings::Email::ServerPortSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "E-mail server port."));
-    nn = new BSettingsNode(Settings::Email::LocalHostNameSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "Name of local host passed to the e-mail server."));
-    nn = new BSettingsNode(QVariant::Bool, Settings::Email::SslRequiredSubpath, n);
-    nn->setDescription(BTranslation::translate("Application",
-                                               "Determines wether the e-mail server requires SSL connection."));
-    nn = new BSettingsNode(Settings::Email::LoginSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "Identifier used to log into the e-mail server."));
-    nn = new BSettingsNode(Settings::Email::PasswordSubpath, n);
-    nn->setUserSetFunction(&Settings::Email::setPassword);
-    nn->setUserShowFunction(&Settings::Email::showPassword);
-    nn->setDescription(BTranslation::translate("Application", "Password used to log into the e-mail server."));
-    nn = new BSettingsNode(Settings::Email::StorePasswordSubpath, n);
-    nn->setUserSetFunction(&Settings::Email::setStorePassword);
-    nn->setDescription(BTranslation::translate("Application", "Determines wether e-mail password is stored on disk."));
-    BTerminal::createBeQtSettingsNode(root);
-    n = new BSettingsNode(Settings::Log::RootPath, root);
-    nn = new BSettingsNode(QVariant::Int, Settings::Log::LoggingModeSubpath, n);
-    nn->setUserSetFunction(&Settings::Log::setLoggingMode);
-    nn->setDescription(BTranslation::translate("Application", "Logging mode. Possible values:\n"
-                                               "  0 or less - don't log\n"
-                                               "  1 - log to console only\n"
-                                               "  2 - log to file only\n"
-                                               "  3 and more - log to console and file\n"
-                                               "  The default is 2"));
-    nn = new BSettingsNode(QVariant::Int, Settings::Log::LogNoopSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "Logging the \"keep alive\" operations. "
-                                               "Possible values:\n"
-                                               "  0 or less - don't log\n"
-                                               "  1 - log locally\n"
-                                               "  2 and more - log loaclly and remotely\n"
-                                               "  The default is 0"));
-    n = new BSettingsNode(Settings::Server::RootPath, root);
-    nn = new BSettingsNode(QVariant::Bool, Settings::Server::ReadonlySubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "Read-only mode. Possible values:\n"
-                                               "  true - read-only mode\n"
-                                               "  false - normal mode (read and write)"));
-    n = new BSettingsNode(Settings::Texsample::RootPath, root);
-    nn = new BSettingsNode(Settings::Texsample::PathSubpath, n);
-    nn->setDescription(BTranslation::translate("Application", "Path to TeXSample Framework"));
-    BTerminal::setRootSettingsNode(root);
-    BTerminal::setHelpDescription(BTranslation::translate("Application",
-        "This is TeXSample Server. Enter \"help --all\" to see full Help"));
-    BTerminal::CommandHelp ch;
-    ch.usage = "user-info [--match-type|-m=<match_type>] --match-pattern|-p=<match_pattern>";
-    ch.description = BTranslation::translate("Application",
-        "Show information about connected users matching <match_pattern>, which is to be a wildcard.\n"
-        "<match_type> may be one of the following:\n"
-        "  login-and-unique-id|a - attempt to match both login and uinque id (default)\n"
-        "  login|l - match login only\n"
-        "  unique-id|u - match unique id only");
-    BTerminal::setCommandHelp("user-info", ch);
-    ch.usage = "start [address]";
-    ch.description = BTranslation::translate("Application", "Start the server.\n"
-        "If [address] is passed, server will listen on that address.\n"
-        "Otherwise it will listen on all available addresses.");
-    BTerminal::setCommandHelp("start", ch);
-    ch.usage = "stop";
-    ch.description = BTranslation::translate("Application", "Stop the server.\nNote: Users are not disconnected.");
-    BTerminal::setCommandHelp("stop", ch);
-    ch.usage = "set-app-version <parameters>";
-    ch.description = BTranslation::translate("Application",
-        "Set the latest version of an application along with the download URL.\n"
-        "The parameters are:\n"
-        "  --client|-c=<client>, where <client> must be one of the following:\n"
-        "    cloudlab-client|clab\n"
-        "    tex-creator|tcrt\n"
-        "    texsample-console|tcsl\n"
-        "  --os|o=<os>, where <os> must be one of the following:\n"
-        "    linux|lin|l\n"
-        "    macos|mac|m\n"
-        "    windows|win|w\n"
-        "  --arch|-a=<arch>, where <arch> must be one of the following:\n"
-        "    alpha, amd64, arm, arm64, blackfin, convex, epiphany,\n"
-        "    risc, x86, itanium, motorola, mips, powerpc, pyramid,\n"
-        "    rs6000, sparc, superh, systemz, tms320, tms470\n"
-        "  --version|-v=<version>, where <version> must be in the following format:\n"
-        "    <major>[.<minor>[.<patch>]][-<status>[extra]]\n"
-        "  --url|-u<url> (optional), where <url> must be a url (schema may be omitted)\n"
-        "  --portable|-p (optional)\n"
-        "Example:\n"
-        "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
-    BTerminal::setCommandHelp("set-app-version", ch);
-    ch.usage = "shrink-db";
-    ch.description = BTranslation::translate("Application", "Shrink the database with VACUUM command.\n"
-                                             "Note: This command will fail if there are active transactions");
-    BTerminal::setCommandHelp("shrink-db", ch);
-    ch.usage = "uptime";
-    ch.description = BTranslation::translate("Application", "Show for how long the application has been running");
-    BTerminal::setCommandHelp("uptime", ch);
 }
 
 Server *Application::server()
@@ -670,4 +560,115 @@ QString Application::msecsToString(qint64 msecs)
 void Application::compatibility()
 {
     bSettings->setValue("Global/version", BVersion(applicationVersion()));
+}
+
+void Application::initializeTerminal()
+{
+    BTerminal::setMode(BTerminal::StandardMode);
+    BTerminal::installHandler(BTerminal::QuitCommand);
+    BTerminal::installHandler(BTerminal::SetCommand);
+    BTerminal::installHandler(BTerminal::HelpCommand);
+    BTerminal::installHandler(BTerminal::LastCommand);
+    BTerminal::installDefaultHandler(&handleUnknownCommand);
+    BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
+    BTerminal::installHandler("start", &handleStartCommand);
+    BTerminal::installHandler("stop", &handleStopCommand);
+    BTerminal::installHandler("shrink-db", &handleShrinkDBCommand);
+    BTerminal::installHandler("uptime", &handleUptimeCommand);
+    BTerminal::installHandler("user-info", &handleUserInfoCommand);
+    BSettingsNode *root = new BSettingsNode;
+    BSettingsNode *n = new BSettingsNode(Settings::Email::RootPath, root);
+    BSettingsNode *nn = new BSettingsNode(Settings::Email::ServerAddressSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "E-mail server address used for e-mail delivery."));
+    nn = new BSettingsNode(QVariant::UInt, Settings::Email::ServerPortSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "E-mail server port."));
+    nn = new BSettingsNode(Settings::Email::LocalHostNameSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Name of local host passed to the e-mail server."));
+    nn = new BSettingsNode(QVariant::Bool, Settings::Email::SslRequiredSubpath, n);
+    nn->setDescription(BTranslation::translate("Application",
+                                               "Determines wether the e-mail server requires SSL connection."));
+    nn = new BSettingsNode(Settings::Email::LoginSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Identifier used to log into the e-mail server."));
+    nn = new BSettingsNode(Settings::Email::PasswordSubpath, n);
+    nn->setUserSetFunction(&Settings::Email::setPassword);
+    nn->setUserShowFunction(&Settings::Email::showPassword);
+    nn->setDescription(BTranslation::translate("Application", "Password used to log into the e-mail server."));
+    nn = new BSettingsNode(Settings::Email::StorePasswordSubpath, n);
+    nn->setUserSetFunction(&Settings::Email::setStorePassword);
+    nn->setDescription(BTranslation::translate("Application", "Determines wether e-mail password is stored on disk."));
+    BTerminal::createBeQtSettingsNode(root);
+    n = new BSettingsNode(Settings::Log::RootPath, root);
+    nn = new BSettingsNode(QVariant::Int, Settings::Log::LoggingModeSubpath, n);
+    nn->setUserSetFunction(&Settings::Log::setLoggingMode);
+    nn->setDescription(BTranslation::translate("Application", "Logging mode. Possible values:\n"
+                                               "  0 or less - don't log\n"
+                                               "  1 - log to console only\n"
+                                               "  2 - log to file only\n"
+                                               "  3 and more - log to console and file\n"
+                                               "  The default is 2"));
+    nn = new BSettingsNode(QVariant::Int, Settings::Log::LogNoopSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Logging the \"keep alive\" operations. "
+                                               "Possible values:\n"
+                                               "  0 or less - don't log\n"
+                                               "  1 - log locally\n"
+                                               "  2 and more - log loaclly and remotely\n"
+                                               "  The default is 0"));
+    n = new BSettingsNode(Settings::Server::RootPath, root);
+    nn = new BSettingsNode(QVariant::Bool, Settings::Server::ReadonlySubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Read-only mode. Possible values:\n"
+                                               "  true - read-only mode\n"
+                                               "  false - normal mode (read and write)"));
+    n = new BSettingsNode(Settings::Texsample::RootPath, root);
+    nn = new BSettingsNode(Settings::Texsample::PathSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Path to TeXSample Framework"));
+    BTerminal::setRootSettingsNode(root);
+    BTerminal::setHelpDescription(BTranslation::translate("Application",
+        "This is TeXSample Server. Enter \"help --all\" to see full Help"));
+    BTerminal::CommandHelp ch;
+    ch.usage = "user-info [--match-type|-m=<match_type>] --match-pattern|-p=<match_pattern>";
+    ch.description = BTranslation::translate("Application",
+        "Show information about connected users matching <match_pattern>, which is to be a wildcard.\n"
+        "<match_type> may be one of the following:\n"
+        "  login-and-unique-id|a - attempt to match both login and uinque id (default)\n"
+        "  login|l - match login only\n"
+        "  unique-id|u - match unique id only");
+    BTerminal::setCommandHelp("user-info", ch);
+    ch.usage = "start [address]";
+    ch.description = BTranslation::translate("Application", "Start the server.\n"
+        "If [address] is passed, server will listen on that address.\n"
+        "Otherwise it will listen on all available addresses.");
+    BTerminal::setCommandHelp("start", ch);
+    ch.usage = "stop";
+    ch.description = BTranslation::translate("Application", "Stop the server.\nNote: Users are not disconnected.");
+    BTerminal::setCommandHelp("stop", ch);
+    ch.usage = "set-app-version <parameters>";
+    ch.description = BTranslation::translate("Application",
+        "Set the latest version of an application along with the download URL.\n"
+        "The parameters are:\n"
+        "  --client|-c=<client>, where <client> must be one of the following:\n"
+        "    cloudlab-client|clab\n"
+        "    tex-creator|tcrt\n"
+        "    texsample-console|tcsl\n"
+        "  --os|o=<os>, where <os> must be one of the following:\n"
+        "    linux|lin|l\n"
+        "    macos|mac|m\n"
+        "    windows|win|w\n"
+        "  --arch|-a=<arch>, where <arch> must be one of the following:\n"
+        "    alpha, amd64, arm, arm64, blackfin, convex, epiphany,\n"
+        "    risc, x86, itanium, motorola, mips, powerpc, pyramid,\n"
+        "    rs6000, sparc, superh, systemz, tms320, tms470\n"
+        "  --version|-v=<version>, where <version> must be in the following format:\n"
+        "    <major>[.<minor>[.<patch>]][-<status>[extra]]\n"
+        "  --url|-u<url> (optional), where <url> must be a url (schema may be omitted)\n"
+        "  --portable|-p (optional)\n"
+        "Example:\n"
+        "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
+    BTerminal::setCommandHelp("set-app-version", ch);
+    ch.usage = "shrink-db";
+    ch.description = BTranslation::translate("Application", "Shrink the database with VACUUM command.\n"
+                                             "Note: This command will fail if there are active transactions");
+    BTerminal::setCommandHelp("shrink-db", ch);
+    ch.usage = "uptime";
+    ch.description = BTranslation::translate("Application", "Show for how long the application has been running");
+    BTerminal::setCommandHelp("uptime", ch);
 }

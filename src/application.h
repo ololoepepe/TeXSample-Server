@@ -69,7 +69,6 @@ public:
 public:
     bool initializeEmail();
     bool initializeStorage();
-    void initializeTerminal();
     Server *server();
     void updateLoggingMode();
     void updateReadonly();
@@ -88,6 +87,7 @@ private:
     static QString msecsToString(qint64 msecs);
 private:
     void compatibility();
+    void initializeTerminal();
 private:
     Q_DISABLE_COPY(Application)
 };

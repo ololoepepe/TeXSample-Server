@@ -44,7 +44,6 @@ int main(int argc, char *argv[])
         s.listen();
         if (!app.initializeEmail() || !app.initializeStorage())
             return 0;
-        app.initializeTerminal();
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
         ret = app.exec();
     } else {
