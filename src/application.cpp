@@ -234,8 +234,8 @@ bool Application::initializeEmail()
     if (password.isEmpty()) {
         //Note: Workaround for Windows
 #if defined(Q_OS_WIN)
-        if (bReadLineSecure(tr("Your e-mail password is required. Continue? [Y/n]:")
-                            + " ").compare("y", Qt::CaseInsensitive)) {
+        QString s = bReadLineSecure(tr("Your e-mail password is required. Continue? [Y/n]:") + " ");
+        if (!s.isEmpty() && s.compare("y", Qt::CaseInsensitive)) {
             bWriteLine(tr("Operation cancelled"));
             return false;
         }
