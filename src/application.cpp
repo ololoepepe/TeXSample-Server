@@ -232,7 +232,17 @@ bool Application::initializeEmail()
     }
     QString password = Settings::Email::password();
     if (password.isEmpty()) {
+        //Note: Workaround for Windows
+#if defined(Q_OS_WIN)
+        if (bReadLineSecure(tr("Your e-mail password is required. Continue? [Y/n]:")
+                            + " ").compare("y", Qt::CaseInsensitive)) {
+            bWriteLine(tr("Operation cancelled"));
+            return false;
+        }
+        password = bReadLine(tr("Enter e-mail password:") + " ");
+#else
         password = bReadLineSecure(tr("Enter e-mail password:") + " ");
+#endif
         if (password.isEmpty()) {
             bWriteLine(tr("Invalid password"));
             return false;

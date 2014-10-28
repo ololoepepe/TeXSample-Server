@@ -1,6 +1,6 @@
 === PATCH ===
 
-
+[done] Fix secure password input
 
 === MINOR ===
 
