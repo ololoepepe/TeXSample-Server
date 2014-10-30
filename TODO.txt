@@ -1,6 +1,7 @@
 === PATCH ===
 
 [done] Fix secure password input
+[done] Execute command line options as command on startup
 
 === MINOR ===
 
