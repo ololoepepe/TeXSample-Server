@@ -50,6 +50,8 @@
 #include <BTerminal>
 #include <BUuid>
 
+#include <QBuffer>
+#include <QByteArray>
 #include <QDateTime>
 #include <QDebug>
 #include <QFileInfo>
@@ -75,7 +77,12 @@ UserService::UserService(DataSource *source) :
 
 UserService::~UserService()
 {
-    //
+    delete AccountRecoveryCodeRepo;
+    delete EmailChangeConfirmationCodeRepo;
+    delete GroupRepo;
+    delete InviteCodeRepo;
+    delete RegistrationConfirmationCodeRepo;
+    delete UserRepo;
 }
 
 /*============================== Public methods ============================*/
@@ -122,6 +129,7 @@ RequestOut<TAddUserReplyData> UserService::addUser(const RequestIn<TAddUserReque
     entity.setAccessLevel(data.accessLevel());
     entity.setActive(false);
     entity.setAvailableServices(data.availableServices());
+    entity.setSaveAvatar(true);
     entity.setAvatar(data.avatar());
     entity.setEmail(data.email());
     entity.setGroups(data.groups());
@@ -523,9 +531,12 @@ RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRe
     typedef RequestOut<TEditSelfReplyData> Out;
     Translator t(in.locale());
     QString error;
-    if (!commonCheck(t, in.data(), &error))
+    const TEditSelfRequestData &requestData = in.data();
+    if (!commonCheck(t, requestData, &error))
         return Out(error);
     if (!checkUserId(t, userId, &error))
+        return Out(error);
+    if (!checkUserAvatar(t, requestData.avatar(), &error))
         return Out(error);
     bool ok = false;
     User entity = UserRepo->findOne(userId, &ok);
@@ -533,8 +544,8 @@ RequestOut<TEditSelfReplyData> UserService::editSelf(const RequestIn<TEditSelfRe
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("UserService", "No such user", "error"));
-    TEditSelfRequestData requestData = in.data();
     entity.convertToCreatedByUser();
+    entity.setSaveAvatar(true);
     entity.setAvatar(requestData.avatar());
     entity.setName(requestData.name());
     entity.setPatronymic(requestData.patronymic());
@@ -562,12 +573,14 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     typedef RequestOut<TEditUserReplyData> Out;
     Translator t(in.locale());
     QString error;
-    if (!commonCheck(t, in.data(), &error))
+    const TEditUserRequestData &requestData = in.data();
+    if (!commonCheck(t, requestData, &error))
         return Out(error);
     if (!checkUserId(t, userId, &error))
         return Out(error);
+    if (!checkUserAvatar(t, requestData.avatar(), &error))
+        return Out(error);
     bool ok = false;
-    TEditUserRequestData requestData = in.data();
     User entity = UserRepo->findOne(requestData.identifier(), &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
@@ -586,6 +599,7 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     entity.setAccessLevel(requestData.accessLevel());
     entity.setActive(requestData.active());
     entity.setAvailableServices(requestData.availableServices());
+    entity.setSaveAvatar(true);
     entity.setAvatar(requestData.avatar());
     if (requestData.editEmail())
         entity.setEmail(requestData.email());
@@ -599,7 +613,7 @@ RequestOut<TEditUserReplyData> UserService::editUser(const RequestIn<TEditUserRe
     UserRepo->edit(entity, &ok);
     if (!ok)
         return Out(t.translate("UserService", "Failed to edit user (internal)", "error"));
-    entity = UserRepo->findOne(userId, &ok);
+    entity = UserRepo->findOne(requestData.identifier(), &ok);
     if (!ok || !entity.isValid())
         return Out(t.translate("UserService", "Failed to get user (internal)", "error"));
     TEditUserReplyData replyData;
@@ -1106,6 +1120,8 @@ bool UserService::addUser(const User &entity, User &newEntity, const QLocale &lo
         return bRet(error, t.translate("UserService", "Failed to check e-mail freeness (internal)", "error"), false);
     if (emailOccupied)
         return bRet(error, t.translate("UserService", "E-mail is occupied", "error"), false);
+    if (!entity.avatar().isNull() && !checkUserAvatar(t, entity.avatar(), error))
+        return false;
     quint64 id = UserRepo->add(entity, &ok);
     if (!ok || !id)
         return bRet(error, t.translate("UserService", "Failed to add user (internal)", "error"), false);
@@ -1127,6 +1143,24 @@ bool UserService::addUser(const User &entity, User &newEntity, const QLocale &lo
     replace.insert("%code%", code.toString(true));
     if (!sendEmail(entity.email(), "registration_confirmation", locale, replace))
         return bRet(error, t.translate("UserService", "Failed to send e-mail message", "error"), false);
+    return bRet(error, QString(), true);
+}
+
+bool UserService::checkUserAvatar(const Translator &t, const QImage &avatar, QString *error)
+{
+    if (avatar.isNull())
+        return bRet(error, QString(), true);
+    if (avatar.height() > Texsample::MaximumAvatarExtent)
+        return bRet(error, t.translate("UserService", "Avatar\'s height is too big", "error"), false);
+    if (avatar.width() > Texsample::MaximumAvatarExtent)
+        return bRet(error, t.translate("UserService", "Avatar\'s width is too big", "error"), false);
+    QByteArray ba;
+    QBuffer buff(&ba);
+    buff.open(QBuffer::WriteOnly);
+    if (!avatar.save(&buff, "png"))
+        return bRet(error, t.translate("UserService", "Unable to test avatar", "error"), false);
+    if (ba.size() > Texsample::MaximumAvatarSize)
+        return bRet(error, t.translate("UserService", "Avatar is too big", "error"), false);
     return bRet(error, QString(), true);
 }
 

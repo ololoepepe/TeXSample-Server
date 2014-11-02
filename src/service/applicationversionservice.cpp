@@ -58,7 +58,7 @@ ApplicationVersionService::ApplicationVersionService(DataSource *source) :
 
 ApplicationVersionService::~ApplicationVersionService()
 {
-    //
+    delete ApplicationVersionRepo;
 }
 
 /*============================== Public methods ============================*/
@@ -74,7 +74,7 @@ RequestOut<TGetLatestAppVersionReplyData> ApplicationVersionService::getLatestAp
     typedef RequestOut<TGetLatestAppVersionReplyData> Out;
     Translator t(in.locale());
     QString error;
-    if (!commonCheck(t, &error))
+    if (!commonCheck(t, in.data(), &error))
         return Out(error);
     TClientInfo info = in.data().clientInfo();
     QDateTime dt = QDateTime::currentDateTimeUtc();
@@ -166,7 +166,7 @@ RequestOut<TSetLatestAppVersionReplyData> ApplicationVersionService::setLatestAp
     BVersion version = requestData.version();
     QUrl downloadUrl = requestData.downloadUrl();
     QDateTime dt = QDateTime::currentDateTimeUtc();
-    if (setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, &error))
+    if (!setLatestAppVersion(t, clientType, os, arch, portable, version, downloadUrl, &error))
         return Out(error);
     TSetLatestAppVersionReplyData replyData;
     return Out(replyData, dt);

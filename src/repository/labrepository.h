@@ -24,17 +24,22 @@
 
 class DataSource;
 
+class TBinaryFile;
 class TBinaryFileList;
-class TFileInfoList;
+class TLabData;
 class TLabDataInfoList;
 class TLabDataList;
 class TLabType;
 
 class QByteArray;
+class QString;
 
 #include "entity/lab.h"
 
+#include <TFileInfoList>
 #include <TIdList>
+
+#include <BeQt>
 
 #include <QDateTime>
 #include <QList>
@@ -55,21 +60,24 @@ public:
     DataSource *dataSource() const;
     QDateTime deleteOne(quint64 id, bool *ok = 0);
     void edit(const Lab &entity, bool *ok = 0);
-    QList<Lab> findAllNewerThan(const TIdList &groups = TIdList(), bool *ok = 0);
-    QList<Lab> findAllNewerThan(const QDateTime &newerThan, const TIdList &groups = TIdList(), bool *ok = 0);
+    TIdList findAllDeletedNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups, bool *ok = 0);
+    QList<Lab> findAllNewerThan(quint64 userId, const QDateTime &newerThan, const TIdList &groups, bool *ok = 0);
+    QDateTime findLastModificationDateTime(quint64 id, bool *ok = 0);
     Lab findOne(quint64 id, bool *ok = 0);
     bool isValid() const;
 private:
     static TLabDataInfoList deserializedDataInfos(const QByteArray &data);
     static TFileInfoList deserializedExtraFileInfos(const QByteArray &data);
     static QByteArray serializedDataInfos(const TLabDataList &list, const TLabType &type);
-    static QByteArray serializedExtraFileInfos(const TBinaryFileList &list);
+    static QByteArray serializedExtraFileInfos(const TBinaryFileList &list,
+                                               const TFileInfoList &previous = TFileInfoList());
 private:
-    //fetch
-    bool createData(quint64 labId, const TLabDataList &data);
+    bool createData(quint64 labId, const TLabDataList &list);
     bool createExtraFiles(quint64 labId, const TBinaryFileList &files);
     bool deleteExtraFiles(quint64 labId, const QStringList &fileNames);
-    bool updateData(quint64 labId, const TLabDataList &data);
+    TLabData fetchData(quint64 labId, const TLabType &type, BeQt::OSType os = BeQt::UnknownOS, bool *ok = false);
+    TBinaryFile fetchExtraFile(quint64 labId, const QString &fileName, bool *ok = false);
+    bool updateData(quint64 labId, const TLabDataList &list);
 private:
     friend class Lab;
     Q_DISABLE_COPY(LabRepository)

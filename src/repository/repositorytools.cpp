@@ -32,6 +32,7 @@
 #include <BSqlResult>
 #include <BSqlWhere>
 
+#include <QDebug>
 #include <QString>
 #include <QStringList>
 #include <QVariant>

@@ -28,8 +28,6 @@ class SampleRepository;
 class TransactionHolder;
 class UserRepository;
 
-class QLocale;
-
 #include "requestin.h"
 #include "requestout.h"
 #include "translator.h"
@@ -76,7 +74,6 @@ private:
     }
 private:
     bool checkUserId(const Translator &t, quint64 userId, QString *error);
-    bool commit(const QLocale &locale, TransactionHolder &holder, QString *error);
     bool commit(const Translator &translator, TransactionHolder &holder, QString *error);
     bool commonCheck(const Translator &translator, QString *error) const;
     TBinaryFile compilePreview(const TTexProject &source, bool *ok = 0);

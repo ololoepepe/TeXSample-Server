@@ -54,6 +54,7 @@ private:
     QByteArray mpassword;
     QString mpatronymic;
     QDateTime mregistrationDateTime;
+    bool msaveAvatar;
     QString msurname;
     bool avatarFetched;
     bool createdByRepo;
@@ -83,6 +84,7 @@ public:
     QString patronymic() const;
     QDateTime registrationDateTime() const;
     UserRepository *repository() const;
+    bool saveAvatar() const;
     void setAccessLevel(const TAccessLevel &accessLevel);
     void setActive(bool active);
     void setAvailableServices(const TServiceList &services);
@@ -94,6 +96,7 @@ public:
     void setName(const QString &name);
     void setPassword(const QByteArray &password);
     void setPatronymic(const QString &partonymic);
+    void setSaveAvatar(bool save);
     void setSurname(const QString &surname);
     QString surname() const;
 public:

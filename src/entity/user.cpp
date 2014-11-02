@@ -170,6 +170,11 @@ UserRepository *User::repository() const
     return repo;
 }
 
+bool User::saveAvatar() const
+{
+    return msaveAvatar;
+}
+
 void User::setAccessLevel(const TAccessLevel &lvl)
 {
     maccessLevel = lvl;
@@ -228,6 +233,11 @@ void User::setPatronymic(const QString &patronymic)
     mpatronymic = Texsample::testName(patronymic) ? patronymic : QString();
 }
 
+void User::setSaveAvatar(bool save)
+{
+    msaveAvatar = save;
+}
+
 void User::setSurname(const QString &surname)
 {
     msurname = Texsample::testName(surname) ? surname : QString();
@@ -256,6 +266,7 @@ User &User::operator =(const User &other)
     mpassword = other.mpassword;
     mpatronymic = other.mpatronymic;
     mregistrationDateTime = other.mregistrationDateTime;
+    msaveAvatar = other.msaveAvatar;
     msurname = other.msurname;
     createdByRepo = other.createdByRepo;
     repo = other.repo;
@@ -277,6 +288,7 @@ void User::init()
     mid = 0;
     mlastModificationDateTime = QDateTime().toUTC();
     mregistrationDateTime = QDateTime().toUTC();
+    msaveAvatar = false;
     createdByRepo = false;
     repo = 0;
     valid = false;

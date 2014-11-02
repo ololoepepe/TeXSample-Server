@@ -53,8 +53,6 @@ class Application : public TCoreApplication
     Q_OBJECT
 private:
     static QMutex serverMutex;
-    static QString texsampleSty;
-    static QString texsampleTex;
 private:
     DataSource * const Source;
     ApplicationVersionService * const ApplicationVersionServ;
@@ -86,10 +84,10 @@ private:
     static bool handleUnknownCommand(const QString &command, const QStringList &args);
     static bool handleUptimeCommand(const QString &cmd, const QStringList &args);
     static bool handleUserInfoCommand(const QString &cmd, const QStringList &args);
-    static void initTerminal();
     static QString msecsToString(qint64 msecs);
 private:
     void compatibility();
+    void initializeTerminal();
 private:
     Q_DISABLE_COPY(Application)
 };

@@ -91,6 +91,17 @@ void setReadonly(bool b);
 
 }
 
+namespace Texsample
+{
+
+const QString RootPath = "Texsample";
+const QString PathSubpath = "path";
+
+QString path();
+void setPath(const QString &path);
+
+}
+
 }
 
 #endif // SETTINGS_H

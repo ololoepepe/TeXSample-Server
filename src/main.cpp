@@ -23,6 +23,7 @@
 
 #include <BApplicationServer>
 #include <BTerminal>
+#include <BTextTools>
 
 #include <QDebug>
 #include <QDir>
@@ -45,6 +46,11 @@ int main(int argc, char *argv[])
         if (!app.initializeEmail() || !app.initializeStorage())
             return 0;
         bWriteLine(translate("main", "Enter \"help --commands\" to see the list of available commands"));
+        QStringList args = app.arguments().mid(1);
+        if (!args.isEmpty()) {
+            BTerminal::writeLine(BTextTools::mergeArguments(args));
+            BTerminal::emulateCommand(args.first(), args.mid(1));
+        }
         ret = app.exec();
     } else {
         bWriteLine(translate("main", "Another instance of") + " "  + AppName + " "

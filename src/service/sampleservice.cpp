@@ -60,7 +60,8 @@ SampleService::SampleService(DataSource *source) :
 
 SampleService::~SampleService()
 {
-    //
+    delete SampleRepo;
+    delete UserRepo;
 }
 
 /*============================== Public methods ============================*/
@@ -203,7 +204,7 @@ RequestOut<TDeleteSampleReplyData> SampleService::deleteSample(const RequestIn<T
     TransactionHolder holder(Source);
     QDateTime dt = SampleRepo->deleteOne(requestData.id(), &ok);
     if (!ok)
-        return Out(t.translate("SampleService", "Failed to edit sample (internal)", "error"));
+        return Out(t.translate("SampleService", "Failed to delete sample (internal)", "error"));
     TDeleteSampleReplyData replyData;
     if (!commit(t, holder, &error))
         return Out(error);
@@ -419,12 +420,6 @@ bool SampleService::checkUserId(const Translator &t, quint64 userId, QString *er
     if (!userId)
         return bRet(error, t.translate("SampleService", "Invalid user ID (internal)", "error"), false);
     return bRet(error, QString(), true);
-}
-
-bool SampleService::commit(const QLocale &locale, TransactionHolder &holder, QString *error)
-{
-    Translator t(locale);
-    return commit(t, holder, error);
 }
 
 bool SampleService::commit(const Translator &t, TransactionHolder &holder, QString *error)

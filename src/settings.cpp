@@ -47,6 +47,7 @@ static const QString ServerAddressPath = RootPath + "/" + ServerAddressSubpath;
 static const QString ServerPortPath = RootPath + "/" + ServerPortSubpath;
 static const QString SslRequiredPath = RootPath + "/" + SslRequiredSubpath;
 static const QString StorePasswordPath = RootPath + "/" + StorePasswordSubpath;
+
 QString mpassword;
 
 bool hasLocalHostName()
@@ -109,9 +110,11 @@ void setPassword(const QString &password)
 
 bool setPassword(const BSettingsNode *, const QVariant &v)
 {
-    mpassword = !v.isNull() ? v.toString() :
-                              bReadLineSecure(translate("Settings::Email", "Enter e-mail password:") + " ");
-    return !mpassword.isEmpty();
+    QString pwd = !v.isNull() ? v.toString() :
+                                bReadLineSecure(translate("Settings::Email", "Enter e-mail password:") + " ");
+    if (!pwd.isEmpty())
+        setPassword(pwd);
+    return !pwd.isEmpty();
 }
 
 void setServerAddress(const QString &address)
@@ -199,7 +202,7 @@ void setLoggingMode(int mode)
 
 bool setLoggingMode(const BSettingsNode *, const QVariant &v)
 {
-    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Settings::Email", "Enter logging mode:") + " ");
+    QString s = !v.isNull() ? v.toString() : bReadLine(translate("Settings::Log", "Enter logging mode:") + " ");
     if (s.isEmpty())
         return false;
     bool ok = false;
@@ -232,6 +235,23 @@ void setReadonly(bool b)
 {
     bSettings->setValue(ReadonlyPath, b);
     bApp->updateReadonly();
+}
+
+}
+
+namespace Texsample
+{
+
+const QString PathPpath = RootPath + "/" + PathSubpath;
+
+QString path()
+{
+    return bSettings->value(PathPpath).toString();
+}
+
+void setPath(const QString &path)
+{
+    bSettings->setValue(PathPpath, path);
 }
 
 }

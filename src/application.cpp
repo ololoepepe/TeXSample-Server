@@ -52,6 +52,7 @@
 #include <QDateTime>
 #include <QDir>
 #include <QElapsedTimer>
+#include <QFileInfo>
 #include <QMap>
 #include <QMutex>
 #include <QMutexLocker>
@@ -70,8 +71,6 @@
 /*============================== Static private variables ==================*/
 
 QMutex Application::serverMutex(QMutex::Recursive);
-QString Application::texsampleSty;
-QString Application::texsampleTex;
 
 /*============================== Public constructors =======================*/
 
@@ -84,7 +83,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    setApplicationVersion("3.0.0-a3");
+    setApplicationVersion("3.0.0-a4");
     setOrganizationDomain("https://github.com/ololoepepe/TeXSample-Server");
     setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
@@ -95,7 +94,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     installBeqtTranslator("beqt");
     installBeqtTranslator("texsample");
     installBeqtTranslator("texsample-server");
-    initTerminal();
+    initializeTerminal();
     updateReadonly();
     bWriteLine(tr("This is") + " " + Application::applicationName() + " v" + applicationVersion());
     logger()->setDateTimeFormat("yyyy.MM.dd hh:mm:ss");
@@ -121,57 +120,31 @@ Application::~Application()
 
 bool Application::copyTexsample(const QString &path, const QString &codecName)
 {
-    if (!QDir(path).exists() || texsampleSty.isEmpty() || texsampleTex.isEmpty())
+
+    if (!QFileInfo(path).isDir() || !QFileInfo(Settings::Texsample::path()).isDir())
+        return false;
+    QStringList fileNames = BDirTools::entryListRecursive(Settings::Texsample::path(), QDir::Files);
+    if (fileNames.isEmpty())
         return false;
     QString cn = (!codecName.isEmpty() ? codecName : QString("UTF-8"));
-    if (!BDirTools::writeTextFile(path + "/texsample.sty", texsampleSty, cn))
-        return false;
-    if (!BDirTools::writeTextFile(path + "/texsample.tex", texsampleTex, cn))
-        return false;
+    foreach (const QString &fn, fileNames) {
+        QString nfn = path + "/" + QFileInfo(fn).fileName();
+        if (!cn.compare("UTF-8", Qt::CaseInsensitive)) {
+            if (!QFile::copy(fn, nfn))
+                return false;
+        } else {
+            bool ok = false;
+            QString text = BDirTools::readTextFile(fn, "UTF-8", &ok);
+            if (!ok)
+                return false;
+            if (!BDirTools::writeTextFile(nfn, text, cn))
+                return false;
+        }
+    }
     return true;
 }
 
 /*============================== Public methods ============================*/
-
-bool Application::initializeStorage()
-{
-    static bool initialized = false;
-    if (initialized) {
-        bWriteLine(tr("Storage already initialized", "message"));
-        return true;
-    }
-    bWriteLine(tr("Initializing storage...", "message"));
-    QString sty = BDirTools::findResource("texsample-framework/texsample.sty", BDirTools::GlobalOnly);
-    sty = BDirTools::readTextFile(sty, "UTF-8");
-    if (sty.isEmpty()) {
-        bWriteLine(tr("Failed to load texsample.sty", "error"));
-        return false;
-    }
-    QString tex = BDirTools::findResource("texsample-framework/texsample.tex", BDirTools::GlobalOnly);
-    tex = BDirTools::readTextFile(tex, "UTF-8");
-    if (tex.isEmpty()) {
-        bWriteLine(tr("Failed to load texsample.tex", "error"));
-        return false;
-    }
-    QString err;
-    if (!Source->initialize(&err)) {
-        bWriteLine(tr("Error:", "error") + " " + err);
-        return false;
-    }
-    if (!UserServ->checkOutdatedEntries()) {
-        bWriteLine(tr("Failed to check for (or delete) outdated entries", "error"));
-        return false;
-    }
-    if (!UserServ->isRootInitialized() && !UserServ->initializeRoot(&err)) {
-        bWriteLine(tr("Error:", "error") + " " + err);
-        return false;
-    }
-    texsampleSty = sty;
-    texsampleTex = tex;
-    initialized = true;
-    bWriteLine(tr("Done!", "message"));
-    return true;
-}
 
 bool Application::initializeEmail()
 {
@@ -237,6 +210,45 @@ bool Application::initializeEmail()
     return true;
 }
 
+bool Application::initializeStorage()
+{
+    static bool initialized = false;
+    if (initialized) {
+        bWriteLine(tr("Storage already initialized", "message"));
+        return true;
+    }
+    bWriteLine(tr("Initializing storage...", "message"));
+    QString texsamplePath = Settings::Texsample::path();
+    if (texsamplePath.isEmpty()) {
+        texsamplePath = bReadLine(tr("Enter path to TeXSample Framework:") + " ");
+        if (texsamplePath.isEmpty()) {
+            bWriteLine(tr("Empty path", "error"));
+            return false;
+        }
+        if (!QFileInfo(texsamplePath).isDir()) {
+            bWriteLine(tr("Invalid path", "error"));
+            return false;
+        }
+        Settings::Texsample::setPath(texsamplePath);
+    }
+    QString err;
+    if (!Source->initialize(&err)) {
+        bWriteLine(tr("Error:", "error") + " " + err);
+        return false;
+    }
+    if (!UserServ->checkOutdatedEntries()) {
+        bWriteLine(tr("Failed to check for (or delete) outdated entries", "error"));
+        return false;
+    }
+    if (!UserServ->isRootInitialized() && !UserServ->initializeRoot(&err)) {
+        bWriteLine(tr("Error:", "error") + " " + err);
+        return false;
+    }
+    initialized = true;
+    bWriteLine(tr("Done!", "message"));
+    return true;
+}
+
 Server *Application::server()
 {
     return mserver;
@@ -254,8 +266,7 @@ void Application::updateLoggingMode()
     } else if (2 == m) {
         bLogger->setLogToConsoleEnabled(false);
         bLogger->setLogToFileEnabled(true);
-    } else if (m >= 3)
-    {
+    } else if (m >= 3) {
         bLogger->setLogToConsoleEnabled(true);
         bLogger->setLogToFileEnabled(true);
     }
@@ -363,7 +374,7 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
     QString options = "client:-c|--client=" + QStringList(clientMap.keys()).join("|") + ",";
     options += "os:-o|--os=" + QStringList(osMap.keys()).join("|") + ",";
     options += "arch:-a|--arch=" + QStringList(archMap.keys()).join("|") + ",";
-    options += "[portable:-p|--portable],version:-v|--version=,url:-u|--url=";
+    options += "[portable:-p|--portable],version:-v|--version=,[url:-u|--url=]";
     BTextTools::OptionsParsingError error = BTextTools::parseOptions(args, options, result, errorData);
     if (!checkParsingError(error, errorData))
         return false;
@@ -377,7 +388,7 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
         bWriteLine(tr("Invalid version", "error"));
         return false;
     }
-    if (!url.isValid()) {
+    if (!result.value("url").isEmpty() && !url.isValid()) {
         bWriteLine(tr("Invalid url", "error"));
         return false;
     }
@@ -529,7 +540,29 @@ bool Application::handleUserInfoCommand(const QString &, const QStringList &args
     return true;
 }
 
-void Application::initTerminal()
+QString Application::msecsToString(qint64 msecs)
+{
+    QString days = QString::number(msecs / (24 * BeQt::Hour));
+    msecs %= (24 * BeQt::Hour);
+    QString hours = QString::number(msecs / BeQt::Hour);
+    hours.prepend(QString().fill('0', 2 - hours.length()));
+    msecs %= BeQt::Hour;
+    QString minutes = QString::number(msecs / BeQt::Minute);
+    minutes.prepend(QString().fill('0', 2 - minutes.length()));
+    msecs %= BeQt::Minute;
+    QString seconds = QString::number(msecs / BeQt::Second);
+    seconds.prepend(QString().fill('0', 2 - seconds.length()));
+    return days + " " + tr("days") + " " + hours + ":" + minutes + ":" + seconds;
+}
+
+/*============================== Private methods ===========================*/
+
+void Application::compatibility()
+{
+    bSettings->setValue("Global/version", BVersion(applicationVersion()));
+}
+
+void Application::initializeTerminal()
 {
     BTerminal::setMode(BTerminal::StandardMode);
     BTerminal::installHandler(BTerminal::QuitCommand);
@@ -585,31 +618,31 @@ void Application::initTerminal()
     nn->setDescription(BTranslation::translate("Application", "Read-only mode. Possible values:\n"
                                                "  true - read-only mode\n"
                                                "  false - normal mode (read and write)"));
+    n = new BSettingsNode(Settings::Texsample::RootPath, root);
+    nn = new BSettingsNode(Settings::Texsample::PathSubpath, n);
+    nn->setDescription(BTranslation::translate("Application", "Path to TeXSample Framework"));
     BTerminal::setRootSettingsNode(root);
-    BTerminal::setHelpDescription(BTranslation::translate("BTerminalIOHandler",
+    BTerminal::setHelpDescription(BTranslation::translate("Application",
         "This is TeXSample Server. Enter \"help --all\" to see full Help"));
-    BTerminal::CommandHelpList chl;
     BTerminal::CommandHelp ch;
     ch.usage = "user-info [--match-type|-m=<match_type>] --match-pattern|-p=<match_pattern>";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
+    ch.description = BTranslation::translate("Application",
         "Show information about connected users matching <match_pattern>, which is to be a wildcard.\n"
         "<match_type> may be one of the following:\n"
         "  login-and-unique-id|a - attempt to match both login and uinque id (default)\n"
         "  login|l - match login only\n"
         "  unique-id|u - match unique id only");
-    chl << ch;
-    BTerminal::setCommandHelp("user-info", chl);
+    BTerminal::setCommandHelp("user-info", ch);
     ch.usage = "start [address]";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Start the server.\n"
+    ch.description = BTranslation::translate("Application", "Start the server.\n"
         "If [address] is passed, server will listen on that address.\n"
         "Otherwise it will listen on all available addresses.");
     BTerminal::setCommandHelp("start", ch);
     ch.usage = "stop";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Stop the server.\n"
-                                             "Note: Users are not disconnected.");
+    ch.description = BTranslation::translate("Application", "Stop the server.\nNote: Users are not disconnected.");
     BTerminal::setCommandHelp("stop", ch);
     ch.usage = "set-app-version <parameters>";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
+    ch.description = BTranslation::translate("Application",
         "Set the latest version of an application along with the download URL.\n"
         "The parameters are:\n"
         "  --client|-c=<client>, where <client> must be one of the following:\n"
@@ -632,33 +665,10 @@ void Application::initTerminal()
         "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");
     BTerminal::setCommandHelp("set-app-version", ch);
     ch.usage = "shrink-db";
-    ch.description = BTranslation::translate("BTerminalIOHandler", "Shrink the database with VACUUM command.\n"
+    ch.description = BTranslation::translate("Application", "Shrink the database with VACUUM command.\n"
                                              "Note: This command will fail if there are active transactions");
     BTerminal::setCommandHelp("shrink-db", ch);
     ch.usage = "uptime";
-    ch.description = BTranslation::translate("BTerminalIOHandler",
-                                             "Show for how long the application has been running");
+    ch.description = BTranslation::translate("Application", "Show for how long the application has been running");
     BTerminal::setCommandHelp("uptime", ch);
-}
-
-QString Application::msecsToString(qint64 msecs)
-{
-    QString days = QString::number(msecs / (24 * BeQt::Hour));
-    msecs %= (24 * BeQt::Hour);
-    QString hours = QString::number(msecs / BeQt::Hour);
-    hours.prepend(QString().fill('0', 2 - hours.length()));
-    msecs %= BeQt::Hour;
-    QString minutes = QString::number(msecs / BeQt::Minute);
-    minutes.prepend(QString().fill('0', 2 - minutes.length()));
-    msecs %= BeQt::Minute;
-    QString seconds = QString::number(msecs / BeQt::Second);
-    seconds.prepend(QString().fill('0', 2 - seconds.length()));
-    return days + " " + tr("days") + " " + hours + ":" + minutes + ":" + seconds;
-}
-
-/*============================== Private methods ===========================*/
-
-void Application::compatibility()
-{
-    bSettings->setValue("Global/version", BVersion(applicationVersion()));
 }
