@@ -36,6 +36,7 @@
 #include <TeXSample/TeXSampleCore>
 
 #include <BDirTools>
+#include <BUuid>
 
 #include <QDateTime>
 #include <QDebug>
@@ -446,15 +447,16 @@ TBinaryFile SampleService::compilePreview(const TTexProject &source, bool *ok)
     if (!Application::copyTexsample(loc.absolutePath(), "UTF-8"))
         return bRet(ok, false, TBinaryFile());
     TTexProject src = source;
+    QString fileName = src.rootFile().fileName();
+    src.rootFile().setFileName(BUuid::createUuid().toString(true) + ".tex");
     src.removeRestrictedCommands();
     if (!src.save(loc.absolutePath(), QTextCodec::codecForName("UTF-8")))
         return bRet(ok, false, TBinaryFile());
     QString command = "pdflatex";
-    QString fileName = src.rootFile().fileName();
     QString baseName = QFileInfo(fileName).baseName();
     QStringList args = QStringList() << "-interaction=nonstopmode";
     args << ("-jobname=" + baseName);
-    args << ("\\input texsample.tex \\input " + fileName + " \\end{document}");
+    args << ("\\input texsample.tex \\input " + src.rootFile().fileName() + " \\end{document}");
     if (BeQt::execProcess(loc.absolutePath(), command, args, 5 * BeQt::Second, 2 * BeQt::Minute))
         return bRet(ok, false, TBinaryFile());
     TBinaryFile file(loc.absoluteFilePath(baseName + ".pdf"));

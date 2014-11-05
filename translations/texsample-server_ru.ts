@@ -720,144 +720,144 @@ Note: This command will fail if there are active transactions</source>
 <context>
     <name>SampleService</name>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="78"/>
-        <location filename="../src/service/sampleservice.cpp" line="421"/>
+        <location filename="../src/service/sampleservice.cpp" line="79"/>
+        <location filename="../src/service/sampleservice.cpp" line="422"/>
         <source>Invalid user ID (internal)</source>
         <comment>error</comment>
         <translation>Некорректный идентификатор пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="87"/>
-        <location filename="../src/service/sampleservice.cpp" line="249"/>
-        <location filename="../src/service/sampleservice.cpp" line="307"/>
+        <location filename="../src/service/sampleservice.cpp" line="88"/>
+        <location filename="../src/service/sampleservice.cpp" line="250"/>
+        <location filename="../src/service/sampleservice.cpp" line="308"/>
         <source>Failed to compile project</source>
         <comment>error</comment>
         <translation>Не удалось скомпилировать проект</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="93"/>
+        <location filename="../src/service/sampleservice.cpp" line="94"/>
         <source>Failed to add sample (internal)</source>
         <comment>error</comment>
         <translation>Не удалось добавить сэмпл (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="96"/>
-        <location filename="../src/service/sampleservice.cpp" line="191"/>
-        <location filename="../src/service/sampleservice.cpp" line="227"/>
-        <location filename="../src/service/sampleservice.cpp" line="259"/>
-        <location filename="../src/service/sampleservice.cpp" line="284"/>
-        <location filename="../src/service/sampleservice.cpp" line="319"/>
-        <location filename="../src/service/sampleservice.cpp" line="379"/>
-        <location filename="../src/service/sampleservice.cpp" line="405"/>
+        <location filename="../src/service/sampleservice.cpp" line="97"/>
+        <location filename="../src/service/sampleservice.cpp" line="192"/>
+        <location filename="../src/service/sampleservice.cpp" line="228"/>
+        <location filename="../src/service/sampleservice.cpp" line="260"/>
+        <location filename="../src/service/sampleservice.cpp" line="285"/>
+        <location filename="../src/service/sampleservice.cpp" line="320"/>
+        <location filename="../src/service/sampleservice.cpp" line="380"/>
+        <location filename="../src/service/sampleservice.cpp" line="406"/>
         <source>Failed to get sample (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить сэмпл (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="99"/>
-        <location filename="../src/service/sampleservice.cpp" line="263"/>
-        <location filename="../src/service/sampleservice.cpp" line="323"/>
-        <location filename="../src/service/sampleservice.cpp" line="350"/>
+        <location filename="../src/service/sampleservice.cpp" line="100"/>
+        <location filename="../src/service/sampleservice.cpp" line="264"/>
+        <location filename="../src/service/sampleservice.cpp" line="324"/>
+        <location filename="../src/service/sampleservice.cpp" line="351"/>
         <source>Failed to create sample info (internal)</source>
         <comment>error</comment>
         <translation>Не удалось создать информацию о сэмпле (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="119"/>
+        <location filename="../src/service/sampleservice.cpp" line="120"/>
         <source>Failed to create temporary location (internal)</source>
         <comment>error</comment>
         <translation>Не удалось создать временную папку</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="124"/>
+        <location filename="../src/service/sampleservice.cpp" line="125"/>
         <source>Failed to copy texsample (internal)</source>
         <comment>error</comment>
         <translation>Не удалось копировать texsample (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="126"/>
+        <location filename="../src/service/sampleservice.cpp" line="127"/>
         <source>Failed to save project (internal)</source>
         <comment>error</comment>
         <translation>Не удалось сохранить проект (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="165"/>
+        <location filename="../src/service/sampleservice.cpp" line="166"/>
         <source>Failed to load file (internal)</source>
         <comment>error</comment>
         <translation>Не удалось загрузить файл (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="193"/>
-        <location filename="../src/service/sampleservice.cpp" line="229"/>
-        <location filename="../src/service/sampleservice.cpp" line="286"/>
+        <location filename="../src/service/sampleservice.cpp" line="194"/>
+        <location filename="../src/service/sampleservice.cpp" line="230"/>
+        <location filename="../src/service/sampleservice.cpp" line="287"/>
         <source>No such sample</source>
         <comment>error</comment>
         <translation>Нет такого сэмпла</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="197"/>
-        <location filename="../src/service/sampleservice.cpp" line="200"/>
-        <location filename="../src/service/sampleservice.cpp" line="233"/>
-        <location filename="../src/service/sampleservice.cpp" line="236"/>
-        <location filename="../src/service/sampleservice.cpp" line="290"/>
-        <location filename="../src/service/sampleservice.cpp" line="293"/>
+        <location filename="../src/service/sampleservice.cpp" line="198"/>
+        <location filename="../src/service/sampleservice.cpp" line="201"/>
+        <location filename="../src/service/sampleservice.cpp" line="234"/>
+        <location filename="../src/service/sampleservice.cpp" line="237"/>
+        <location filename="../src/service/sampleservice.cpp" line="291"/>
+        <location filename="../src/service/sampleservice.cpp" line="294"/>
         <source>Failed to get user access level (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить уровень доступа пользователя (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="202"/>
+        <location filename="../src/service/sampleservice.cpp" line="203"/>
         <source>Not enough rights to delete sample</source>
         <comment>error</comment>
         <translation>Недостаточно прав для удаления сэмпла</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="207"/>
+        <location filename="../src/service/sampleservice.cpp" line="208"/>
         <source>Failed to delete sample (internal)</source>
         <comment>error</comment>
         <translation>Не удалось удалить сэмпл (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="256"/>
-        <location filename="../src/service/sampleservice.cpp" line="316"/>
+        <location filename="../src/service/sampleservice.cpp" line="257"/>
+        <location filename="../src/service/sampleservice.cpp" line="317"/>
         <source>Failed to edit sample (internal)</source>
         <comment>error</comment>
         <translation>Не удалось отредактировать сэмпл (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="238"/>
-        <location filename="../src/service/sampleservice.cpp" line="295"/>
+        <location filename="../src/service/sampleservice.cpp" line="239"/>
+        <location filename="../src/service/sampleservice.cpp" line="296"/>
         <source>Not enough rights to edit sample</source>
         <comment>error</comment>
         <translation>Недостаточно прав для редактирования сэмпла</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="342"/>
+        <location filename="../src/service/sampleservice.cpp" line="343"/>
         <source>Failed to get sample list (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить список сэмплов (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="346"/>
+        <location filename="../src/service/sampleservice.cpp" line="347"/>
         <source>Failed to get deleted sample list (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить список удаленных сэмплов (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="371"/>
-        <location filename="../src/service/sampleservice.cpp" line="397"/>
+        <location filename="../src/service/sampleservice.cpp" line="372"/>
+        <location filename="../src/service/sampleservice.cpp" line="398"/>
         <source>Failed to get sample last modification date time (internal)</source>
         <comment>error</comment>
         <translation>Не удалось получить дату и время последнего изменения сэмпла (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="428"/>
+        <location filename="../src/service/sampleservice.cpp" line="429"/>
         <source>Failed to commit (internal)</source>
         <comment>error</comment>
         <translation>Не удалось зафиксировать транзакцию (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/service/sampleservice.cpp" line="435"/>
+        <location filename="../src/service/sampleservice.cpp" line="436"/>
         <source>Invalid SampleService instance (internal)</source>
         <comment>error</comment>
         <translation>Некорректный экземпляр SampleService (внутренняя)</translation>
