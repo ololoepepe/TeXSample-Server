@@ -120,7 +120,6 @@ Application::~Application()
 
 bool Application::copyTexsample(const QString &path, const QString &codecName)
 {
-
     if (!QFileInfo(path).isDir() || !QFileInfo(Settings::Texsample::path()).isDir())
         return false;
     QStringList fileNames = BDirTools::entryListRecursive(Settings::Texsample::path(), QDir::Files);

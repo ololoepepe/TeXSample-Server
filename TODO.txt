@@ -1,6 +1,6 @@
 === PATCH ===
 
-
+[done] Fix sample editing
 
 === MINOR ===
 

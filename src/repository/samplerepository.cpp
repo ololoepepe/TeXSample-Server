@@ -373,8 +373,8 @@ bool SampleRepository::updatePreview(quint64 sampleId, const TBinaryFile &previe
 {
     if (!isValid() || !sampleId || !previewMainFile.isValid() || !previewMainFile.size())
         return false;
-    QByteArray data = BeQt::serialize(previewMainFile);
-    return Source->update("sample_previews", "sample_id", sampleId, "main_file", data).success();
+    BSqlWhere where("sample_id = :sample_id", ":sample_id", sampleId);
+    return Source->update("sample_previews", "main_file", BeQt::serialize(previewMainFile), where).success();
 }
 
 bool SampleRepository::updateSource(quint64 sampleId, const TTexProject &source)
@@ -383,5 +383,6 @@ bool SampleRepository::updateSource(quint64 sampleId, const TTexProject &source)
         return false;
     TTexProject src = source;
     src.removeRestrictedCommands();
-    return Source->update("sample_sources", "sample_id", sampleId, "source", BeQt::serialize(src)).success();
+    BSqlWhere where("sample_id = :sample_id", ":sample_id", sampleId);
+    return Source->update("sample_sources", "source", BeQt::serialize(src), where).success();
 }
