@@ -23,13 +23,14 @@
 #define CONNECTION_H
 
 class ApplicationVersionService;
+class AuthorityResolver;
 class DataSource;
 class LabService;
 class SampleService;
-class Translator;
 class UserService;
 
 class TReply;
+class TRequest;
 
 class BNetworkServer;
 class BGenericSocket;
@@ -39,11 +40,7 @@ class QString;
 
 #include "application.h"
 
-#include <TAccessLevel>
 #include <TClientInfo>
-#include <TIdList>
-#include <TService>
-#include <TServiceList>
 #include <TUserInfo>
 
 #include <BLogger>
@@ -79,6 +76,7 @@ private:
 private:
     DataSource * const Source;
     ApplicationVersionService * const ApplicationVersionServ;
+    AuthorityResolver * const AuthResolver;
     LabService * const LabServ;
     SampleService * const SampleServ;
     UserService * const UserServ;
@@ -101,21 +99,14 @@ public:
     void sendLogRequest(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     qint64 uptime() const;
     TUserInfo userInfo() const;
+public slots:
+    void setAuthorityResolverEnabled(bool enabled);
 protected:
     void log(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logLocal(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
     void logRemote(const QString &text, BLogger::Level lvl = BLogger::NoLevel);
 private:
-    bool accessCheck(const Translator &translator, QString *error = 0, const TServiceList &services = TServiceList(),
-                     const TIdList &groups = TIdList());
-    bool accessCheck(const QLocale &locale = Application::locale(), QString *error = 0,
-                     const TServiceList &services = TServiceList(), const TIdList &groups = TIdList());
-    bool commonCheck(const Translator &translator, QString *error = 0,
-                     const TAccessLevel &accessLevel = TAccessLevel::NoLevel,
-                     const TService &service = TService::NoService);
-    bool commonCheck(const QLocale &locale = Application::locale(), QString *error = 0,
-                     const TAccessLevel &accessLevel = TAccessLevel::NoLevel,
-                     const TService &service = TService::NoService);
+    bool commonCheck(const TRequest &request, BNetworkOperation *op, QString *error = 0);
     bool handleAddGroupRequest(BNetworkOperation *op);
     bool handleAddLabRequest(BNetworkOperation *op);
     bool handleAddSampleRequest(BNetworkOperation *op);

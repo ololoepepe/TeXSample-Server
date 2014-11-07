@@ -26,6 +26,7 @@ include($${TSMP_PREFIX}/share/texsample/depend.pri)
 
 SOURCES += \
     application.cpp \
+    authorityinfoprovider.cpp \
     connection.cpp \
     datasource.cpp \
     main.cpp \
@@ -33,17 +34,22 @@ SOURCES += \
     settings.cpp \
     temporarylocation.cpp \
     transactionholder.cpp \
-    translator.cpp
+    translator.cpp \
+    authorityinfo.cpp \
+    authorityresolver.cpp
 
 HEADERS += \
     application.h \
+    authorityinfoprovider.h \
     connection.h \
     datasource.h \
     server.h \
     settings.h \
     temporarylocation.h \
     transactionholder.h \
-    translator.h
+    translator.h \
+    authorityinfo.h \
+    authorityresolver.h
 
 include(entity/entity.pri)
 include(repository/repository.pri)
@@ -121,6 +127,9 @@ INSTALLS = target
     installsTsfv.files+=$$files($${PWD}/texsample-framework/*.tex)
     installsTsfv.path=$${RESOURCES_INSTALLS_PATH}/texsample-framework
     INSTALLS += installsTsfv
+    installsAuthDefConf.files=$$files($${PWD}/auth-def.properties)
+    installsAuthDefConf.path=$${RESOURCES_INSTALLS_PATH}
+    INSTALLS += installsAuthDefConf
 }
 
 } #end !contains(TSRV_CONFIG, no_install)

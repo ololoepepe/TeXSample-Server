@@ -21,6 +21,7 @@
 
 #include "application.h"
 
+#include "authorityinfoprovider.h"
 #include "connection.h"
 #include "datasource.h"
 #include "server.h"
@@ -102,6 +103,8 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     QString logfn = location(DataPath, UserResource) + "/logs/";
     logfn += QDateTime::currentDateTime().toString("yyyy.MM.dd-hh.mm.ss") + ".txt";
     logger()->setFileName(logfn);
+    mdefAuthProvider.loadFromFile(BDirTools::findResource("auth-def.properties", BDirTools::GlobalOnly), "UTF-8");
+    mauthProvider.loadFromFile(location(DataPath, UserResource) + "/auth.properties", "UTF-8");
     mserver = new Server(location(DataPath, UserResource));
     melapsedTimer.start();
     timerId = startTimer(BeQt::Hour);
@@ -110,6 +113,9 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
 Application::~Application()
 {
     delete mserver;
+    delete ApplicationVersionServ;
+    delete UserServ;
+    delete Source;
 #if defined(BUILTIN_RESOURCES)
     Q_CLEANUP_RESOURCE(texsample_server);
     Q_CLEANUP_RESOURCE(texsample_server_translations);
@@ -144,6 +150,16 @@ bool Application::copyTexsample(const QString &path, const QString &codecName)
 }
 
 /*============================== Public methods ============================*/
+
+const AuthorityInfoProvider &Application::authorityInfoProvider() const
+{
+    return mauthProvider;
+}
+
+const AuthorityInfoProvider &Application::defaultAuthorityInfoProvider() const
+{
+    return mdefAuthProvider;
+}
 
 bool Application::initializeEmail()
 {
@@ -320,6 +336,42 @@ bool Application::checkParsingError(BTextTools::OptionsParsingError error, const
     default:
         return true;
     }
+}
+
+bool Application::handleReloadAuthorityConfigCommand(const QString &, const QStringList &args)
+{
+    if (args.size() > 1) {
+        bWriteLine(tr("Invalid argument count. This command accepts 0-1 arguments", "error"));
+        return false;
+    }
+    if (!bApp) {
+        bWriteLine(tr("No Application instance", "error"));
+        return false;
+    }
+    QString fn = location(DataPath, UserResource) + "/auth.properties";
+    if (!args.isEmpty()) {
+        if (!QFileInfo(args.first()).isFile()) {
+            bWriteLine(tr("Invalid path", "error"));
+            return true;
+        }
+        QFileInfo fi(fn);
+        if (fi.isDir() || (fi.isFile() && (!QFile::remove(fn) || !QFile::copy(args.first(), fn)))) {
+            bWriteLine(tr("Failed to copy file", "error"));
+            return true;
+        }
+    }
+    Server *srv = bApp->mserver;
+    srv->lock();
+    srv->setAuthorityResolverEnabled(false);
+    bool b = bApp->mauthProvider.loadFromFile(location(DataPath, UserResource) + "/auth.properties", "UTF-8");
+    srv->setAuthorityResolverEnabled(true);
+    srv->unlock();
+    if (!b) {
+        bWriteLine(tr("Failed to load authorities configuration", "error"));
+        return true;
+    }
+    bWriteLine(tr("OK", "message"));
+    return true;
 }
 
 bool Application::handleSetAppVersionCommand(const QString &, const QStringList &args)
@@ -569,6 +621,7 @@ void Application::initializeTerminal()
     BTerminal::installHandler(BTerminal::HelpCommand);
     BTerminal::installHandler(BTerminal::LastCommand);
     BTerminal::installDefaultHandler(&handleUnknownCommand);
+    BTerminal::installHandler("reload-auth-config", &handleReloadAuthorityConfigCommand);
     BTerminal::installHandler("set-app-version", &handleSetAppVersionCommand);
     BTerminal::installHandler("start", &handleStartCommand);
     BTerminal::installHandler("stop", &handleStopCommand);
@@ -670,4 +723,10 @@ void Application::initializeTerminal()
     ch.usage = "uptime";
     ch.description = BTranslation::translate("Application", "Show for how long the application has been running");
     BTerminal::setCommandHelp("uptime", ch);
+    ch.usage = "reload-auth-config [path]";
+    ch.description = BTranslation::translate("Application", "Reloads authorities configuration from the configuration "
+                                             "file (auth.properties).\nIf [path] is specified, the new conf file will "
+                                             "be copied to the application resources location (the old "
+                                             "auth.properties will be replaced by the new one).");
+    BTerminal::setCommandHelp("reload-auth-config", ch);
 }

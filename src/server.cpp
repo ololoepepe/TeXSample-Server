@@ -34,10 +34,12 @@
 #include <BUuid>
 
 #include <QDateTime>
+#include <QMetaObject>
 #include <QObject>
 #include <QRegExp>
 #include <QString>
 #include <QTcpSocket>
+#include <QThread>
 
 /*============================================================================
 ================================ Server ======================================
@@ -52,6 +54,17 @@ Server::Server(const QString &location, QObject *parent) :
 }
 
 /*============================== Static public methods =====================*/
+
+void Server::setAuthorityResolverEnabled(bool enabled)
+{
+    lock();
+    foreach (BNetworkConnection *c, connections()) {
+        Qt::ConnectionType ct = (c->thread() == QThread::currentThread()) ? Qt::DirectConnection :
+                                                                            Qt::BlockingQueuedConnection;
+        QMetaObject::invokeMethod(c, "setAuthorityResolverEnabled", ct, Q_ARG(bool, enabled));
+    }
+    unlock();
+}
 
 TUserConnectionInfoList Server::userConnections(
         const QString &matchPattern, TGetUserConnectionInfoListRequestData::MatchType type, int *total) const

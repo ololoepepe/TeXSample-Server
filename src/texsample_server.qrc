@@ -25,5 +25,6 @@
         <file>templates/request_recovery_code/body_ru.txt</file>
         <file>templates/request_recovery_code/subject.txt</file>
         <file>templates/request_recovery_code/subject_ru.txt</file>
+        <file>auth-def.properties</file>
     </qresource>
 </RCC>

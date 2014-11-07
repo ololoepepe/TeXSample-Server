@@ -1063,6 +1063,19 @@ RequestOut<TRequestRecoveryCodeReplyData> UserService::requestRecoveryCode(
     return Out(replyData, dt);
 }
 
+TUserInfo UserService::userInfo(quint64 userId, bool includeEmail, bool *ok)
+{
+    if (!isValid() || !userId)
+        return bRet(ok, false, TUserInfo());
+    bool b = false;
+    User entity = UserRepo->findOne(userId, &b);
+    if (!b)
+        return bRet(ok, false, TUserInfo());
+    if (!entity.isValid())
+        return bRet(ok, false, TUserInfo());
+    return userToUserInfo(entity, includeEmail, ok);
+}
+
 /*============================== Static private methods ====================*/
 
 bool UserService::sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,

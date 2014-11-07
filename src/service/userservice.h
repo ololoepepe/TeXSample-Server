@@ -116,6 +116,7 @@ public:
     RequestOut<TRegisterReplyData> registerUser(const RequestIn<TRegisterRequestData> &in);
     RequestOut<TRequestRecoveryCodeReplyData> requestRecoveryCode(
             const RequestIn<TRequestRecoveryCodeRequestData> &in);
+    TUserInfo userInfo(quint64 userId, bool includeEmail, bool *ok = 0);
 private:
     static bool sendEmail(const QString &receiver, const QString &templateName, const QLocale &locale,
                           const BProperties &replace = BProperties());

@@ -137,7 +137,7 @@ BSqlResult DataSource::exec(const QString &qs, const QVariantMap &boundValues)
 bool DataSource::initialize(QString *error)
 {
     if (!isValid())
-        return bRet(error, tr("Invalid DataSource instance", "error"), false);
+        return bRet(error, tr("Invalid DataSource instance (internal)", "error"), false);
     QString fn = BDirTools::findResource("db/texsample.schema", BDirTools::GlobalOnly);
     QStringList list = BSqlDatabase::schemaFromFile(fn, "UTF-8");
     if (list.isEmpty())
