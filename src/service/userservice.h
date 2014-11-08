@@ -92,16 +92,15 @@ public:
     RequestOut<TConfirmRegistrationReplyData> confirmRegistration(
             const RequestIn<TConfirmRegistrationRequestData> &in);
     DataSource *dataSource() const;
-    RequestOut<TDeleteGroupReplyData> deleteGroup(const RequestIn<TDeleteGroupRequestData> &in, quint64 userId);
-    RequestOut<TDeleteInvitesReplyData> deleteInvites(const RequestIn<TDeleteInvitesRequestData> &in, quint64 userId);
+    RequestOut<TDeleteGroupReplyData> deleteGroup(const RequestIn<TDeleteGroupRequestData> &in);
+    RequestOut<TDeleteInvitesReplyData> deleteInvites(const RequestIn<TDeleteInvitesRequestData> &in);
     RequestOut<TDeleteUserReplyData> deleteUser(const RequestIn<TDeleteUserRequestData> &in);
-    RequestOut<TEditGroupReplyData> editGroup(const RequestIn<TEditGroupRequestData> &in, quint64 userId);
+    RequestOut<TEditGroupReplyData> editGroup(const RequestIn<TEditGroupRequestData> &in);
     RequestOut<TEditSelfReplyData> editSelf(const RequestIn<TEditSelfRequestData> &in, quint64 userId);
-    RequestOut<TEditUserReplyData> editUser(const RequestIn<TEditUserRequestData> &in, quint64 userId);
+    RequestOut<TEditUserReplyData> editUser(const RequestIn<TEditUserRequestData> &in);
     RequestOut<TGenerateInvitesReplyData> generateInvites(const RequestIn<TGenerateInvitesRequestData> &in,
                                                           quint64 userId);
-    RequestOut<TGetGroupInfoListReplyData> getGroupInfoList(const RequestIn<TGetGroupInfoListRequestData> &in,
-                                                            quint64 userId);
+    RequestOut<TGetGroupInfoListReplyData> getGroupInfoList(const RequestIn<TGetGroupInfoListRequestData> &in);
     RequestOut<TGetInviteInfoListReplyData> getInviteInfoList(const RequestIn<TGetInviteInfoListRequestData> &in,
                                                               quint64 userId);
     RequestOut<TGetSelfInfoReplyData> getSelfInfo(const RequestIn<TGetSelfInfoRequestData> &in, quint64 userId);

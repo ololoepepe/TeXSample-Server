@@ -354,7 +354,7 @@ bool Connection::handleDeleteGroupRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TDeleteGroupRequestData> in(request);
-    return sendReply(op, UserServ->deleteGroup(in, muserInfo.id()).createReply());
+    return sendReply(op, UserServ->deleteGroup(in).createReply());
 }
 
 bool Connection::handleDeleteInvitesRequest(BNetworkOperation *op)
@@ -365,7 +365,7 @@ bool Connection::handleDeleteInvitesRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TDeleteInvitesRequestData> in(request);
-    return sendReply(op, UserServ->deleteInvites(in, muserInfo.id()).createReply());
+    return sendReply(op, UserServ->deleteInvites(in).createReply());
 }
 
 bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
@@ -376,7 +376,7 @@ bool Connection::handleDeleteLabRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TDeleteLabRequestData> in(request);
-    return sendReply(op, LabServ->deleteLab(in, muserInfo.id()).createReply());
+    return sendReply(op, LabServ->deleteLab(in).createReply());
 }
 
 bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
@@ -387,7 +387,7 @@ bool Connection::handleDeleteSampleRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TDeleteSampleRequestData> in(request);
-    return sendReply(op, SampleServ->deleteSample(in, muserInfo.id()).createReply());
+    return sendReply(op, SampleServ->deleteSample(in).createReply());
 }
 
 bool Connection::handleDeleteUserRequest(BNetworkOperation *op)
@@ -409,7 +409,7 @@ bool Connection::handleEditGroupRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TEditGroupRequestData> in(request);
-    return sendReply(op, UserServ->editGroup(in, muserInfo.id()).createReply());
+    return sendReply(op, UserServ->editGroup(in).createReply());
 }
 
 bool Connection::handleEditLabRequest(BNetworkOperation *op)
@@ -420,7 +420,7 @@ bool Connection::handleEditLabRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TEditLabRequestData> in(request);
-    return sendReply(op, LabServ->editLab(in, muserInfo.id()).createReply());
+    return sendReply(op, LabServ->editLab(in).createReply());
 }
 
 bool Connection::handleEditSampleRequest(BNetworkOperation *op)
@@ -431,7 +431,7 @@ bool Connection::handleEditSampleRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TEditSampleRequestData> in(request);
-    return sendReply(op, SampleServ->editSample(in, muserInfo.id()).createReply());
+    return sendReply(op, SampleServ->editSample(in).createReply());
 }
 
 bool Connection::handleEditSampleAdminRequest(BNetworkOperation *op)
@@ -442,7 +442,7 @@ bool Connection::handleEditSampleAdminRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TEditSampleAdminRequestData> in(request);
-    return sendReply(op, SampleServ->editSampleAdmin(in, muserInfo.id()).createReply());
+    return sendReply(op, SampleServ->editSampleAdmin(in).createReply());
 }
 
 bool Connection::handleEditSelfRequest(BNetworkOperation *op)
@@ -464,7 +464,7 @@ bool Connection::handleEditUserRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TEditUserRequestData> in(request);
-    return sendReply(op, UserServ->editUser(in, muserInfo.id()).createReply());
+    return sendReply(op, UserServ->editUser(in).createReply());
 }
 
 bool Connection::handleGenerateInvitesRequest(BNetworkOperation *op)
@@ -486,7 +486,7 @@ bool Connection::handleGetGroupInfoListRequest(BNetworkOperation *op)
     if (!commonCheck(request, op, &error))
         return sendReply(op, error);
     RequestIn<TGetGroupInfoListRequestData> in(request);
-    return sendReply(op, UserServ->getGroupInfoList(in, muserInfo.id()).createReply());
+    return sendReply(op, UserServ->getGroupInfoList(in).createReply());
 }
 
 bool Connection::handleGetInviteInfoListRequest(BNetworkOperation *op)

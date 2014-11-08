@@ -57,8 +57,8 @@ public:
 public:
     RequestOut<TAddLabReplyData> addLab(const RequestIn<TAddLabRequestData> &in, quint64 userId);
     DataSource *dataSource() const;
-    RequestOut<TDeleteLabReplyData> deleteLab(const RequestIn<TDeleteLabRequestData> &in, quint64 userId);
-    RequestOut<TEditLabReplyData> editLab(const RequestIn<TEditLabRequestData> &in, quint64 userId);
+    RequestOut<TDeleteLabReplyData> deleteLab(const RequestIn<TDeleteLabRequestData> &in);
+    RequestOut<TEditLabReplyData> editLab(const RequestIn<TEditLabRequestData> &in);
     RequestOut<TGetLabDataReplyData> getLabData(const RequestIn<TGetLabDataRequestData> &in);
     RequestOut<TGetLabExtraFileReplyData> getLabExtraFile(const RequestIn<TGetLabExtraFileRequestData> &in);
     RequestOut<TGetLabInfoListReplyData> getLabInfoList(const RequestIn<TGetLabInfoListRequestData> &in,
