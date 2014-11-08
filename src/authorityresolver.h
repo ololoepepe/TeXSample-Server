@@ -44,7 +44,7 @@ public:
     const AuthorityInfoProvider *defaultProvider() const;
     bool isValid() const;
     bool mayPerformOperation(const TUserInfo &info, AuthorityInfoProvider::OperationType type, const TRequest &request,
-                             QString *error = 0);
+                             QString *error = 0) const;
     const AuthorityInfoProvider *provider() const;
     void setDefaultProvider(const AuthorityInfoProvider *provider);
     void setProvider(const AuthorityInfoProvider *provider);
@@ -52,19 +52,20 @@ private:
     static bool predicate(const TAccessLevel &lvl1, const TAccessLevel &lvl2, AuthorityInfo::AccessLevelMode mode);
 private:
     bool testAccessLevel(const TAccessLevel &userAccessLevel, AuthorityInfo::AccessLevel requiredAccessLevel,
-                         TAccessLevel *level = 0);
+                         TAccessLevel *level = 0) const;
     bool testAuth(const TUserInfo &info, AuthorityInfoProvider::OperationType type, const TRequest &request,
-                  const AuthorityInfo &auth, Translator &t, QString *error = 0);
-    bool testGroups(const TGroupInfoList &groups, AuthorityInfoProvider::OperationType type, const TRequest &request);
-    bool testOwnership(quint64 userId, AuthorityInfoProvider::OperationType type, const TRequest &request);
+                  const AuthorityInfo &auth, Translator &t, QString *error = 0) const;
+    bool testGroups(const TGroupInfoList &groups, AuthorityInfoProvider::OperationType type,
+                    const TRequest &request) const;
+    bool testOwnership(quint64 userId, AuthorityInfoProvider::OperationType type, const TRequest &request) const;
     bool testSampleTypes(AuthorityInfo::SampleTypes sampleTypes, AuthorityInfoProvider::OperationType type,
-                         const TRequest &request);
+                         const TRequest &request) const;
     bool testServices(const TServiceList &services, AuthorityInfoProvider::OperationType type,
-                      const TRequest &request);
+                      const TRequest &request) const;
     bool testTargetAccessLevel(const TAccessLevel &userAccessLevel, AuthorityInfoProvider::OperationType type,
                                AuthorityInfo::AccessLevel targetAccesslevel,
                                AuthorityInfo::AccessLevelMode accessLevelMode, const TRequest &request,
-                               TAccessLevel *level = 0);
+                               TAccessLevel *level = 0) const;
 };
 
 #endif // AUTHORITYRESOLVER_H

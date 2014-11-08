@@ -106,7 +106,6 @@ bool AuthorityInfoProvider::loadFromProperties(const BProperties &p)
         list = parce(value, &ok);
         if (!ok) {
             clear();
-            qDebug() << "pss" << value;
             return false;
         }
         mauthListMap.insert(type, list);

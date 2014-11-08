@@ -65,7 +65,7 @@ bool AuthorityResolver::isValid() const
 }
 
 bool AuthorityResolver::mayPerformOperation(const TUserInfo &info, AuthorityInfoProvider::OperationType type,
-                                            const TRequest &request, QString *error)
+                                            const TRequest &request, QString *error) const
 {
     Translator t(request.locale());
     if (!isValid()) {
@@ -120,7 +120,7 @@ bool AuthorityResolver::predicate(const TAccessLevel &lvl1, const TAccessLevel &
 /*============================== Private methods ===========================*/
 
 bool AuthorityResolver::testAccessLevel(const TAccessLevel &userAccessLevel,
-                                            AuthorityInfo::AccessLevel requiredAccessLevel, TAccessLevel *level)
+                                            AuthorityInfo::AccessLevel requiredAccessLevel, TAccessLevel *level) const
 {
     switch (requiredAccessLevel) {
     case AuthorityInfo::UserLevel:
@@ -147,7 +147,8 @@ bool AuthorityResolver::testAccessLevel(const TAccessLevel &userAccessLevel,
 }
 
 bool AuthorityResolver::testAuth(const TUserInfo &info, AuthorityInfoProvider::OperationType type,
-                                 const TRequest &request, const AuthorityInfo &auth, Translator &t, QString *error)
+                                 const TRequest &request, const AuthorityInfo &auth, Translator &t,
+                                 QString *error) const
 {
     switch (auth.basicState) {
     case AuthorityInfo::No:
@@ -215,7 +216,7 @@ bool AuthorityResolver::testAuth(const TUserInfo &info, AuthorityInfoProvider::O
 }
 
 bool AuthorityResolver::testGroups(const TGroupInfoList &groups, AuthorityInfoProvider::OperationType type,
-                                   const TRequest &request)
+                                   const TRequest &request) const
 {
     quint64 labId = 0;
     TUserIdentifier identifier;
@@ -314,7 +315,7 @@ bool AuthorityResolver::testGroups(const TGroupInfoList &groups, AuthorityInfoPr
 }
 
 bool AuthorityResolver::testOwnership(quint64 userId, AuthorityInfoProvider::OperationType type,
-                                      const TRequest &request)
+                                      const TRequest &request) const
 {
     if (!userId)
         return false;
@@ -421,7 +422,7 @@ bool AuthorityResolver::testOwnership(quint64 userId, AuthorityInfoProvider::Ope
 }
 
 bool AuthorityResolver::testSampleTypes(AuthorityInfo::SampleTypes sampleTypes,
-                                        AuthorityInfoProvider::OperationType type, const TRequest &request)
+                                        AuthorityInfoProvider::OperationType type, const TRequest &request) const
 {
     quint64 sampleId = 0;
     switch (type) {
@@ -475,7 +476,7 @@ bool AuthorityResolver::testSampleTypes(AuthorityInfo::SampleTypes sampleTypes,
 }
 
 bool AuthorityResolver::testServices(const TServiceList &services, AuthorityInfoProvider::OperationType type,
-                                     const TRequest &request)
+                                     const TRequest &request) const
 {
     TUserIdentifier userId;
     switch (type) {
@@ -538,7 +539,7 @@ bool AuthorityResolver::testServices(const TServiceList &services, AuthorityInfo
 bool AuthorityResolver::testTargetAccessLevel(
         const TAccessLevel &userAccessLevel, AuthorityInfoProvider::OperationType type,
         AuthorityInfo::AccessLevel targetAccessLevel, AuthorityInfo::AccessLevelMode accessLevelMode,
-        const TRequest &request, TAccessLevel *level)
+        const TRequest &request, TAccessLevel *level) const
 {
     if (AuthorityInfo::SelfLevel == targetAccessLevel) {
         switch (userAccessLevel.level()) {
