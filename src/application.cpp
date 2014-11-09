@@ -87,7 +87,7 @@ Application::Application(int &argc, char **argv, const QString &applicationName,
     Q_INIT_RESOURCE(texsample_server);
     Q_INIT_RESOURCE(texsample_server_translations);
 #endif
-    setApplicationVersion("3.0.0-a4");
+    setApplicationVersion("3.0.0-beta");
     setOrganizationDomain("https://github.com/ololoepepe/TeXSample-Server");
     setApplicationCopyrightPeriod("2012-2014");
     BLocationProvider *prov = new BLocationProvider;
