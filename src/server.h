@@ -47,6 +47,7 @@ private:
 public:
     explicit Server(const QString &location, QObject *parent = 0);
 public:
+    void setAuthorityResolverEnabled(bool enabled);
     TUserConnectionInfoList userConnections(
             const QString &matchPattern, TGetUserConnectionInfoListRequestData::MatchType type =
             TGetUserConnectionInfoListRequestData::MatchLoginAndUniqueId, int *total = 0) const;

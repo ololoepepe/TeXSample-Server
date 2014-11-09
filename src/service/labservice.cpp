@@ -70,8 +70,8 @@ RequestOut<TAddLabReplyData> LabService::addLab(const RequestIn<TAddLabRequestDa
     const TAddLabRequestData &requestData = in.data();
     if (!commonCheck(t, requestData, &error))
         return Out(error);
-    if (!userId)
-        return Out(t.translate("LabService", "Invalid user ID (internal)", "error"));
+    if (!checkUserId(t, userId, &error))
+        return Out(error);
     bool ok = false;
     Lab entity;
     entity.setAuthors(requestData.authors());
@@ -105,14 +105,12 @@ DataSource *LabService::dataSource() const
     return Source;
 }
 
-RequestOut<TDeleteLabReplyData> LabService::deleteLab(const RequestIn<TDeleteLabRequestData> &in, quint64 userId)
+RequestOut<TDeleteLabReplyData> LabService::deleteLab(const RequestIn<TDeleteLabRequestData> &in)
 {
     typedef RequestOut<TDeleteLabReplyData> Out;
     Translator t(in.locale());
     QString error;
     if (!commonCheck(t, in.data(), &error))
-        return Out(error);
-    if (!checkUserId(t, userId, &error))
         return Out(error);
     bool ok = false;
     const TDeleteLabRequestData &requestData = in.data();
@@ -121,16 +119,6 @@ RequestOut<TDeleteLabReplyData> LabService::deleteLab(const RequestIn<TDeleteLab
         return Out(t.translate("LabService", "Failed to get lab (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("LabService", "No such lab", "error"));
-    if (entity.senderId() != userId) {
-        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
-        if (!ok)
-            return Out(t.translate("LabService", "Failed to get user access level (internal)", "error"));
-        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
-        if (!ok)
-            return Out(t.translate("LabService", "Failed to get user access level (internal)", "error"));
-        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
-            return Out(t.translate("LabService", "Not enough rights to delete lab", "error"));
-    }
     TransactionHolder holder(Source);
     QDateTime dt = LabRepo->deleteOne(requestData.id(), &ok);
     if (!ok)
@@ -141,14 +129,12 @@ RequestOut<TDeleteLabReplyData> LabService::deleteLab(const RequestIn<TDeleteLab
     return Out(replyData, dt);
 }
 
-RequestOut<TEditLabReplyData> LabService::editLab(const RequestIn<TEditLabRequestData> &in, quint64 userId)
+RequestOut<TEditLabReplyData> LabService::editLab(const RequestIn<TEditLabRequestData> &in)
 {
     typedef RequestOut<TEditLabReplyData> Out;
     Translator t(in.locale());
     QString error;
     if (!commonCheck(t, in.data(), &error))
-        return Out(error);
-    if (!checkUserId(t, userId, &error))
         return Out(error);
     bool ok = false;
     const TEditLabRequestData &requestData = in.data();
@@ -157,16 +143,6 @@ RequestOut<TEditLabReplyData> LabService::editLab(const RequestIn<TEditLabReques
         return Out(t.translate("LabService", "Failed to get lab (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("LabService", "No such lab", "error"));
-    if (entity.senderId() != userId) {
-        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
-        if (!ok)
-            return Out(t.translate("LabService", "Failed to get user access level (internal)", "error"));
-        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
-        if (!ok)
-            return Out(t.translate("LabService", "Failed to get user access level (internal)", "error"));
-        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
-            return Out(t.translate("LabService", "Not enough rights to edit lab", "error"));
-    }
     entity.convertToCreatedByUser();
     entity.setAuthors(requestData.authors());
     entity.setDeletedExtraFiles(requestData.deletedExtraFiles());

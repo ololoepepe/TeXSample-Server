@@ -30,6 +30,8 @@ class UserService;
 class QStringList;
 class QTimerEvent;
 
+#include "authorityinfoprovider.h"
+
 #include <TCoreApplication>
 
 #include <BTextTools>
@@ -52,12 +54,17 @@ class Application : public TCoreApplication
 {
     Q_OBJECT
 private:
+    static QMutex appVersionMutex;
+    static QMutex authorityMutex;
+    static QMutex dbMutex;
     static QMutex serverMutex;
 private:
     DataSource * const Source;
     ApplicationVersionService * const ApplicationVersionServ;
     UserService * const UserServ;
 private:
+    AuthorityInfoProvider mauthProvider;
+    AuthorityInfoProvider mdefAuthProvider;
     QElapsedTimer melapsedTimer;
     Server *mserver;
     int timerId;
@@ -67,6 +74,8 @@ public:
 public:
     static bool copyTexsample(const QString &path, const QString &codecName = QString("UTF-8"));
 public:
+    const AuthorityInfoProvider &authorityInfoProvider() const;
+    const AuthorityInfoProvider &defaultAuthorityInfoProvider() const;
     bool initializeEmail();
     bool initializeStorage();
     Server *server();
@@ -77,6 +86,7 @@ protected:
     void timerEvent(QTimerEvent *e);
 private:
     static bool checkParsingError(BTextTools::OptionsParsingError error, const QString &errorData);
+    static bool handleReloadAuthorityConfigCommand(const QString &cmd, const QStringList &args);
     static bool handleSetAppVersionCommand(const QString &cmd, const QStringList &args);
     static bool handleShrinkDBCommand(const QString &cmd, const QStringList &args);
     static bool handleStartCommand(const QString &cmd, const QStringList &args);

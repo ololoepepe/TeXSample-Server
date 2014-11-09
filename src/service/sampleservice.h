@@ -55,10 +55,9 @@ public:
     RequestOut<TAddSampleReplyData> addSample(const RequestIn<TAddSampleRequestData> &in, quint64 userId);
     RequestOut<TCompileTexProjectReplyData> compileTexProject(const RequestIn<TCompileTexProjectRequestData> &in);
     DataSource *dataSource() const;
-    RequestOut<TDeleteSampleReplyData> deleteSample(const RequestIn<TDeleteSampleRequestData> &in, quint64 userId);
-    RequestOut<TEditSampleReplyData> editSample(const RequestIn<TEditSampleRequestData> &in, quint64 userId);
-    RequestOut<TEditSampleAdminReplyData> editSampleAdmin(const RequestIn<TEditSampleAdminRequestData> &in,
-                                                          quint64 userId);
+    RequestOut<TDeleteSampleReplyData> deleteSample(const RequestIn<TDeleteSampleRequestData> &in);
+    RequestOut<TEditSampleReplyData> editSample(const RequestIn<TEditSampleRequestData> &in);
+    RequestOut<TEditSampleAdminReplyData> editSampleAdmin(const RequestIn<TEditSampleAdminRequestData> &in);
     RequestOut<TGetSampleInfoListReplyData> getSampleInfoList(const RequestIn<TGetSampleInfoListRequestData> &in);
     RequestOut<TGetSamplePreviewReplyData> getSamplePreview(const RequestIn<TGetSamplePreviewRequestData> &in);
     RequestOut<TGetSampleSourceReplyData> getSampleSource(const RequestIn<TGetSampleSourceRequestData> &in);

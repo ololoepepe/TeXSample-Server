@@ -8,6 +8,7 @@
 
 === MAJOR ===
 
+[done] Implement conf-file-based authority management system
 [done] Implement registration confirmation
 [done] Implement e-mail change confirmation
 [done] Add access level info to invites

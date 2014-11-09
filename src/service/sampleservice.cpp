@@ -36,6 +36,7 @@
 #include <TeXSample/TeXSampleCore>
 
 #include <BDirTools>
+#include <BUuid>
 
 #include <QDateTime>
 #include <QDebug>
@@ -74,8 +75,8 @@ RequestOut<TAddSampleReplyData> SampleService::addSample(const RequestIn<TAddSam
     const TAddSampleRequestData &requestData = in.data();
     if (!commonCheck(t, requestData, &error))
         return Out(error);
-    if (!userId)
-        return Out(t.translate("SampleService", "Invalid user ID (internal)", "error"));
+    if (!checkUserId(t, userId, &error))
+        return Out(error);
     bool ok = false;
     Sample entity;
     entity.setSenderId(userId);
@@ -174,33 +175,15 @@ DataSource *SampleService::dataSource() const
     return Source;
 }
 
-RequestOut<TDeleteSampleReplyData> SampleService::deleteSample(const RequestIn<TDeleteSampleRequestData> &in,
-                                                               quint64 userId)
+RequestOut<TDeleteSampleReplyData> SampleService::deleteSample(const RequestIn<TDeleteSampleRequestData> &in)
 {
     typedef RequestOut<TDeleteSampleReplyData> Out;
     Translator t(in.locale());
     QString error;
     if (!commonCheck(t, in.data(), &error))
         return Out(error);
-    if (!checkUserId(t, userId, &error))
-        return Out(error);
     bool ok = false;
     const TDeleteSampleRequestData &requestData = in.data();
-    Sample entity = SampleRepo->findOne(requestData.id(), &ok);
-    if (!ok)
-        return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
-    if (!entity.isValid())
-        return Out(t.translate("SampleService", "No such sample", "error"));
-    if (entity.senderId() != userId) {
-        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
-            return Out(t.translate("SampleService", "Not enough rights to delete sample", "error"));
-    }
     TransactionHolder holder(Source);
     QDateTime dt = SampleRepo->deleteOne(requestData.id(), &ok);
     if (!ok)
@@ -211,14 +194,12 @@ RequestOut<TDeleteSampleReplyData> SampleService::deleteSample(const RequestIn<T
     return Out(replyData, dt);
 }
 
-RequestOut<TEditSampleReplyData> SampleService::editSample(const RequestIn<TEditSampleRequestData> &in, quint64 userId)
+RequestOut<TEditSampleReplyData> SampleService::editSample(const RequestIn<TEditSampleRequestData> &in)
 {
     typedef RequestOut<TEditSampleReplyData> Out;
     Translator t(in.locale());
     QString error;
     if (!commonCheck(t, in.data(), &error))
-        return Out(error);
-    if (!checkUserId(t, userId, &error))
         return Out(error);
     bool ok = false;
     const TEditSampleRequestData &requestData = in.data();
@@ -227,16 +208,6 @@ RequestOut<TEditSampleReplyData> SampleService::editSample(const RequestIn<TEdit
         return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("SampleService", "No such sample", "error"));
-    if (entity.senderId() != userId) {
-        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
-            return Out(t.translate("SampleService", "Not enough rights to edit sample", "error"));
-    }
     entity.convertToCreatedByUser();
     entity.setAuthors(requestData.authors());
     entity.setDescription(requestData.description());
@@ -267,15 +238,12 @@ RequestOut<TEditSampleReplyData> SampleService::editSample(const RequestIn<TEdit
     return Out(replyData, entity.lastModificationDateTime());
 }
 
-RequestOut<TEditSampleAdminReplyData> SampleService::editSampleAdmin(const RequestIn<TEditSampleAdminRequestData> &in,
-                                                                     quint64 userId)
+RequestOut<TEditSampleAdminReplyData> SampleService::editSampleAdmin(const RequestIn<TEditSampleAdminRequestData> &in)
 {
     typedef RequestOut<TEditSampleAdminReplyData> Out;
     Translator t(in.locale());
     QString error;
     if (!commonCheck(t, in.data(), &error))
-        return Out(error);
-    if (!checkUserId(t, userId, &error))
         return Out(error);
     bool ok = false;
     const TEditSampleAdminRequestData &requestData = in.data();
@@ -284,16 +252,6 @@ RequestOut<TEditSampleAdminReplyData> SampleService::editSampleAdmin(const Reque
         return Out(t.translate("SampleService", "Failed to get sample (internal)", "error"));
     if (!entity.isValid())
         return Out(t.translate("SampleService", "No such sample", "error"));
-    if (entity.senderId() != userId) {
-        int lvlSelf = UserRepo->findAccessLevel(userId, &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        int lvlSender = UserRepo->findAccessLevel(entity.senderId(), &ok).level();
-        if (!ok)
-            return Out(t.translate("SampleService", "Failed to get user access level (internal)", "error"));
-        if (lvlSelf < TAccessLevel::SuperuserLevel && lvlSelf <= lvlSender)
-            return Out(t.translate("SampleService", "Not enough rights to edit sample", "error"));
-    }
     entity.convertToCreatedByUser();
     entity.setAdminRemark(requestData.adminRemark());
     entity.setAuthors(requestData.authors());
@@ -446,15 +404,16 @@ TBinaryFile SampleService::compilePreview(const TTexProject &source, bool *ok)
     if (!Application::copyTexsample(loc.absolutePath(), "UTF-8"))
         return bRet(ok, false, TBinaryFile());
     TTexProject src = source;
+    QString fileName = src.rootFile().fileName();
+    src.rootFile().setFileName(BUuid::createUuid().toString(true) + ".tex");
     src.removeRestrictedCommands();
     if (!src.save(loc.absolutePath(), QTextCodec::codecForName("UTF-8")))
         return bRet(ok, false, TBinaryFile());
     QString command = "pdflatex";
-    QString fileName = src.rootFile().fileName();
     QString baseName = QFileInfo(fileName).baseName();
     QStringList args = QStringList() << "-interaction=nonstopmode";
     args << ("-jobname=" + baseName);
-    args << ("\\input texsample.tex \\input " + fileName + " \\end{document}");
+    args << ("\\input texsample.tex \\input " + src.rootFile().fileName() + " \\end{document}");
     if (BeQt::execProcess(loc.absolutePath(), command, args, 5 * BeQt::Second, 2 * BeQt::Minute))
         return bRet(ok, false, TBinaryFile());
     TBinaryFile file(loc.absoluteFilePath(baseName + ".pdf"));
