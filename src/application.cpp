@@ -71,6 +71,9 @@
 
 /*============================== Static private variables ==================*/
 
+QMutex Application::appVersionMutex(QMutex::Recursive);
+QMutex Application::authorityMutex(QMutex::Recursive);
+QMutex Application::dbMutex(QMutex::Recursive);
 QMutex Application::serverMutex(QMutex::Recursive);
 
 /*============================== Public constructors =======================*/
@@ -348,6 +351,8 @@ bool Application::handleReloadAuthorityConfigCommand(const QString &, const QStr
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
+    QMutexLocker locker(&authorityMutex);
+    Q_UNUSED(locker)
     QString fn = location(DataPath, UserResource) + "/auth.properties";
     if (!args.isEmpty()) {
         if (!QFileInfo(args.first()).isFile()) {
@@ -447,6 +452,8 @@ bool Application::handleSetAppVersionCommand(const QString &, const QStringList 
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
+    QMutexLocker locker(&appVersionMutex);
+    Q_UNUSED(locker)
     QString err;
     if (!bApp->ApplicationVersionServ->setLatestAppVersion(client, os, arch, portable, version, url, &err)) {
         bWriteLine(tr("Failed to set application version due to the following error:", "error") + " " + err);
@@ -466,6 +473,8 @@ bool Application::handleShrinkDBCommand(const QString &, const QStringList &args
         bWriteLine(tr("No Application instance", "error"));
         return false;
     }
+    QMutexLocker locker(&dbMutex);
+    Q_UNUSED(locker)
     QString error;
     if (!bApp->Source->shrinkDB(&error)) {
         bWriteLine(tr("Failed to shrink DB due to the following error:", "error") + " " + error);

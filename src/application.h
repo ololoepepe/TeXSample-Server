@@ -54,6 +54,9 @@ class Application : public TCoreApplication
 {
     Q_OBJECT
 private:
+    static QMutex appVersionMutex;
+    static QMutex authorityMutex;
+    static QMutex dbMutex;
     static QMutex serverMutex;
 private:
     DataSource * const Source;

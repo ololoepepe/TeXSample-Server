@@ -4,334 +4,334 @@
 <context>
     <name>Application</name>
     <message>
-        <location filename="../src/application.cpp" line="100"/>
+        <location filename="../src/application.cpp" line="103"/>
         <source>This is</source>
         <translation>Это</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="232"/>
+        <location filename="../src/application.cpp" line="235"/>
         <source>Storage already initialized</source>
         <comment>message</comment>
         <translation>Хранилище уже инициализировано</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="235"/>
+        <location filename="../src/application.cpp" line="238"/>
         <source>Initializing storage...</source>
         <comment>message</comment>
         <translation>Инициализация хранилища...</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="251"/>
-        <location filename="../src/application.cpp" line="259"/>
+        <location filename="../src/application.cpp" line="254"/>
+        <location filename="../src/application.cpp" line="262"/>
         <source>Error:</source>
         <comment>error</comment>
         <translation>Ошибка:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="255"/>
+        <location filename="../src/application.cpp" line="258"/>
         <source>Failed to check for (or delete) outdated entries</source>
         <comment>error</comment>
         <translation>Не уадлось проверить наличие или удалить записи с истекшим сроком действия</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="263"/>
+        <location filename="../src/application.cpp" line="266"/>
         <source>Done!</source>
         <comment>message</comment>
         <translation>Готово!</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="168"/>
+        <location filename="../src/application.cpp" line="171"/>
         <source>E-mail already initialized</source>
         <translation>Эл. почта уже инициализирована</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="171"/>
+        <location filename="../src/application.cpp" line="174"/>
         <source>Initializing e-mail...</source>
         <translation>Инициализация эл. почты...</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="174"/>
+        <location filename="../src/application.cpp" line="177"/>
         <source>Enter e-mail server address:</source>
         <translation>Введите адрес сервера эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="176"/>
+        <location filename="../src/application.cpp" line="179"/>
         <source>Invalid address</source>
         <translation>Недействительный адрес</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="182"/>
+        <location filename="../src/application.cpp" line="185"/>
         <source>Enter e-mail server port (default 25):</source>
         <translation>Введите порт сервера эл. почты (по умолчанию 25):</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="185"/>
+        <location filename="../src/application.cpp" line="188"/>
         <source>Invalid port</source>
         <translation>Недействительный порт</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="190"/>
+        <location filename="../src/application.cpp" line="193"/>
         <source>Enter local host name or empty string:</source>
         <translation>Введите имя локального хоста или пустую строку:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="195"/>
+        <location filename="../src/application.cpp" line="198"/>
         <source>Enter SSL mode [true|false] (default false):</source>
         <translation>Введите режим SSL [true|false] (по умолчанию false):</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="198"/>
+        <location filename="../src/application.cpp" line="201"/>
         <source>Invalid value</source>
         <translation>Некорректное значение</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="203"/>
+        <location filename="../src/application.cpp" line="206"/>
         <source>Enter e-mail login:</source>
         <translation>Введите логин от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="205"/>
+        <location filename="../src/application.cpp" line="208"/>
         <source>Invalid login</source>
         <translation>Недействительный логин</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="211"/>
+        <location filename="../src/application.cpp" line="214"/>
         <source>Enter e-mail password:</source>
         <translation>Введите пароль от эл. почты:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="213"/>
+        <location filename="../src/application.cpp" line="216"/>
         <source>Invalid password</source>
         <translation>Недействительный пароль</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="224"/>
+        <location filename="../src/application.cpp" line="227"/>
         <source>Done!</source>
         <translation>Готово!</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="294"/>
+        <location filename="../src/application.cpp" line="297"/>
         <source>read-only mode</source>
         <translation>режим только для чтения</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="318"/>
+        <location filename="../src/application.cpp" line="321"/>
         <source>Internal parsing error</source>
         <comment>error</comment>
         <translation>Внутренняя ошибка разбора</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="321"/>
+        <location filename="../src/application.cpp" line="324"/>
         <source>Malformed option:</source>
         <comment>error</comment>
         <translation>Неправильная опция:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="324"/>
+        <location filename="../src/application.cpp" line="327"/>
         <source>Missing option:</source>
         <comment>error</comment>
         <translation>Отсутствуюет опция:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="327"/>
+        <location filename="../src/application.cpp" line="330"/>
         <source>Repeating option:</source>
         <comment>error</comment>
         <translation>Повторяющаяся опция:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="330"/>
+        <location filename="../src/application.cpp" line="333"/>
         <source>Unknown option:</source>
         <comment>error</comment>
         <translation>Неизвестная опция:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="333"/>
+        <location filename="../src/application.cpp" line="336"/>
         <source>Unknown option value:</source>
         <comment>error</comment>
         <translation>Неизвестное значение поции:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="439"/>
+        <location filename="../src/application.cpp" line="444"/>
         <source>Invalid version</source>
         <comment>error</comment>
         <translation>Некорректная версия</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="443"/>
+        <location filename="../src/application.cpp" line="448"/>
         <source>Invalid url</source>
         <comment>error</comment>
         <translation>Некорректная ссылка</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="348"/>
-        <location filename="../src/application.cpp" line="447"/>
-        <location filename="../src/application.cpp" line="466"/>
-        <location filename="../src/application.cpp" line="487"/>
-        <location filename="../src/application.cpp" line="511"/>
-        <location filename="../src/application.cpp" line="536"/>
-        <location filename="../src/application.cpp" line="571"/>
+        <location filename="../src/application.cpp" line="351"/>
+        <location filename="../src/application.cpp" line="452"/>
+        <location filename="../src/application.cpp" line="473"/>
+        <location filename="../src/application.cpp" line="496"/>
+        <location filename="../src/application.cpp" line="520"/>
+        <location filename="../src/application.cpp" line="545"/>
+        <location filename="../src/application.cpp" line="580"/>
         <source>No Application instance</source>
         <comment>error</comment>
         <translation>Отсутствует экземпляр Application</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="452"/>
+        <location filename="../src/application.cpp" line="459"/>
         <source>Failed to set application version due to the following error:</source>
         <comment>error</comment>
         <translation>Не удалось задать версию приложения из-за следующей ошибки:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="373"/>
-        <location filename="../src/application.cpp" line="455"/>
-        <location filename="../src/application.cpp" line="474"/>
-        <location filename="../src/application.cpp" line="498"/>
-        <location filename="../src/application.cpp" line="519"/>
+        <location filename="../src/application.cpp" line="378"/>
+        <location filename="../src/application.cpp" line="462"/>
+        <location filename="../src/application.cpp" line="483"/>
+        <location filename="../src/application.cpp" line="507"/>
+        <location filename="../src/application.cpp" line="528"/>
         <source>OK</source>
         <comment>message</comment>
         <translation>ОК</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="471"/>
+        <location filename="../src/application.cpp" line="480"/>
         <source>Failed to shrink DB due to the following error:</source>
         <comment>error</comment>
         <translation>Не удалось сжать БД из-за следующей ошибки:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="344"/>
-        <location filename="../src/application.cpp" line="483"/>
+        <location filename="../src/application.cpp" line="347"/>
+        <location filename="../src/application.cpp" line="492"/>
         <source>Invalid argument count. This command accepts 0-1 arguments</source>
         <comment>error</comment>
         <translation>Некорректное количество аргументов. Эта команда принимает 0-1 агрумент(ов)</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="491"/>
+        <location filename="../src/application.cpp" line="500"/>
         <source>The server is listening already</source>
         <comment>error</comment>
         <translation>Сервер уже прослушивает порт</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="495"/>
+        <location filename="../src/application.cpp" line="504"/>
         <source>Failed to start server</source>
         <comment>error</comment>
         <translation>Не удалось запустить сервер</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="462"/>
-        <location filename="../src/application.cpp" line="507"/>
-        <location filename="../src/application.cpp" line="532"/>
+        <location filename="../src/application.cpp" line="469"/>
+        <location filename="../src/application.cpp" line="516"/>
+        <location filename="../src/application.cpp" line="541"/>
         <source>Invalid argument count. This command does not accept any arguments</source>
         <comment>error</comment>
         <translation>Некорректное количество аргументов. Эта команда не принимает аргументы</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="238"/>
+        <location filename="../src/application.cpp" line="241"/>
         <source>Enter path to TeXSample Framework:</source>
         <translation>Введите путь к TeXSample Framework:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="240"/>
+        <location filename="../src/application.cpp" line="243"/>
         <source>Empty path</source>
         <comment>error</comment>
         <translation>Пустой путь</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="244"/>
-        <location filename="../src/application.cpp" line="354"/>
+        <location filename="../src/application.cpp" line="247"/>
+        <location filename="../src/application.cpp" line="359"/>
         <source>Invalid path</source>
         <comment>error</comment>
         <translation>Некорректный путь</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="359"/>
+        <location filename="../src/application.cpp" line="364"/>
         <source>Failed to copy file</source>
         <comment>error</comment>
         <translation>Не удалось скопировать файл</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="370"/>
+        <location filename="../src/application.cpp" line="375"/>
         <source>Failed to load authorities configuration</source>
         <comment>error</comment>
         <translation>Не удалось загрузить конфигурацию прав</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="515"/>
+        <location filename="../src/application.cpp" line="524"/>
         <source>The server is not listening</source>
         <comment>error</comment>
         <translation>Сервер не прослушивает порт</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="525"/>
+        <location filename="../src/application.cpp" line="534"/>
         <source>Unknown command. Enter &quot;help --commands&quot; to see the list of available commands</source>
         <translation>Неизвестная команда. Введите &quot;help --commands&quot; чтобы посмотреть список доступных команд</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="539"/>
-        <location filename="../src/application.cpp" line="588"/>
+        <location filename="../src/application.cpp" line="548"/>
+        <location filename="../src/application.cpp" line="597"/>
         <source>Uptime:</source>
         <comment>message</comment>
         <translation>Аптайм:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="565"/>
+        <location filename="../src/application.cpp" line="574"/>
         <source>Invalid pattern</source>
         <comment>error</comment>
         <translation>Недействительный шаблон</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="577"/>
+        <location filename="../src/application.cpp" line="586"/>
         <source>No user matched. Total:</source>
         <comment>message</comment>
         <translation>Ни один пользователь не соответствует запросу. Всего:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="580"/>
+        <location filename="../src/application.cpp" line="589"/>
         <source>Matched users:</source>
         <comment>message</comment>
         <translation>Пользователи, соответствующие запросу:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="586"/>
+        <location filename="../src/application.cpp" line="595"/>
         <source>Connected at:</source>
         <comment>message</comment>
         <translation>Дата подключения:</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="634"/>
+        <location filename="../src/application.cpp" line="643"/>
         <source>E-mail server address used for e-mail delivery.</source>
         <translation>Адрес сервера эл. почты, используемый для доставки эл. почты.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="636"/>
+        <location filename="../src/application.cpp" line="645"/>
         <source>E-mail server port.</source>
         <translation>Порт сервера эл. почты.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="638"/>
+        <location filename="../src/application.cpp" line="647"/>
         <source>Name of local host passed to the e-mail server.</source>
         <translation>Имя локального хоста, передаваемое на сервер эл. почты.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="640"/>
+        <location filename="../src/application.cpp" line="649"/>
         <source>Determines wether the e-mail server requires SSL connection.</source>
         <translation>Определяет, требуется ли серверу эл. почты SSL-соединение.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="643"/>
+        <location filename="../src/application.cpp" line="652"/>
         <source>Identifier used to log into the e-mail server.</source>
         <translation>Идентификатор, используемый для входа на сервер эл. почты.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="647"/>
+        <location filename="../src/application.cpp" line="656"/>
         <source>Password used to log into the e-mail server.</source>
         <translation>Пароль, используемый для входа на сервер эл. почты.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="650"/>
+        <location filename="../src/application.cpp" line="659"/>
         <source>Determines wether e-mail password is stored on disk.</source>
         <translation>Определяет, хранится ли пароль от эл. почты на диске.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="655"/>
+        <location filename="../src/application.cpp" line="664"/>
         <source>Logging mode. Possible values:
   0 or less - don&apos;t log
   1 - log to console only
@@ -346,7 +346,7 @@
   Значение по умолчанию - 2</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="662"/>
+        <location filename="../src/application.cpp" line="671"/>
         <source>Logging the &quot;keep alive&quot; operations. Possible values:
   0 or less - don&apos;t log
   1 - log locally
@@ -359,7 +359,7 @@
   Значение по умолчанию - 0</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="670"/>
+        <location filename="../src/application.cpp" line="679"/>
         <source>Read-only mode. Possible values:
   true - read-only mode
   false - normal mode (read and write)</source>
@@ -368,17 +368,17 @@
   false - нормальный режим (чтение и запись)</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="675"/>
+        <location filename="../src/application.cpp" line="684"/>
         <source>Path to TeXSample Framework</source>
         <translation>Путь к TeXSample Framework</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="677"/>
+        <location filename="../src/application.cpp" line="686"/>
         <source>This is TeXSample Server. Enter &quot;help --all&quot; to see full Help</source>
         <translation>Это TeXSample Server. Введите &quot;help --all&quot; чтобы увидеть полную Справку</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="681"/>
+        <location filename="../src/application.cpp" line="690"/>
         <source>Show information about connected users matching &lt;match_pattern&gt;, which is to be a wildcard.
 &lt;match_type&gt; may be one of the following:
   login-and-unique-id|a - attempt to match both login and uinque id (default)
@@ -391,7 +391,7 @@
   unique-id|u - пытаться найти соответствие только уникального идентификатора</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="689"/>
+        <location filename="../src/application.cpp" line="698"/>
         <source>Start the server.
 If [address] is passed, server will listen on that address.
 Otherwise it will listen on all available addresses.</source>
@@ -400,14 +400,14 @@ Otherwise it will listen on all available addresses.</source>
 В противном случае он будет слушать на всех доступных адресах.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="694"/>
+        <location filename="../src/application.cpp" line="703"/>
         <source>Stop the server.
 Note: Users are not disconnected.</source>
         <translation>Выключить сервер.
 Примечание: Пользователи не будут отключены.</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="697"/>
+        <location filename="../src/application.cpp" line="706"/>
         <source>Set the latest version of an application along with the download URL.
 The parameters are:
   --client|-c=&lt;client&gt;, where &lt;client&gt; must be one of the following:
@@ -450,25 +450,25 @@ Example:
   set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="720"/>
+        <location filename="../src/application.cpp" line="729"/>
         <source>Shrink the database with VACUUM command.
 Note: This command will fail if there are active transactions</source>
         <translation>Сжать базу данных при помощи команды VACUUM.
 Примечание: эта команда не будет выполнена, если имеются активные транзакции</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="724"/>
+        <location filename="../src/application.cpp" line="733"/>
         <source>Show for how long the application has been running</source>
         <translation>Показать, как долго работает приложение</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="727"/>
+        <location filename="../src/application.cpp" line="736"/>
         <source>Reloads authorities configuration from the configuration file (auth.properties).
 If [path] is specified, the new conf file will be copied to the application resources location (the old auth.properties will be replaced by the new one).</source>
         <translation>Перезагружает конфигурацию прав из конфигурационного файла (auth.properties). Если передан параметр [path], новый файл будет скопирован в папку ресурсов приложения (старый auth.properties будет заменен новым).</translation>
     </message>
     <message>
-        <location filename="../src/application.cpp" line="606"/>
+        <location filename="../src/application.cpp" line="615"/>
         <source>days</source>
         <translation>дней</translation>
     </message>

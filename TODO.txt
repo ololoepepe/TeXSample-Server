@@ -1,7 +1,6 @@
 === PATCH ===
 
-[done] Fix sample editing
-[done] Use unique UUID-based names for compiled sample sources
+
 
 === MINOR ===
 
