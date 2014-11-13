@@ -522,67 +522,67 @@ If [path] is specified, the new conf file will be copied to the application reso
 <context>
     <name>AuthorityInfoResolver</name>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="80"/>
+        <location filename="../src/authorityresolver.cpp" line="101"/>
         <source>No rule for operation (internal)</source>
         <comment>error</comment>
         <translation>Отсутствует правило для операции (внутренняя)</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="155"/>
+        <location filename="../src/authorityresolver.cpp" line="176"/>
         <source>This operation is not allowed to anyone</source>
         <comment>error</comment>
         <translation>Эта операция не разрешена никому</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="161"/>
+        <location filename="../src/authorityresolver.cpp" line="182"/>
         <source>Not authorized</source>
         <comment>error</comment>
         <translation>Не авторизован</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="165"/>
+        <location filename="../src/authorityresolver.cpp" line="186"/>
         <source>Account is inactive</source>
         <comment>error</comment>
         <translation>Аккаунт неактивен</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="175"/>
+        <location filename="../src/authorityresolver.cpp" line="196"/>
         <source>No access to %1 service</source>
         <comment>error</comment>
         <translation>нет доступа к сервису %1</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="187"/>
+        <location filename="../src/authorityresolver.cpp" line="208"/>
         <source>Operation is only allowed on own objects</source>
         <comment>error</comment>
         <translation>Операцию разрешено совершать только над собственными объектами</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="191"/>
+        <location filename="../src/authorityresolver.cpp" line="212"/>
         <source>Accessing/creating objects that belong to groups you do not belong to is not allowed</source>
         <comment>error</comment>
         <translation>Создание или доступ к объектам, принадлежащим группам, к которым вы не относитесь, не разрешается</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="195"/>
+        <location filename="../src/authorityresolver.cpp" line="216"/>
         <source>Accessing/creating objects that belong to groups you are not an owner of is not allowed</source>
         <comment>error</comment>
         <translation>Создание или доступ к объектам, принадлежащим группам, владельцем которых вы не являетесь, не разрешается</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="200"/>
+        <location filename="../src/authorityresolver.cpp" line="221"/>
         <source>Accessing/creating objects that belong to services you do not have access to is not allowed</source>
         <comment>error</comment>
         <translation>Создание или доступ к объектам, относящимся к сервисам, к которым у вас нет доступа, не разрешается</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="207"/>
+        <location filename="../src/authorityresolver.cpp" line="228"/>
         <source>Accessing/creating objects with access level highter than yours is not allowed (%1 access level is required)</source>
         <comment>error</comment>
         <translation>Создание или доступ к объектам с уровнем доступа выше вашего не разрешается (требуется уровень доступа %1)</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="212"/>
+        <location filename="../src/authorityresolver.cpp" line="233"/>
         <source>Operation is not allowed on this type of samples</source>
         <comment>error</comment>
         <translation>Операция не разрешается по отношению к данному типу сэмплов</translation>
@@ -591,7 +591,7 @@ If [path] is specified, the new conf file will be copied to the application reso
 <context>
     <name>AuthorityResolver</name>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="72"/>
+        <location filename="../src/authorityresolver.cpp" line="93"/>
         <source>Invalid AuthorityResolver instance (internal)</source>
         <comment>error</comment>
         <translation>Некорректный экземпляр AuthorityResolver (внутренняя)</translation>
@@ -641,7 +641,7 @@ If [path] is specified, the new conf file will be copied to the application reso
         <translation>Не удалось запустить сервер</translation>
     </message>
     <message>
-        <location filename="../src/authorityresolver.cpp" line="181"/>
+        <location filename="../src/authorityresolver.cpp" line="202"/>
         <source>%1 access level is required</source>
         <comment>error</comment>
         <translation>Требуется уровень доступа %1</translation>
