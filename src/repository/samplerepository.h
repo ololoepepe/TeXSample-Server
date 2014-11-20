@@ -69,8 +69,8 @@ private:
 private:
     bool createPreview(quint64 sampleId, const TBinaryFile &previewMainFile);
     bool createSource(quint64 sampleId, const TTexProject &source);
-    TBinaryFile fetchPreview(quint64 sampleId, bool *ok = false);
-    TTexProject fetchSource(quint64 sampleId, bool *ok = false);
+    TBinaryFile fetchPreview(quint64 sampleId, bool *ok = 0);
+    TTexProject fetchSource(quint64 sampleId, bool *ok = 0);
     bool updatePreview(quint64 sampleId, const TBinaryFile &previewMainFile);
     bool updateSource(quint64 sampleId, const TTexProject &source);
 private:

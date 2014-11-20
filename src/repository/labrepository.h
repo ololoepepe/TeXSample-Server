@@ -75,8 +75,8 @@ private:
     bool createData(quint64 labId, const TLabDataList &list);
     bool createExtraFiles(quint64 labId, const TBinaryFileList &files);
     bool deleteExtraFiles(quint64 labId, const QStringList &fileNames);
-    TLabData fetchData(quint64 labId, const TLabType &type, BeQt::OSType os = BeQt::UnknownOS, bool *ok = false);
-    TBinaryFile fetchExtraFile(quint64 labId, const QString &fileName, bool *ok = false);
+    TLabData fetchData(quint64 labId, const TLabType &type, BeQt::OSType os = BeQt::UnknownOS, bool *ok = 0);
+    TBinaryFile fetchExtraFile(quint64 labId, const QString &fileName, bool *ok = 0);
     bool updateData(quint64 labId, const TLabDataList &list);
 private:
     friend class Lab;
