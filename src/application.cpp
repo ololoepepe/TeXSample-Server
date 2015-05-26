@@ -710,7 +710,7 @@ void Application::initializeTerminal()
         "    cloudlab-client|clab\n"
         "    tex-creator|tcrt\n"
         "    texsample-console|tcsl\n"
-        "  --os|o=<os>, where <os> must be one of the following:\n"
+        "  --os|-o=<os>, where <os> must be one of the following:\n"
         "    linux|lin|l\n"
         "    macos|mac|m\n"
         "    windows|win|w\n"
@@ -720,7 +720,7 @@ void Application::initializeTerminal()
         "    rs6000, sparc, superh, systemz, tms320, tms470\n"
         "  --version|-v=<version>, where <version> must be in the following format:\n"
         "    <major>[.<minor>[.<patch>]][-<status>[extra]]\n"
-        "  --url|-u<url> (optional), where <url> must be a url (schema may be omitted)\n"
+        "  --url|-u=<url> (optional), where <url> must be a url (schema may be omitted)\n"
         "  --portable|-p (optional)\n"
         "Example:\n"
         "  set-app-version -c=tex-creator -o=windows -a=x86 -p -v=3.5.0-beta2 -u=site.com/dl/install.exe");

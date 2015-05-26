@@ -1049,7 +1049,7 @@ bool UserService::sendEmail(const QString &receiver, const QString &templateName
     email.setBody(body);
     sender.setEmail(email);
     sender.send();
-    return sender.waitForFinished();
+    return sender.waitForFinished() && sender.lastTransferSuccess();
 }
 
 /*============================== Private methods ===========================*/

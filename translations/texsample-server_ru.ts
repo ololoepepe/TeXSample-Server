@@ -130,7 +130,7 @@
         <location filename="../src/application.cpp" line="327"/>
         <source>Missing option:</source>
         <comment>error</comment>
-        <translation>Отсутствуюет опция:</translation>
+        <translation>Отсутствует опция:</translation>
     </message>
     <message>
         <location filename="../src/application.cpp" line="330"/>
@@ -148,7 +148,7 @@
         <location filename="../src/application.cpp" line="336"/>
         <source>Unknown option value:</source>
         <comment>error</comment>
-        <translation>Неизвестное значение поции:</translation>
+        <translation>Неизвестное значение опции:</translation>
     </message>
     <message>
         <location filename="../src/application.cpp" line="444"/>

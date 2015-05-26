@@ -1,6 +1,7 @@
 === PATCH ===
 
-
+* Install additional Qt5 translators
+[done] Fix email sending
 
 === MINOR ===
 
